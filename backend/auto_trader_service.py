@@ -434,8 +434,17 @@ def _default_state() -> Dict[str, Any]:
         "positions": [],  # [{symbol, name, sector, qty, avg_price, current_price, highest_price, stop_price, target_price, bought_at, reason, market}]
         "trade_logs": [],  # [{id, timestamp, action, symbol, name, qty, price, amount_krw, pnl_krw, pnl_pct, reason, mode}]
         "candidates": [],  # [{symbol, name, sector, price, change_pct, ai_score, reason}]
+        "custom_ai_strategies": [],  # AI 매매 전략 연습장 등록 전략 (가상/실전 분리)
+        "watchlist": [],
+        "strategy_lab_positions": [],  # 전략랩 가상/실전 보유 포지션
+        "strategy_lab_logs": [],  # 전략랩 가상/실전 매매 체결 이력
+        "strategy_lab_settings": {
+            "paper_enabled": True,   # 가상매매(모의) 마스터 스위치
+            "real_enabled": False,   # 실전매매(한투 실계좌) 마스터 스위치 (안전 기본 OFF)
+        },
         "last_cycle_at": "",
         "kis_token": {"access_token": "", "expires_at": 0},
+        "kis_token_real": {"access_token": "", "expires_at": 0},
     }
 
 
@@ -491,8 +500,15 @@ def load_state() -> Dict[str, Any]:
             state["paper_positions_backup"] = saved.get("paper_positions_backup", [])
             state["trade_logs"] = saved.get("trade_logs", [])[:100]
             state["candidates"] = saved.get("candidates", [])
+            state["custom_ai_strategies"] = saved.get("custom_ai_strategies", [])
+            state["watchlist"] = saved.get("watchlist", [])
+            state["strategy_lab_positions"] = saved.get("strategy_lab_positions", [])
+            state["strategy_lab_logs"] = saved.get("strategy_lab_logs", [])[:100]
+            if isinstance(saved.get("strategy_lab_settings"), dict):
+                state["strategy_lab_settings"].update(saved.get("strategy_lab_settings", {}))
             state["last_cycle_at"] = saved.get("last_cycle_at", "")
             state["kis_token"] = saved.get("kis_token", {"access_token": "", "expires_at": 0})
+            state["kis_token_real"] = saved.get("kis_token_real", {"access_token": "", "expires_at": 0})
             # KIS_REAL 모드일 때 실제 한투 주문 확인(kis_order_confirmed / [한투주문 완료])이 없는 가상 매수분이 섞여 있으면 즉시 분리 및 예수금 복원
             if state["config"].get("mode") == "KIS_REAL":
                 real_only = [
@@ -636,6 +652,7 @@ def save_state(state: Dict[str, Any]) -> None:
                     raw_k = str(safe_copy["config"]["kis_app_key"])
                     safe_copy["config"]["kis_app_key"] = f"{raw_k[:4]}********{raw_k[-3:]}" if len(raw_k) > 8 else "********"
             safe_copy["kis_token"] = {"access_token": "", "expires_at": 0}
+            safe_copy["kis_token_real"] = {"access_token": "", "expires_at": 0}
             db.collection("admin_auto_trader").document("current_state").set(safe_copy)
         except Exception:
             pass
@@ -693,13 +710,18 @@ def _fetch_live_quote(symbol: str) -> Dict[str, Any]:
             res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=3.5)
             if res.status_code == 200:
                 data = res.json()
-                price = float(str(data.get("nowPrice", 0)).replace(",", ""))
-                chg_pct = float(str(data.get("fluctuationRate", 0)).replace(",", "").replace("%", ""))
-                vol = float(str(data.get("totalVolume", 0)).replace(",", "") or 0)
+                raw_p = data.get("nowPrice") or data.get("closePrice") or 0
+                price = float(str(raw_p).replace(",", ""))
+                raw_r = data.get("fluctuationsRatio") if data.get("fluctuationsRatio") is not None else data.get("fluctuationRate", 0)
+                chg_pct = float(str(raw_r or 0).replace(",", "").replace("%", ""))
+                cmp_info = data.get("compareToPreviousPrice") or {}
+                if chg_pct > 0 and (str(cmp_info.get("code", "")) in ("4", "5") or cmp_info.get("name") in ("FALLING", "DOWN")):
+                    chg_pct = -chg_pct
+                vol = float(str(data.get("accumulatedTradingVolume") or data.get("totalVolume") or 0).replace(",", "") or 0)
                 if price > 0:
                     return {
                         "price": price,
-                        "change_pct": chg_pct,
+                        "change_pct": round(chg_pct, 2),
                         "volume": vol,
                         "is_us": False,
                     }
@@ -1441,18 +1463,20 @@ def _get_kis_base_url(mode: str) -> str:
     return "https://openapivts.koreainvestment.com:29443"
 
 
-def _get_kis_token(state: Dict[str, Any]) -> Optional[str]:
+def _get_kis_token(state: Dict[str, Any], mode_override: Optional[str] = None) -> Optional[str]:
     cfg = state.get("config", {})
     app_key = (cfg.get("kis_app_key") or os.environ.get("KIS_APP_KEY", "")).strip()
     app_secret = (cfg.get("kis_app_secret") or os.environ.get("KIS_APP_SECRET", "")).strip()
     if not app_key or not app_secret:
         return None
 
-    tok_info = state.get("kis_token", {})
+    target_mode = mode_override or cfg.get("mode", "KIS_VIRTUAL")
+    tok_key = "kis_token_real" if target_mode == "KIS_REAL" else "kis_token"
+    tok_info = state.get(tok_key, {})
     if tok_info.get("access_token") and tok_info.get("expires_at", 0) > time.time() + 300:
         return tok_info["access_token"]
 
-    base_url = _get_kis_base_url(cfg.get("mode", "KIS_VIRTUAL"))
+    base_url = _get_kis_base_url(target_mode)
     try:
         res = requests.post(
             f"{base_url}/oauth2/tokenP",
@@ -1463,23 +1487,30 @@ def _get_kis_token(state: Dict[str, Any]) -> Optional[str]:
             data = res.json()
             token = data.get("access_token", "")
             if token:
-                state["kis_token"] = {
+                state[tok_key] = {
                     "access_token": token,
                     "expires_at": int(time.time()) + int(data.get("expires_in", 82800)),
                 }
                 return token
     except Exception as e:
-        print(f"[AutoTrader] KIS token issue failed: {e}")
+        print(f"[AutoTrader] KIS token issue failed ({target_mode}): {e}")
     return None
 
 
-def _place_kis_order(state: Dict[str, Any], symbol: str, qty: int, is_buy: bool, price: float = 0.0) -> Dict[str, Any]:
+def _place_kis_order(
+    state: Dict[str, Any],
+    symbol: str,
+    qty: int,
+    is_buy: bool,
+    price: float = 0.0,
+    mode_override: Optional[str] = None,
+) -> Dict[str, Any]:
     """한국투자증권 국내주식/ETF 및 해외(미국)주식/ETF 현금 자동 주문 (모의/실전 자동 분기)"""
     cfg = state.get("config", {})
     if not cfg.get("kis_order_enabled", True):
         return {"ok": False, "msg": "계좌 연동 주문 스위치가 OFF(잠금) 상태이므로 증권사 주문을 전송하지 않았습니다."}
-    mode = cfg.get("mode", "KIS_VIRTUAL")
-    token = _get_kis_token(state)
+    mode = mode_override or cfg.get("mode", "KIS_VIRTUAL")
+    token = _get_kis_token(state, mode_override=mode)
     acct_raw = (cfg.get("kis_account_no") or os.environ.get("KIS_ACCOUNT_NO", "")).replace("-", "").strip()
     if not token or len(acct_raw) < 8:
         return {"ok": False, "msg": "KIS API 키 또는 계좌번호 미설정 (AI 가상 체결로 자동 전환됨)"}
@@ -2126,8 +2157,301 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                 is_paper=(cfg.get("mode") != "KIS_REAL"),
             )
 
+    # [AI 매매 전략 자율 연습장] 가상매매(PAPER) / 실전매매(REAL) 등록 전략 실시간 감시 및 자동 집행
+    try:
+        lab_actions = execute_custom_ai_strategies(state)
+        if lab_actions:
+            actions_taken.extend(lab_actions)
+    except Exception as _lab_err:
+        print(f"[AutoTrader] execute_custom_ai_strategies error: {_lab_err}")
+
     save_state(state)
     return get_dashboard_summary(state)
+
+
+def execute_custom_ai_strategies(state: Dict[str, Any]) -> List[str]:
+    """
+    AI 매매 전략 자율 연습장에서 등록된 사용자 맞춤 전략(가상매매 PAPER / 실전매매 REAL)을
+    45초~3분 주기마다 실제로 실시간 시세 감시하고, 조건 충족 시 자동 매수·익절·손절을 집행합니다.
+    """
+    strategies = state.get("custom_ai_strategies") or []
+    if not strategies:
+        return []
+
+    cfg = state.get("config", {})
+    lab_settings = state.get("strategy_lab_settings") or {"paper_enabled": True, "real_enabled": False}
+    paper_master_on = bool(lab_settings.get("paper_enabled", True))
+    real_master_on = bool(lab_settings.get("real_enabled", False))
+
+    lab_positions = state.get("strategy_lab_positions") or []
+    lab_logs = state.get("strategy_lab_logs") or []
+    now_str = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
+    fx_rate = 1380.0
+    actions: List[str] = []
+
+    # 등록된 모든 종목의 실시간 시세를 병렬로 1회 조회
+    unique_syms = list({str(s.get("symbol", "")).strip().upper() for s in strategies if s.get("symbol")})
+    quotes: Dict[str, Dict[str, Any]] = {}
+    try:
+        with ThreadPoolExecutor(max_workers=min(8, max(1, len(unique_syms)))) as ex:
+            futs = {ex.submit(_fetch_live_quote, sym): sym for sym in unique_syms}
+            for fut, sym in futs.items():
+                try:
+                    quotes[sym] = fut.result(timeout=5)
+                except Exception:
+                    quotes[sym] = {"price": 0.0, "change_pct": 0.0, "is_us": any(c.isalpha() for c in sym)}
+    except Exception:
+        for sym in unique_syms:
+            quotes[sym] = _fetch_live_quote(sym)
+
+    # 1) 보유 중인 전략랩 포지션: 실시간 평가 및 익절/손절 집행
+    still_open_positions = []
+    pos_by_strat_id: Dict[str, Dict[str, Any]] = {}
+    for pos in lab_positions:
+        sym = str(pos.get("symbol", "")).strip().upper()
+        sid = str(pos.get("strategy_id", ""))
+        t_mode = str(pos.get("trade_mode", "PAPER")).upper()
+        is_us = bool(pos.get("is_us") or any(c.isalpha() for c in sym))
+        q = quotes.get(sym) or _fetch_live_quote(sym)
+        live_p = float(q.get("price") or pos.get("current_price") or 0.0)
+        avg_p = float(pos.get("avg_price") or live_p or 0.0)
+        qty = int(pos.get("qty") or 0)
+
+        if live_p > 0:
+            pos["current_price"] = live_p
+        pnl_pct = round(((live_p - avg_p) / avg_p) * 100.0, 2) if avg_p > 0 and live_p > 0 else 0.0
+        unit_mult = fx_rate if is_us else 1.0
+        pnl_krw = int(round((live_p - avg_p) * qty * unit_mult))
+        pos["pnl_pct"] = pnl_pct
+        pos["pnl_krw"] = pnl_krw
+        pos["last_checked_at"] = now_str
+
+        tp_pct = abs(float(pos.get("tp_pct") or 5.0))
+        sl_pct = abs(float(pos.get("sl_pct") or 4.0))
+        mode_active = real_master_on if t_mode == "REAL" else paper_master_on
+        mkt_open = is_market_open_now(sym, is_us=is_us)
+
+        should_sell = False
+        sell_reason = ""
+        if mkt_open and mode_active and live_p > 0 and qty > 0:
+            if pnl_pct >= tp_pct:
+                should_sell = True
+                sell_reason = f"[전략랩 익절 +{tp_pct:.1f}% 도달] 수익률 {pnl_pct:+.2f}% 자동 매도"
+            elif pnl_pct <= -sl_pct:
+                should_sell = True
+                sell_reason = f"[전략랩 손절 -{sl_pct:.1f}% 이탈] 수익률 {pnl_pct:+.2f}% 자동 방어 매도"
+
+        if should_sell:
+            order_ok = True
+            order_tag = " [🧪 가상매매]"
+            if t_mode == "REAL":
+                kis_res = _place_kis_order(state, sym, qty, is_buy=False, price=live_p, mode_override="KIS_REAL")
+                if kis_res.get("ok"):
+                    order_tag = f" [🔥 한투실전 체결: {kis_res.get('msg', '성공')}]"
+                else:
+                    order_ok = False
+                    pos["last_error"] = f"실전 매도 실패: {kis_res.get('msg', '오류')}"
+                    still_open_positions.append(pos)
+                    pos_by_strat_id[sid] = pos
+                    continue
+
+            if order_ok:
+                amt_krw = int(round(live_p * qty * unit_mult))
+                log_entry = {
+                    "id": f"LAB-SELL-{int(time.time()*1000)}-{sym}",
+                    "timestamp": now_str,
+                    "action": "SELL",
+                    "symbol": sym,
+                    "name": pos.get("name") or sym,
+                    "qty": qty,
+                    "price": live_p,
+                    "amount_krw": amt_krw,
+                    "pnl_krw": pnl_krw,
+                    "pnl_pct": pnl_pct,
+                    "reason": sell_reason + order_tag,
+                    "mode": "STRATEGY_LAB_REAL" if t_mode == "REAL" else "STRATEGY_LAB_PAPER",
+                    "trade_mode": t_mode,
+                    "strategy_id": sid,
+                }
+                lab_logs.insert(0, log_entry)
+                state["trade_logs"].insert(0, log_entry)
+                actions.append(f"🔴 {sell_reason} ({pos.get('name') or sym} {qty}주){order_tag}")
+                if cfg.get("telegram_notify", True):
+                    try:
+                        _send_admin_trade_notification(
+                            f"{'🔥[전략랩 실전매도]' if t_mode == 'REAL' else '🧪[전략랩 가상매도]'} {pos.get('name') or sym}",
+                            f"{sell_reason} | {qty}주 | 손익 {pnl_krw:+,}원 ({pnl_pct:+.2f}%){order_tag}",
+                        )
+                    except Exception:
+                        pass
+                continue
+
+        still_open_positions.append(pos)
+        if sid:
+            pos_by_strat_id[sid] = pos
+
+    state["strategy_lab_positions"] = still_open_positions
+
+    # 2) 등록된 전략별 실시간 시세 감시 및 급락 진입 조건 체결
+    for strat in strategies:
+        sym = str(strat.get("symbol", "")).strip().upper()
+        if not sym:
+            continue
+        sid = str(strat.get("strategy_id") or f"STRAT-{sym}")
+        strat["strategy_id"] = sid
+        t_mode = str(strat.get("trade_mode") or "PAPER").upper()
+        strat["trade_mode"] = "REAL" if t_mode == "REAL" else "PAPER"
+        enabled = bool(strat.get("enabled", True))
+        strat["enabled"] = enabled
+        alloc_krw = int(strat.get("allocation_krw") or (500000 if t_mode == "REAL" else 2000000))
+        strat["allocation_krw"] = alloc_krw
+
+        buy_dip = abs(float(strat.get("buy_dip_threshold_pct") or 3.5))
+        tp_pct = abs(float(strat.get("take_profit_threshold_pct") or 6.0))
+        sl_pct = abs(float(strat.get("stop_loss_pct") or 4.0))
+        is_us = bool(any(c.isalpha() for c in sym))
+        q = quotes.get(sym) or {"price": 0.0, "change_pct": 0.0, "is_us": is_us}
+        live_p = float(q.get("price") or 0.0)
+        chg_pct = round(float(q.get("change_pct") or 0.0), 2)
+        mkt_open = is_market_open_now(sym, is_us=is_us)
+
+        strat["last_checked_at"] = now_str
+        strat["last_price"] = live_p
+        strat["last_change_pct"] = chg_pct
+        strat["is_us"] = is_us
+        strat["market_open"] = mkt_open
+        # 매수 조건(-buy_dip%)까지 얼마나 더 빠져야 하는지 (0 이하면 이미 조건 충족!)
+        gap_pct = round(chg_pct - (-buy_dip), 2)
+        strat["gap_to_trigger_pct"] = gap_pct
+
+        held_pos = pos_by_strat_id.get(sid)
+        if held_pos:
+            strat["holding"] = True
+            strat["holding_qty"] = held_pos.get("qty", 0)
+            strat["holding_avg_price"] = held_pos.get("avg_price", 0)
+            strat["holding_pnl_pct"] = held_pos.get("pnl_pct", 0.0)
+            strat["monitor_status"] = (
+                f"📈 보유 감시 중 ({held_pos.get('qty', 0)}주 · 수익률 {held_pos.get('pnl_pct', 0.0):+.2f}% | "
+                f"익절 +{tp_pct:.1f}% / 손절 -{sl_pct:.1f}% 대기)"
+            )
+            continue
+        else:
+            strat["holding"] = False
+            strat["holding_qty"] = 0
+            strat["holding_pnl_pct"] = 0.0
+
+        mode_master_on = real_master_on if strat["trade_mode"] == "REAL" else paper_master_on
+        if not mode_master_on:
+            strat["monitor_status"] = (
+                "🔒 실전매매 마스터 스위치 OFF (상단 스위치 ON 시 실시간 주문 가동)"
+                if strat["trade_mode"] == "REAL"
+                else "⏸️ 가상매매 마스터 스위치 OFF (상단 스위치 ON 시 가동)"
+            )
+            continue
+
+        if not enabled:
+            strat["monitor_status"] = "⏸️ 개별 전략 일시 정지 중"
+            continue
+
+        if not mkt_open:
+            strat["monitor_status"] = (
+                f"🌙 정규장 마감 대기 (현재 {chg_pct:+.2f}% · 매수 조건 -{buy_dip:.2f}% | 개장 시 자동 감시)"
+            )
+            continue
+
+        if live_p <= 0:
+            strat["monitor_status"] = "⚠️ 실시간 시세 조회 대기 중"
+            continue
+
+        # 매수 트리거 충족 여부 판단: 당일 등락률 <= -buy_dip%
+        if chg_pct <= -buy_dip:
+            unit_mult = fx_rate if is_us else 1.0
+            unit_krw = live_p * unit_mult
+            qty = int(alloc_krw // unit_krw) if unit_krw > 0 else 0
+            if qty <= 0:
+                strat["monitor_status"] = f"⚠️ 1회 투자금({alloc_krw:,}원)이 1주 가격({int(unit_krw):,}원)보다 적어 매수 보류"
+                continue
+
+            order_ok = True
+            kis_confirmed = False
+            order_tag = " [🧪 가상매매 체결]"
+            if strat["trade_mode"] == "REAL":
+                if not cfg.get("kis_order_enabled", True):
+                    strat["monitor_status"] = "🔒 한투 계좌 주문 잠금(OFF)으로 실전 매수 보류"
+                    continue
+                kis_res = _place_kis_order(state, sym, qty, is_buy=True, price=live_p, mode_override="KIS_REAL")
+                if kis_res.get("ok"):
+                    kis_confirmed = True
+                    order_tag = f" [🔥 한투실전 체결: {kis_res.get('msg', '성공')}]"
+                else:
+                    order_ok = False
+                    strat["monitor_status"] = f"❌ 실전 매수 거절: {kis_res.get('msg', '한투 API 확인 필요')}"
+                    continue
+
+            if order_ok:
+                buy_amt_krw = int(round(unit_krw * qty))
+                stock_label = strat.get("stock_name") or sym
+                new_pos = {
+                    "strategy_id": sid,
+                    "symbol": sym,
+                    "name": stock_label,
+                    "trade_mode": strat["trade_mode"],
+                    "is_us": is_us,
+                    "qty": qty,
+                    "avg_price": live_p,
+                    "current_price": live_p,
+                    "tp_pct": tp_pct,
+                    "sl_pct": sl_pct,
+                    "pnl_pct": 0.0,
+                    "pnl_krw": 0,
+                    "bought_at": now_str,
+                    "last_checked_at": now_str,
+                    "kis_order_confirmed": kis_confirmed,
+                    "reason": f"[전략랩 급락 매수] 당일 {chg_pct:+.2f}% <= -{buy_dip:.2f}% 포착{order_tag}",
+                }
+                state["strategy_lab_positions"].append(new_pos)
+                pos_by_strat_id[sid] = new_pos
+                strat["holding"] = True
+                strat["holding_qty"] = qty
+                strat["holding_avg_price"] = live_p
+                strat["holding_pnl_pct"] = 0.0
+                strat["last_triggered_at"] = now_str
+                strat["monitor_status"] = f"🟢 매수 체결 완료! ({qty}주 · {now_str}){order_tag}"
+
+                log_entry = {
+                    "id": f"LAB-BUY-{int(time.time()*1000)}-{sym}",
+                    "timestamp": now_str,
+                    "action": "BUY",
+                    "symbol": sym,
+                    "name": stock_label,
+                    "qty": qty,
+                    "price": live_p,
+                    "amount_krw": buy_amt_krw,
+                    "pnl_krw": 0,
+                    "pnl_pct": 0.0,
+                    "reason": new_pos["reason"],
+                    "mode": "STRATEGY_LAB_REAL" if strat["trade_mode"] == "REAL" else "STRATEGY_LAB_PAPER",
+                    "trade_mode": strat["trade_mode"],
+                    "strategy_id": sid,
+                }
+                lab_logs.insert(0, log_entry)
+                state["trade_logs"].insert(0, log_entry)
+                actions.append(f"🟢 [전략랩 자동매수] {stock_label} {qty}주 ({buy_amt_krw:,}원){order_tag}")
+                if cfg.get("telegram_notify", True):
+                    try:
+                        _send_admin_trade_notification(
+                            f"{'🔥[전략랩 실전매수]' if strat['trade_mode'] == 'REAL' else '🧪[전략랩 가상매수]'} {stock_label}",
+                            f"당일 {chg_pct:+.2f}% 급락(기준 -{buy_dip:.2f}%) 포착! {qty}주 ({buy_amt_krw:,}원) 진입{order_tag}",
+                        )
+                    except Exception:
+                        pass
+        else:
+            strat["monitor_status"] = (
+                f"🟢 실시간 감시 중 (현재 {chg_pct:+.2f}% · 매수 기준 -{buy_dip:.2f}%까지 {gap_pct:.2f}%p 남음)"
+            )
+
+    state["strategy_lab_logs"] = lab_logs[:100]
+    return actions
 
 
 def manual_close_position(symbol: str, reason: str = "관리자 수동 즉시 매도") -> Dict[str, Any]:
@@ -3314,6 +3638,10 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         "candidates": curr_cands[:10],
         "kr_candidates": state.get("kr_candidates", curr_cands if active_mkt == "KR" else [])[:10],
         "us_candidates": state.get("us_candidates", curr_cands if active_mkt == "US" else [])[:10],
+        "custom_ai_strategies": state.get("custom_ai_strategies", []),
+        "strategy_lab_positions": state.get("strategy_lab_positions", []),
+        "strategy_lab_logs": state.get("strategy_lab_logs", [])[:30],
+        "strategy_lab_settings": state.get("strategy_lab_settings", {"paper_enabled": True, "real_enabled": False}),
         "last_cycle_at": state.get("last_cycle_at", ""),
         "last_quote_refresh_at": state.get("last_quote_refresh_at", datetime.now(KST).strftime("%H:%M:%S")),
     }

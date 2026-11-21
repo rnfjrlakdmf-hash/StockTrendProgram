@@ -25,16 +25,15 @@ KST = timezone(timedelta(hours=9))
 
 
 def fetch_historical_candles(symbol: str, years: int = 5) -> Optional[pd.DataFrame]:
-    """과거 주가 일봉 데이터 조회 (yfinance 기반, KRX 및 미국주식 지원)"""
+    """과거 주가 일봉 데이터 조회 (yfinance + FinanceDataReader 폴백, 국내·해외 전 종목 & 신규상장주 지원)"""
     import yfinance as yf
 
     sym = symbol.strip().upper()
-    # 6자리 한국 종목코드 처리
-    if re.match(r'^\d{6}$', sym):
-        # 코스피/코스닥 판별 (기본 .KS 시도 후 .KQ 폴백)
+    is_kr_code = bool(re.match(r'^\d{6}$', sym))
+    if is_kr_code:
         candidates = [f"{sym}.KS", f"{sym}.KQ"]
-    elif not "." in sym and len(sym) <= 5:
-        candidates = [sym]  # 미국 주식
+    elif "." not in sym and len(sym) <= 6:
+        candidates = [sym]  # 미국 주식 / ETF
     else:
         candidates = [sym]
 
@@ -43,14 +42,28 @@ def fetch_historical_candles(symbol: str, years: int = 5) -> Optional[pd.DataFra
         try:
             tk = yf.Ticker(ticker_sym)
             hist = tk.history(period=f"{years}y", auto_adjust=True)
-            if hist is not None and len(hist) >= 100:
+            if hist is None or len(hist) < 60:
+                hist = tk.history(period="max", auto_adjust=True)
+            if hist is not None and len(hist) >= 60:
                 df = hist.copy()
                 df["Ticker"] = ticker_sym
                 break
         except Exception as e:
             logger.warning(f"Failed to fetch {ticker_sym}: {e}")
 
-    if df is None or len(df) < 50:
+    # 2순위 폴백: 국내 종목/ETF는 FinanceDataReader(KRX)로 보완
+    if (df is None or len(df) < 60) and is_kr_code:
+        try:
+            import FinanceDataReader as fdr
+            start_dt = (datetime.now(KST) - timedelta(days=years * 365 + 30)).strftime("%Y-%m-%d")
+            fdr_df = fdr.DataReader(sym, start_dt)
+            if fdr_df is not None and len(fdr_df) >= 60:
+                df = fdr_df.copy()
+                df["Ticker"] = sym
+        except Exception as e:
+            logger.warning(f"FinanceDataReader fallback failed for {sym}: {e}")
+
+    if df is None or len(df) < 60:
         return None
 
     # 정규화
@@ -289,14 +302,17 @@ def run_strategy_auto_tuning_loop(
     5. 전과정 보고서 및 strategy-improved.json 도출
     """
     df = fetch_historical_candles(symbol, years=years)
-    if df is None or len(df) < 150:
+    if df is None or len(df) < 60:
         return {
             "status": "error",
             "message": f"'{symbol}'의 과거 주가 데이터를 충분히 불러오지 못했습니다. 종목코드나 티커를 확인해 주세요.",
         }
 
-    # 최근 1년(약 250거래일)을 검증용(OOS)으로 분리
-    split_idx = max(50, len(df) - 250)
+    # 최근 1년(약 250거래일)을 검증용(OOS)으로 분리 (신규상장주 등 데이터가 짧은 경우 75:25 비율 자동 적용)
+    if len(df) >= 340:
+        split_idx = len(df) - 250
+    else:
+        split_idx = max(35, int(len(df) * 0.75))
     train_df = df.iloc[:split_idx].reset_index(drop=True)
     test_df = df.iloc[split_idx:].reset_index(drop=True)
 
@@ -322,6 +338,9 @@ def run_strategy_auto_tuning_loop(
         relaxed_note = f"거래 횟수 부족으로 매수 하락 기준을 -{orig_dip}%에서 -{cur_buy_dip}%로 완화"
 
     step0["step_name"] = "초기 규칙 (시작)"
+    step0["buy_dip"] = cur_buy_dip
+    step0["take_profit"] = cur_tp
+    step0["stop_loss"] = cur_sl
     step0["change_desc"] = f"하루 {cur_buy_dip:.1f}% 하락 시 매수, +{cur_tp:.1f}% 익절, -{cur_sl:.1f}% 손절"
     if relaxed_note:
         step0["change_desc"] += f" ({relaxed_note})"
@@ -360,6 +379,9 @@ def run_strategy_auto_tuning_loop(
 
         new_res = run_single_backtest(train_df, cur_buy_dip, cur_tp, cur_sl, max_portfolio_dd_pct=max_dd)
         new_res["step_name"] = step_name
+        new_res["buy_dip"] = cur_buy_dip
+        new_res["take_profit"] = cur_tp
+        new_res["stop_loss"] = cur_sl
         new_res["change_desc"] = change_desc
         history_steps.append(new_res)
 

@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '@/lib/config';
 import {
     Sparkles, Play, CheckCircle2, AlertTriangle, ShieldAlert,
-    TrendingUp, TrendingDown, ArrowRight, RefreshCw,
-    Sliders, FileText, Check, Bot, Zap, Info, ShieldCheck, ExternalLink
+    RefreshCw, Sliders, FileText, Bot, Zap, Info, ShieldCheck,
+    Search, Trash2, Power, ArrowLeftRight, Activity, Flame, FlaskConical, Clock
 } from 'lucide-react';
 
 interface TuningStep {
@@ -26,45 +26,76 @@ interface TuningStep {
     };
     loss_analysis?: {
         total_losses: number;
-        reasons: {
-            falling_knife: number;
-            stop_loss: number;
-            max_drawdown: number;
-            time_decay: number;
-        };
         main_loss_cause: string;
     };
 }
 
 interface OutOfSampleResult {
     period: string;
-    before_tune: {
-        return_pct: number;
-        win_rate_pct: number;
-        trades: number;
-    };
-    after_tune: {
-        return_pct: number;
-        win_rate_pct: number;
-        trades: number;
-    };
+    before_tune: { return_pct: number; win_rate_pct: number; trades: number };
+    after_tune: { return_pct: number; win_rate_pct: number; trades: number };
     status: 'OVERFITTING_WARNING' | 'STABLE_IMPROVEMENT' | 'INSUFFICIENT_SAMPLES';
     warning_message: string;
 }
 
 interface StrategyLabResponse {
     status: string;
+    message?: string;
     symbol: string;
+    stock_name?: string;
     searched_name?: string;
     resolved_symbol?: string;
-    rule_summary: {
-        buy_rule: string;
-        sell_rule: string;
-    };
+    rule_summary: { buy_rule: string; sell_rule: string };
     benchmark_buy_and_hold_return_pct: number;
     tuning_steps: TuningStep[];
     out_of_sample_1year: OutOfSampleResult;
     strategy_config: any;
+}
+
+interface SearchStockItem {
+    symbol: string;
+    name: string;
+    market: string;
+    label: string;
+}
+
+interface DeployedStrategy {
+    strategy_id: string;
+    symbol: string;
+    stock_name?: string;
+    trade_mode: 'PAPER' | 'REAL';
+    allocation_krw: number;
+    enabled: boolean;
+    buy_dip_threshold_pct: number;
+    take_profit_threshold_pct: number;
+    stop_loss_pct: number;
+    deployed_at?: string;
+    last_checked_at?: string;
+    last_price?: number;
+    last_change_pct?: number;
+    gap_to_trigger_pct?: number;
+    is_us?: boolean;
+    market_open?: boolean;
+    holding?: boolean;
+    holding_qty?: number;
+    holding_avg_price?: number;
+    holding_pnl_pct?: number;
+    monitor_status?: string;
+}
+
+interface LabLogItem {
+    id: string;
+    timestamp: string;
+    action: string;
+    symbol: string;
+    name: string;
+    qty: number;
+    price: number;
+    amount_krw: number;
+    pnl_krw: number;
+    pnl_pct: number;
+    reason: string;
+    trade_mode?: string;
 }
 
 interface StrategyLabWidgetProps {
@@ -72,55 +103,209 @@ interface StrategyLabWidgetProps {
 }
 
 export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidgetProps) {
-    // 입력 상태
+    // 1. 종목 검색 & 입력 상태
     const [symbolInput, setSymbolInput] = useState('삼성전자');
+    const [selectedLabel, setSelectedLabel] = useState('삼성전자 (005930)');
+    const [searchResults, setSearchResults] = useState<SearchStockItem[]>([]);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const searchWrapRef = useRef<HTMLDivElement>(null);
+
     const [buyDip, setBuyDip] = useState<number>(3.0);
     const [takeProfit, setTakeProfit] = useState<number>(5.0);
     const [stopLoss, setStopLoss] = useState<number>(5.0);
     const [maxDd, setMaxDd] = useState<number>(15.0);
     const [years, setYears] = useState<number>(5);
 
-    // 실행 및 결과 상태
+    // 2. 백테스트 실행 및 결과 상태
     const [loading, setLoading] = useState(false);
     const [loadingStage, setLoadingStage] = useState('');
     const [result, setResult] = useState<StrategyLabResponse | null>(null);
     const [errorMsg, setErrorMsg] = useState('');
+
+    // 3. 자동매매 등록 설정 (가상매매 vs 실전매매 분리)
+    const [deployMode, setDeployMode] = useState<'PAPER' | 'REAL'>('PAPER');
+    const [allocationKrw, setAllocationKrw] = useState<number>(2000000);
+    const [realConfirmChecked, setRealConfirmChecked] = useState<boolean>(false);
+    const [autoEnableRealMaster, setAutoEnableRealMaster] = useState<boolean>(true);
     const [deploying, setDeploying] = useState(false);
     const [deploySuccess, setDeploySuccess] = useState<string | null>(null);
     const [showDeployModal, setShowDeployModal] = useState(false);
+    const [lastDeployedInfo, setLastDeployedInfo] = useState<any>(null);
 
-    // 인기 종목 퀵 버튼
+    // 4. 등록된 전략 실시간 감시 현황판 상태
+    const [labSettings, setLabSettings] = useState<{ paper_enabled: boolean; real_enabled: boolean }>({
+        paper_enabled: true,
+        real_enabled: false,
+    });
+    const [paperStrategies, setPaperStrategies] = useState<DeployedStrategy[]>([]);
+    const [realStrategies, setRealStrategies] = useState<DeployedStrategy[]>([]);
+    const [labLogs, setLabLogs] = useState<LabLogItem[]>([]);
+    const [kisConfigured, setKisConfigured] = useState<boolean>(false);
+    const [kisAccountMasked, setKisAccountMasked] = useState<string>('');
+    const [lastCycleAt, setLastCycleAt] = useState<string>('');
+    const [monitorTab, setMonitorTab] = useState<'PAPER' | 'REAL' | 'LOGS'>('PAPER');
+    const [loadingMonitor, setLoadingMonitor] = useState<boolean>(false);
+
     const quickPicks = [
         { name: '삼성전자', code: '005930' },
         { name: 'SK하이닉스', code: '000660' },
+        { name: '엘앤에프', code: '066970' },
+        { name: '한중엔시에스', code: '107640' },
+        { name: '리노공업', code: '058470' },
         { name: '현대차', code: '005380' },
-        { name: '카카오', code: '035720' },
-        { name: '에코프로비엠', code: '247540' },
         { name: '알테오젠', code: '196170' },
-        { name: '셀트리온', code: '068270' },
         { name: '테슬라', code: 'TSLA' },
         { name: '엔비디아', code: 'NVDA' },
         { name: '애플', code: 'AAPL' },
-        { name: '팔란티어', code: 'PLTR' }
+        { name: '팔란티어', code: 'PLTR' },
+        { name: 'SOXL', code: 'SOXL' },
+        { name: 'TQQQ', code: 'TQQQ' },
     ];
 
-    // 백테스트 & AI 자가 교정 실행
-    const handleRunAutoTuning = async () => {
-        if (!symbolInput.trim()) {
-            alert('종목명 또는 종목코드를 입력해주세요.');
+    // 외부 클릭 시 검색 드롭다운 닫기
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (searchWrapRef.current && !searchWrapRef.current.contains(e.target as Node)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // 실시간 감시 전략 현황 조회
+    const fetchMonitorStatus = async (forceRefresh = true) => {
+        setLoadingMonitor(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/strategy-lab/strategies?refresh=${forceRefresh ? 'true' : 'false'}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.status === 'ok') {
+                setLabSettings(data.settings || { paper_enabled: true, real_enabled: false });
+                setPaperStrategies(data.paper_strategies || []);
+                setRealStrategies(data.real_strategies || []);
+                setLabLogs(data.logs || []);
+                setKisConfigured(Boolean(data.kis_configured));
+                setKisAccountMasked(data.kis_account_masked || '');
+                setLastCycleAt(data.last_cycle_at || '');
+            }
+        } catch (err) {
+            console.error('전략 감시 현황 조회 실패:', err);
+        } finally {
+            setLoadingMonitor(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchMonitorStatus(true);
+    }, []);
+
+    // 전 종목 실시간 자동완성 디바운스 검색
+    useEffect(() => {
+        const q = symbolInput.trim();
+        if (!q || !showDropdown) {
+            return;
+        }
+        const timer = setTimeout(async () => {
+            setSearchLoading(true);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/strategy-lab/search-stocks?q=${encodeURIComponent(q)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setSearchResults(data.results || []);
+                }
+            } catch {
+                // ignore
+            } finally {
+                setSearchLoading(false);
+            }
+        }, 220);
+        return () => clearTimeout(timer);
+    }, [symbolInput, showDropdown]);
+
+    // 가상/실전 마스터 스위치 전환
+    const handleToggleMasterSetting = async (field: 'paper_enabled' | 'real_enabled', nextVal: boolean) => {
+        if (field === 'real_enabled' && nextVal) {
+            const ok = window.confirm(
+                '⚠️ [실전매매 마스터 스위치 ON]\n\n한국투자증권 실전 계좌로 등록된 AI 전략의 조건 충족 시 실제 주문이 자동으로 전송됩니다. 실전매매 엔진을 가동하시겠습니까?'
+            );
+            if (!ok) return;
+        }
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/strategy-lab/settings`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [field]: nextVal }),
+            });
+            const data = await res.json();
+            if (data.status === 'ok') {
+                setLabSettings(data.settings);
+                await fetchMonitorStatus(false);
+            }
+        } catch (err: any) {
+            alert('설정 변경 실패: ' + err.message);
+        }
+    };
+
+    // 개별 전략 ON/OFF 또는 모드 변경
+    const handlePatchStrategy = async (strategyId: string, patch: Record<string, any>) => {
+        if (patch.trade_mode === 'REAL') {
+            const ok = window.confirm('이 전략을 [🔥 실전매매 (한국투자증권 실계좌)] 모드로 전환하시겠습니까?');
+            if (!ok) return;
+        }
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/strategy-lab/strategies/${encodeURIComponent(strategyId)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const data = await res.json();
+            if (data.status === 'ok') {
+                await fetchMonitorStatus(false);
+            } else {
+                alert(data.message || '전략 수정 실패');
+            }
+        } catch (err: any) {
+            alert('전략 수정 오류: ' + err.message);
+        }
+    };
+
+    // 개별 전략 삭제
+    const handleDeleteStrategy = async (strategyId: string, label: string) => {
+        if (!window.confirm(`'${label}' 자동매매 감시 전략을 삭제(중지)하시겠습니까?`)) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/strategy-lab/strategies/${encodeURIComponent(strategyId)}`, {
+                method: 'DELETE',
+            });
+            const data = await res.json();
+            if (data.status === 'ok') {
+                await fetchMonitorStatus(false);
+            }
+        } catch (err: any) {
+            alert('전략 삭제 오류: ' + err.message);
+        }
+    };
+
+    // 백테스트 & AI 3단계 자가 교정 실행
+    const handleRunAutoTuning = async (overrideSymbol?: string) => {
+        const target = (overrideSymbol ?? symbolInput).trim();
+        if (!target) {
+            alert('종목명 또는 종목코드·티커를 입력해주세요.');
             return;
         }
 
+        setShowDropdown(false);
         setLoading(true);
         setErrorMsg('');
         setDeploySuccess(null);
         setResult(null);
 
         try {
-            setLoadingStage('과거 5년치 실시간 주가 캔들 데이터 수집 중...');
-            
+            setLoadingStage(`'${target}' 과거 ${years}년 주가 데이터 수집 & 3단계 자율 교정 시뮬레이션 중...`);
+
             const payload = {
-                symbol: symbolInput.trim(),
+                symbol: target,
                 buy_dip: Number(buyDip),
                 take_profit: Number(takeProfit),
                 stop_loss: Number(stopLoss),
@@ -134,12 +319,11 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                 body: JSON.stringify(payload),
             });
 
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.detail || '매매 연습장 엔진 응답 실패');
+            const data: StrategyLabResponse = await res.json();
+            if (!res.ok || data.status !== 'success') {
+                throw new Error(data.message || (data as any).detail || '매매 연습장 엔진 응답 실패');
             }
 
-            const data: StrategyLabResponse = await res.json();
             setResult(data);
         } catch (err: any) {
             console.error('Tuning error:', err);
@@ -150,26 +334,38 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
         }
     };
 
-    // 실전 자동매매 봇에 등록
+    // 가상매매 또는 실전매매 봇에 등록
     const handleDeployToAutoTrader = async () => {
         if (!result || !result.strategy_config) return;
+        if (deployMode === 'REAL' && !realConfirmChecked) {
+            alert('실전매매 등록을 위해 아래 안전 확인 체크박스에 동의해 주세요.');
+            return;
+        }
+
         setDeploying(true);
         try {
             const res = await fetch(`${API_BASE_URL}/api/strategy-lab/deploy`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    strategy_config: result.strategy_config
+                    strategy_config: result.strategy_config,
+                    stock_name: result.stock_name || result.searched_name || result.symbol,
+                    trade_mode: deployMode,
+                    allocation_krw: Number(allocationKrw),
+                    auto_enable_master: deployMode === 'REAL' ? autoEnableRealMaster : true,
                 }),
             });
 
             const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.detail || '자동매매 등록에 실패했습니다.');
+            if (!res.ok || data.status !== 'success') {
+                throw new Error(data.message || data.detail || '자동매매 등록에 실패했습니다.');
             }
 
             setDeploySuccess(data.message || '성공적으로 자동매매 엔진에 등록되었습니다!');
+            setLastDeployedInfo(data);
             setShowDeployModal(true);
+            setMonitorTab(deployMode);
+            await fetchMonitorStatus(false);
             if (onDeploySuccess) {
                 onDeploySuccess(result.symbol);
             }
@@ -180,6 +376,8 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
         }
     };
 
+    const activeMonitorList = monitorTab === 'REAL' ? realStrategies : paperStrategies;
+
     return (
         <div className="space-y-6">
             {/* 상단 헤더 배너 */}
@@ -189,13 +387,13 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                         <span className="px-3 py-1 rounded-full text-xs font-black bg-violet-500/20 text-violet-300 border border-violet-500/40 flex items-center gap-1.5">
                             <Bot className="w-3.5 h-3.5 text-violet-400" />
-                            <span>AI 자율 매매 연습장</span>
+                            <span>AI 자율 매매 연습장 · 실전/가상 자동매매 엔진 완전 연동</span>
                         </span>
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                            스스로 손실 원인 분석 &amp; 3회 규칙 교정
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                            국내·해외 전 종목 실시간 검색
                         </span>
                         <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                            최근 1년 블라인드 과적합(Overfitting) 검증
+                            가상매매 / 실전매매 독립 분리 작동
                         </span>
                     </div>
 
@@ -205,30 +403,306 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                     </h2>
 
                     <p className="text-xs sm:text-sm text-zinc-300 mt-2.5 leading-relaxed max-w-4xl">
-                        대표님께서 평소 생각하신 <strong className="text-violet-300">매매 기준(언제 사고, 언제 팔지)</strong>을 입력하시면, 
-                        AI가 지난 5년 치 실제 주가로 시험하고, <strong className="text-amber-300">돈을 잃은 거래만 골라 왜 잃었는지(떨어지는 칼날 매수, 손절선 터치 등) 분석</strong>한 뒤 
-                        규칙을 3번 스스로 고쳐 수익률을 개선합니다. 마지막 1년은 미사용 데이터로 남겨두어 <strong className="text-emerald-300">과적합 여부까지 검증</strong>한 후 대표이사 자동매매 봇에 즉시 등록할 수 있습니다.
+                        국내(코스피·코스닥·ETF)와 미국(나스닥·NYSE·ETF) <strong className="text-sky-300">모든 종목을 검색</strong>해 지난 주가로 시뮬레이션하고,
+                        AI가 3번 규칙을 교정한 뒤 <strong className="text-emerald-300">🧪 가상매매(모의계좌)</strong> 또는{' '}
+                        <strong className="text-rose-300">🔥 실전매매(한국투자증권 실계좌)</strong> 중 원하는 모드로 분리해 45초마다 실시간 자동매매를 가동할 수 있습니다.
                     </p>
                 </div>
             </div>
 
-            {/* 매매 규칙 설정 패널 */}
+            {/* 0. 📡 가상매매 vs 실전매매 실시간 자동매매 작동 현황판 */}
+            <div className="bg-[#0b101d] border-2 border-indigo-500/35 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                            <Activity className="w-5 h-5 text-emerald-400" />
+                            <span>실시간 자동매매 작동 제어판 (가상매매 · 실전매매 분리 운영)</span>
+                        </h3>
+                        <p className="text-xs text-zinc-400 mt-0.5">
+                            등록된 전략은 45초 주기 자동매매 데몬이 실시간 등락률을 감시하며 조건 충족 시 자동 집행합니다.
+                            {lastCycleAt && <span className="text-indigo-300 ml-1.5">· 최근 감시: {lastCycleAt}</span>}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => fetchMonitorStatus(true)}
+                        disabled={loadingMonitor}
+                        className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-bold text-zinc-200 flex items-center gap-1.5 w-fit cursor-pointer"
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${loadingMonitor ? 'animate-spin' : ''}`} />
+                        <span>실시간 시세·감시 새로고침</span>
+                    </button>
+                </div>
+
+                {/* 가상매매 / 실전매매 독립 마스터 스위치 2열 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {/* 🧪 가상매매 마스터 카드 */}
+                    <div className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between gap-3 ${
+                        labSettings.paper_enabled
+                            ? 'bg-emerald-950/25 border-emerald-500/45'
+                            : 'bg-zinc-900/50 border-white/10'
+                    }`}>
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded-md text-[11px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                                    <FlaskConical className="w-3 h-3" /> 가상매매 (모의)
+                                </span>
+                                <span className={`text-xs font-black ${labSettings.paper_enabled ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                                    {labSettings.paper_enabled ? '● 실시간 가동 중' : '○ 일시 정지'}
+                                </span>
+                            </div>
+                            <div className="text-xs text-zinc-300">
+                                등록 전략 <strong className="text-white">{paperStrategies.length}개</strong> · 실제 돈 출금 없이 안전하게 실전처럼 자동매매 테스트
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => handleToggleMasterSetting('paper_enabled', !labSettings.paper_enabled)}
+                            className={`px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                labSettings.paper_enabled
+                                    ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/25'
+                                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/15'
+                            }`}
+                        >
+                            <Power className="w-3.5 h-3.5" />
+                            <span>{labSettings.paper_enabled ? 'ON' : 'OFF'}</span>
+                        </button>
+                    </div>
+
+                    {/* 🔥 실전매매 마스터 카드 */}
+                    <div className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between gap-3 ${
+                        labSettings.real_enabled
+                            ? 'bg-rose-950/30 border-rose-500/50'
+                            : 'bg-zinc-900/50 border-white/10'
+                    }`}>
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="px-2 py-0.5 rounded-md text-[11px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">
+                                    <Flame className="w-3 h-3" /> 실전매매 (한투 실계좌)
+                                </span>
+                                <span className={`text-xs font-black ${labSettings.real_enabled ? 'text-rose-400' : 'text-zinc-500'}`}>
+                                    {labSettings.real_enabled ? '● 실계좌 가동 중' : '○ 안전 잠금(OFF)'}
+                                </span>
+                            </div>
+                            <div className="text-xs text-zinc-300">
+                                등록 전략 <strong className="text-white">{realStrategies.length}개</strong> ·{' '}
+                                {kisConfigured ? (
+                                    <span className="text-amber-300 font-semibold">한투 연동됨 ({kisAccountMasked || '실계좌'})</span>
+                                ) : (
+                                    <span className="text-rose-300">한투 API 미연동 (자동매매 콘솔에서 연동 필요)</span>
+                                )}
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => handleToggleMasterSetting('real_enabled', !labSettings.real_enabled)}
+                            className={`px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                labSettings.real_enabled
+                                    ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-md shadow-rose-500/30'
+                                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/15'
+                            }`}
+                        >
+                            <Power className="w-3.5 h-3.5" />
+                            <span>{labSettings.real_enabled ? 'ON' : 'OFF'}</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* 등록 전략 목록 탭 (가상매매 / 실전매매 / 체결 로그) */}
+                <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-2.5">
+                        <button
+                            type="button"
+                            onClick={() => setMonitorTab('PAPER')}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                monitorTab === 'PAPER'
+                                    ? 'bg-emerald-500 text-slate-950'
+                                    : 'bg-white/5 text-zinc-300 hover:bg-white/10'
+                            }`}
+                        >
+                            🧪 가상매매 감시 중 ({paperStrategies.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMonitorTab('REAL')}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                monitorTab === 'REAL'
+                                    ? 'bg-rose-500 text-white'
+                                    : 'bg-white/5 text-zinc-300 hover:bg-white/10'
+                            }`}
+                        >
+                            🔥 실전매매 감시 중 ({realStrategies.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMonitorTab('LOGS')}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                monitorTab === 'LOGS'
+                                    ? 'bg-violet-500 text-white'
+                                    : 'bg-white/5 text-zinc-300 hover:bg-white/10'
+                            }`}
+                        >
+                            📜 체결 이력 ({labLogs.length})
+                        </button>
+                    </div>
+
+                    {monitorTab !== 'LOGS' ? (
+                        activeMonitorList.length === 0 ? (
+                            <div className="p-4 rounded-xl bg-black/35 border border-white/10 text-xs text-zinc-400 text-center">
+                                현재 {monitorTab === 'REAL' ? '🔥 실전매매' : '🧪 가상매매'}로 등록된 전략이 없습니다. 아래에서 원하는 종목을 검색해 시뮬레이션한 뒤 등록해 보세요!
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {activeMonitorList.map((st) => {
+                                    const isReal = st.trade_mode === 'REAL';
+                                    const chg = Number(st.last_change_pct || 0);
+                                    return (
+                                        <div
+                                            key={st.strategy_id}
+                                            className={`p-4 rounded-2xl border space-y-2.5 transition-all ${
+                                                !st.enabled
+                                                    ? 'bg-zinc-900/40 border-white/10 opacity-70'
+                                                    : isReal
+                                                    ? 'bg-rose-950/20 border-rose-500/35'
+                                                    : 'bg-emerald-950/15 border-emerald-500/35'
+                                            }`}
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                                                            isReal
+                                                                ? 'bg-rose-500/25 text-rose-300 border border-rose-500/40'
+                                                                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                                        }`}>
+                                                            {isReal ? '🔥 실전매매' : '🧪 가상매매'}
+                                                        </span>
+                                                        <span className="text-sm font-black text-white">
+                                                            {st.stock_name || st.symbol}
+                                                        </span>
+                                                        <span className="text-[11px] font-mono text-zinc-400">
+                                                            ({st.symbol})
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[11px] text-zinc-300 mt-1 font-medium">
+                                                        매수 <strong className="text-sky-300">-{st.buy_dip_threshold_pct}%</strong> ·
+                                                        익절 <strong className="text-emerald-300">+{st.take_profit_threshold_pct}%</strong> ·
+                                                        손절 <strong className="text-rose-300">-{st.stop_loss_pct}%</strong> ·
+                                                        1회 <strong className="text-amber-300">{(st.allocation_krw || 0).toLocaleString()}원</strong>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        title={st.enabled ? '일시정지' : '감시 재개'}
+                                                        onClick={() => handlePatchStrategy(st.strategy_id, { enabled: !st.enabled })}
+                                                        className={`px-2 py-1 rounded-lg text-[10px] font-black cursor-pointer ${
+                                                            st.enabled
+                                                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                                                : 'bg-zinc-800 text-zinc-400 border border-white/10'
+                                                        }`}
+                                                    >
+                                                        {st.enabled ? 'ON' : 'OFF'}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        title={isReal ? '가상매매로 전환' : '실전매매로 전환'}
+                                                        onClick={() => handlePatchStrategy(st.strategy_id, { trade_mode: isReal ? 'PAPER' : 'REAL' })}
+                                                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-zinc-300 border border-white/10 cursor-pointer"
+                                                    >
+                                                        <ArrowLeftRight className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        title="전략 삭제"
+                                                        onClick={() => handleDeleteStrategy(st.strategy_id, st.stock_name || st.symbol)}
+                                                        className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/25 text-rose-300 border border-rose-500/25 cursor-pointer"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* 실시간 현재가 & 감시 상태 */}
+                                            <div className="bg-black/45 border border-white/10 rounded-xl p-2.5 space-y-1 text-[11px]">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-zinc-400">
+                                                        현재가:{' '}
+                                                        <strong className="text-white font-mono">
+                                                            {st.last_price
+                                                                ? st.is_us
+                                                                    ? `$${st.last_price.toLocaleString()}`
+                                                                    : `${Math.round(st.last_price).toLocaleString()}원`
+                                                                : '조회 대기'}
+                                                        </strong>
+                                                    </span>
+                                                    <span className={`font-black font-mono ${chg > 0 ? 'text-rose-400' : chg < 0 ? 'text-sky-400' : 'text-zinc-300'}`}>
+                                                        오늘 {chg > 0 ? '+' : ''}{chg.toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                                <div className="text-emerald-200/95 font-medium break-keep">
+                                                    {st.monitor_status || '🟢 45초 주기 실시간 감시 대기 중'}
+                                                </div>
+                                                {st.last_checked_at && (
+                                                    <div className="text-[10px] text-zinc-500 flex items-center gap-1">
+                                                        <Clock className="w-2.5 h-2.5" />
+                                                        <span>마지막 점검: {st.last_checked_at}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )
+                    ) : labLogs.length === 0 ? (
+                        <div className="p-4 rounded-xl bg-black/35 border border-white/10 text-xs text-zinc-400 text-center">
+                            아직 조건에 도달해 체결된 전략랩 주문 내역이 없습니다. 등록된 전략이 매수/익절/손절 조건에 도달하면 여기에 실시간 기록됩니다.
+                        </div>
+                    ) : (
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            {labLogs.map((lg) => (
+                                <div key={lg.id} className="p-3 rounded-xl bg-black/40 border border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-2 py-0.5 rounded font-black text-[10px] ${
+                                            lg.action === 'BUY' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                                        }`}>
+                                            {lg.action === 'BUY' ? '매수' : '매도'}
+                                        </span>
+                                        <span className="font-bold text-white">{lg.name} ({lg.symbol})</span>
+                                        <span className="text-zinc-400">{lg.qty}주 · {lg.amount_krw.toLocaleString()}원</span>
+                                    </div>
+                                    <div className="text-[11px] text-zinc-300">{lg.reason}</div>
+                                    <div className="text-[10px] text-zinc-500 font-mono">{lg.timestamp}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* 1. 종목 검색 & 매매 규칙 설정 패널 */}
             <div className="bg-[#0b101d] border border-white/10 rounded-2xl p-5 sm:p-7 shadow-xl space-y-6">
                 <div>
                     <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-3">
                         <Sliders className="w-5 h-5 text-violet-400" />
-                        <span>1. 종목 및 매매 규칙 입력</span>
+                        <span>1. 국내·해외 모든 종목 검색 &amp; 매매 규칙 입력</span>
                     </h3>
 
                     {/* 추천 종목 퀵 칩 */}
                     <div className="flex flex-wrap items-center gap-1.5 mb-4">
-                        <span className="text-xs text-zinc-400 mr-1">추천 종목:</span>
+                        <span className="text-xs text-zinc-400 mr-1">인기 종목:</span>
                         {quickPicks.map((p) => (
                             <button
                                 key={p.code}
                                 type="button"
-                                onClick={() => setSymbolInput(p.name)}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                                onClick={() => {
+                                    setSymbolInput(p.name);
+                                    setSelectedLabel(`${p.name} (${p.code})`);
+                                    setShowDropdown(false);
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                                     symbolInput === p.name || symbolInput === p.code
                                         ? 'bg-violet-600 text-white font-bold shadow-md shadow-violet-600/30'
                                         : 'bg-white/5 text-zinc-300 hover:bg-white/10 border border-white/10'
@@ -241,49 +715,104 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
 
                     {/* 입력 그리드 */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-                        {/* 종목 입력 */}
-                        <div className="space-y-1 sm:col-span-2 lg:col-span-1">
+                        {/* 전 종목 실시간 자동완성 검색 */}
+                        <div ref={searchWrapRef} className="space-y-1 sm:col-span-2 lg:col-span-1 relative">
                             <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-                                <span>🔍 종목 검색 (국내/해외)</span>
-                                <span className="text-[10px] text-zinc-400">엔터(Enter) 지원</span>
+                                <span>🔍 전 종목 검색 (국내/해외)</span>
+                                <span className="text-[10px] text-sky-400">자동완성</span>
                             </label>
-                            <input
-                                type="text"
-                                value={symbolInput}
-                                onChange={(e) => setSymbolInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleRunAutoTuning();
-                                }}
-                                placeholder="예: 카카오, 셀트리온, TSLA, 엔비디아"
-                                className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white text-sm focus:outline-none focus:border-violet-500 transition-all font-medium placeholder:text-zinc-500"
-                            />
+                            <div className="relative">
+                                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <input
+                                    type="text"
+                                    value={symbolInput}
+                                    onFocus={() => setShowDropdown(true)}
+                                    onChange={(e) => {
+                                        setSymbolInput(e.target.value);
+                                        setSelectedLabel('');
+                                        setShowDropdown(true);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            setShowDropdown(false);
+                                            handleRunAutoTuning();
+                                        }
+                                    }}
+                                    placeholder="종목명·코드·미국티커 (예: 한중엔시에스, NVDA)"
+                                    className="w-full pl-8 pr-3 py-2.5 rounded-xl bg-black/50 border border-white/15 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500 transition-colors"
+                                />
+                            </div>
+                            {selectedLabel && (
+                                <div className="text-[10px] text-emerald-400 font-semibold truncate">
+                                    ✓ 선택됨: {selectedLabel}
+                                </div>
+                            )}
+
+                            {/* 자동완성 드롭다운 */}
+                            {showDropdown && symbolInput.trim().length > 0 && (
+                                <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-[#0f172a] border border-violet-500/40 rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+                                    {searchLoading ? (
+                                        <div className="px-3.5 py-3 text-xs text-zinc-400 flex items-center gap-2">
+                                            <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-400" />
+                                            <span>국내·해외 전 종목 검색 중...</span>
+                                        </div>
+                                    ) : searchResults.length === 0 ? (
+                                        <div className="px-3.5 py-3 text-xs text-zinc-400">
+                                            자동완성 결과 없음 — 그대로 엔터를 누르시면 직접 조회합니다.
+                                        </div>
+                                    ) : (
+                                        searchResults.map((item) => (
+                                            <button
+                                                key={`${item.market}-${item.symbol}`}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSymbolInput(item.symbol);
+                                                    setSelectedLabel(`${item.name} (${item.symbol})`);
+                                                    setShowDropdown(false);
+                                                }}
+                                                className="w-full text-left px-3.5 py-2.5 hover:bg-violet-500/20 border-b border-white/5 last:border-b-0 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                                            >
+                                                <div className="min-w-0">
+                                                    <div className="text-xs font-bold text-white truncate">{item.name}</div>
+                                                    <div className="text-[10px] font-mono text-zinc-400">{item.symbol}</div>
+                                                </div>
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-black shrink-0 ${
+                                                    item.market.includes('US')
+                                                        ? 'bg-sky-500/20 text-sky-300'
+                                                        : 'bg-amber-500/20 text-amber-300'
+                                                }`}>
+                                                    {item.market}
+                                                </span>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </div>
 
-                        {/* 매수 하락폭 */}
+                        {/* 살 때 (하락률) */}
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-                                <span>🔻 살 때 (일일 급락폭)</span>
-                                <span className="text-violet-400 font-bold">-{buyDip}%</span>
+                            <label className="text-xs font-semibold text-zinc-300">
+                                📉 살 때 (하루 하락률 %)
                             </label>
                             <div className="relative">
                                 <input
                                     type="number"
                                     step="0.5"
-                                    min="1"
-                                    max="20"
+                                    min="0.5"
+                                    max="15"
                                     value={buyDip}
                                     onChange={(e) => setBuyDip(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white text-sm focus:outline-none focus:border-violet-500 font-bold"
+                                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-sm text-white focus:outline-none focus:border-violet-500"
                                 />
-                                <span className="absolute right-3 top-2.5 text-xs text-zinc-400">% 하락 시</span>
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400">% 하락</span>
                             </div>
                         </div>
 
-                        {/* 익절 목표 */}
+                        {/* 팔 때 (익절 목표) */}
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-                                <span>🎯 팔 때 (익절 목표)</span>
-                                <span className="text-emerald-400 font-bold">+{takeProfit}%</span>
+                            <label className="text-xs font-semibold text-zinc-300">
+                                📈 팔 때 (익절 목표 %)
                             </label>
                             <div className="relative">
                                 <input
@@ -293,17 +822,16 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                     max="50"
                                     value={takeProfit}
                                     onChange={(e) => setTakeProfit(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white text-sm focus:outline-none focus:border-violet-500 font-bold text-emerald-300"
+                                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-sm text-white focus:outline-none focus:border-violet-500"
                                 />
-                                <span className="absolute right-3 top-2.5 text-xs text-zinc-400">% 수익 시</span>
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-400">% 상승</span>
                             </div>
                         </div>
 
                         {/* 손절선 */}
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-                                <span>🛑 손절선 (위험 차단)</span>
-                                <span className="text-rose-400 font-bold">-{stopLoss}%</span>
+                            <label className="text-xs font-semibold text-zinc-300">
+                                🛑 손절선 (바로 팔기 %)
                             </label>
                             <div className="relative">
                                 <input
@@ -313,70 +841,56 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                     max="30"
                                     value={stopLoss}
                                     onChange={(e) => setStopLoss(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white text-sm focus:outline-none focus:border-violet-500 font-bold text-rose-300"
+                                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-sm text-white focus:outline-none focus:border-violet-500"
                                 />
-                                <span className="absolute right-3 top-2.5 text-xs text-zinc-400">% 손실 시</span>
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-rose-400">% 하락</span>
                             </div>
                         </div>
 
-                        {/* 최대 손실 한도 */}
+                        {/* 최대 손실 한도 & 기간 */}
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-                                <span>🛡️ 계좌 한도 (매매 중단)</span>
-                                <span className="text-amber-400 font-bold">최대 {maxDd}%</span>
+                            <label className="text-xs font-semibold text-zinc-300">
+                                🛡️ 최대손실한도 / 기간
                             </label>
-                            <div className="relative">
+                            <div className="grid grid-cols-2 gap-1.5">
                                 <input
                                     type="number"
-                                    step="1"
                                     min="5"
                                     max="50"
                                     value={maxDd}
-                                    onChange={(e) => setMaxDd(parseFloat(e.target.value) || 0)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/15 text-white text-sm focus:outline-none focus:border-violet-500 font-bold text-amber-300"
+                                    onChange={(e) => setMaxDd(parseFloat(e.target.value) || 15)}
+                                    title="최대 손실 한도 (%)"
+                                    className="w-full px-2.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-violet-500"
                                 />
-                                <span className="absolute right-3 top-2.5 text-xs text-zinc-400">% 감소 시</span>
+                                <select
+                                    value={years}
+                                    onChange={(e) => setYears(parseInt(e.target.value, 10))}
+                                    className="w-full px-2 py-2.5 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-violet-500"
+                                >
+                                    <option value={5}>최근 5년</option>
+                                    <option value={3}>최근 3년</option>
+                                    <option value={2}>최근 2년</option>
+                                </select>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* 쉬운 설명 팁 */}
-                    <div className="mt-4 p-3 rounded-xl bg-white/[0.03] border border-white/5 flex items-start gap-2.5 text-xs text-zinc-400">
-                        <Info className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
-                        <div>
-                            <strong className="text-zinc-200">규칙 작동 방식: </strong>
-                            장 마감 후 하루 <span className="text-violet-300">-{buyDip}%</span> 이상 급락하면, 다음 날 아침 시초가에 매수하고,
-                            산 값보다 <span className="text-emerald-300">+{takeProfit}%</span> 오르면 익절, 
-                            <span className="text-rose-300">-{stopLoss}%</span> 떨어지면 손절합니다.
-                            최근 5년 데이터 중 <span className="text-amber-300">앞선 4년으로 학습 및 규칙을 교정</span>하고, <span className="text-sky-300">마지막 1년은 미사용 블라인드 검증용</span>으로 남겨둡니다.
                         </div>
                     </div>
                 </div>
 
-                {/* 시작 버튼 */}
+                {/* 실행 버튼 */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-white/10">
-                    <div className="text-xs text-zinc-400">
-                        {loading && (
-                            <span className="inline-flex items-center gap-2 text-violet-300 font-medium animate-pulse">
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                {loadingStage || 'AI 알고리즘이 과거 주가를 시험하고 있습니다...'}
-                            </span>
-                        )}
-                        {!loading && !result && (
-                            <span>💡 입력 후 버튼을 누르면 AI가 손실 원인을 스스로 고치는 3단계 시뮬레이션을 수행합니다.</span>
-                        )}
-                    </div>
-
+                    <p className="text-xs text-zinc-400">
+                        💡 <strong>Tip:</strong> 신규 상장주(예: 한중엔시에스)부터 국내 ETF, 미국 주식·ETF까지 검색창에서 바로 골라 시뮬레이션할 수 있습니다.
+                    </p>
                     <button
                         type="button"
-                        onClick={handleRunAutoTuning}
+                        onClick={() => handleRunAutoTuning()}
                         disabled={loading}
-                        className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-violet-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-sm font-black shadow-xl shadow-violet-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                         {loading ? (
                             <>
                                 <RefreshCw className="w-4 h-4 animate-spin" />
-                                <span>AI 학습 및 규칙 교정 진행 중...</span>
+                                <span>{loadingStage || 'AI 시뮬레이션 분석 중...'}</span>
                             </>
                         ) : (
                             <>
@@ -399,13 +913,15 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
             {/* 결과 리포트 영역 */}
             {result && (
                 <div className="space-y-6 animate-fade-in">
-                    {/* 1. 내가 정리한 매매 규칙 & 비교 카드 */}
+                    {/* 1. 규칙 요약 & 초기 비교 카드 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* 규칙 두 줄 요약 */}
                         <div className="bg-[#0e1424] border border-violet-500/30 rounded-2xl p-5 shadow-lg">
-                            <div className="flex items-center gap-2 text-violet-400 text-xs font-bold mb-2">
-                                <FileText className="w-4 h-4" />
-                                <span>1. 대표님의 매매 방법을 정리한 규칙</span>
+                            <div className="flex items-center justify-between gap-2 text-violet-400 text-xs font-bold mb-2">
+                                <span className="flex items-center gap-2">
+                                    <FileText className="w-4 h-4" />
+                                    <span>1. [{result.stock_name || result.symbol}] 매매 규칙 정리</span>
+                                </span>
+                                <span className="font-mono text-zinc-400">{result.symbol}</span>
                             </div>
                             <div className="space-y-2 mt-3">
                                 <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 text-xs text-zinc-200">
@@ -419,12 +935,11 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                             </div>
                         </div>
 
-                        {/* 처음 결과 & 단순 보유 비교 */}
                         <div className="bg-[#0e1424] border border-white/10 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
                             <div className="flex items-center justify-between">
                                 <span className="text-zinc-400 text-xs font-bold">2. 초기 규칙 결과 vs 단순 보유</span>
                                 <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-white/5 text-zinc-300">
-                                    학습 기간 4년
+                                    학습 구간 검증
                                 </span>
                             </div>
 
@@ -450,19 +965,17 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                         {result.benchmark_buy_and_hold_return_pct > 0 ? '+' : ''}
                                         {result.benchmark_buy_and_hold_return_pct.toFixed(1)}%
                                     </div>
-                                    <div className="text-[10px] text-zinc-500 mt-1">
-                                        Buy &amp; Hold 기준
-                                    </div>
+                                    <div className="text-[10px] text-zinc-500 mt-1">Buy &amp; Hold 기준</div>
                                 </div>
                             </div>
 
                             <p className="text-[11px] text-zinc-400">
-                                💡 돈을 잃었더라도 걱정하지 마세요. 아래에서 AI가 손실 원인을 찾아 스스로 규칙을 바꿉니다.
+                                💡 아래 표에서 AI가 각 단계마다 어떤 수치를 어떻게 고쳤는지 확인해 보세요.
                             </p>
                         </div>
                     </div>
 
-                    {/* 2. 🔁 AI 3단계 자율 교정 표 (하이라이트) */}
+                    {/* 2. AI 3단계 자율 교정 표 */}
                     <div className="bg-[#0b101d] border border-white/10 rounded-2xl p-5 sm:p-7 shadow-xl space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div>
@@ -471,7 +984,7 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                     <span>3. AI 손실 원인 분석 &amp; 단계별 규칙 교정 과정</span>
                                 </h3>
                                 <p className="text-xs text-zinc-400 mt-1">
-                                    AI가 돈을 잃은 거래를 집중 분석하여 가장 문제가 된 규칙을 하나씩 수정해 나간 과정입니다.
+                                    단계별로 매수 하락 기준·익절선·손절선을 하나씩 조정해 결과를 비교했습니다.
                                 </p>
                             </div>
                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 w-fit">
@@ -479,16 +992,15 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                             </span>
                         </div>
 
-                        {/* 단계별 비교 테이블 */}
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr className="border-b border-white/10 bg-white/[0.02] text-zinc-400 text-[11px]">
                                         <th className="py-3 px-3">단계</th>
-                                        <th className="py-3 px-3">적용된 규칙</th>
+                                        <th className="py-3 px-3">적용된 규칙 (단계별 수치)</th>
                                         <th className="py-3 px-3 text-center">수익률</th>
                                         <th className="py-3 px-3 text-center">승률 / 거래수</th>
-                                        <th className="py-3 px-3">손실 원인 및 수정 사유</th>
+                                        <th className="py-3 px-3">수정 사유</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5 text-zinc-200">
@@ -496,17 +1008,13 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                         const isFinal = st.step === 3;
                                         const isInitial = st.step === 0;
                                         const ret = st.metrics.total_return_pct;
-
                                         return (
                                             <tr
                                                 key={st.step}
                                                 className={`transition-colors ${
-                                                    isFinal
-                                                        ? 'bg-violet-950/20 hover:bg-violet-950/30'
-                                                        : 'hover:bg-white/[0.02]'
+                                                    isFinal ? 'bg-violet-950/20 hover:bg-violet-950/30' : 'hover:bg-white/[0.02]'
                                                 }`}
                                             >
-                                                {/* 단계 배지 */}
                                                 <td className="py-3.5 px-3 whitespace-nowrap">
                                                     <span className={`px-2.5 py-1 rounded-lg text-xs font-black inline-flex items-center gap-1 ${
                                                         isFinal
@@ -516,21 +1024,15 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                                             : 'bg-violet-500/20 text-violet-300'
                                                     }`}>
                                                         {st.title}
-                                                        {isFinal && ' (최적)'}
+                                                        {isFinal && ' (최종)'}
                                                     </span>
                                                 </td>
-
-                                                {/* 적용된 규칙 */}
                                                 <td className="py-3.5 px-3">
-                                                    <div className="font-semibold text-white">
-                                                        {st.description}
-                                                    </div>
-                                                    <div className="text-[11px] text-zinc-400 mt-0.5">
+                                                    <div className="font-semibold text-white">{st.description}</div>
+                                                    <div className="text-[11px] text-sky-300/90 font-mono mt-0.5">
                                                         매수: -{st.buy_dip}% | 익절: +{st.take_profit}% | 손절: -{st.stop_loss}%
                                                     </div>
                                                 </td>
-
-                                                {/* 수익률 */}
                                                 <td className="py-3.5 px-3 text-center whitespace-nowrap">
                                                     <span className={`text-sm sm:text-base font-black ${
                                                         ret > 0 ? 'text-emerald-400' : ret < 0 ? 'text-rose-400' : 'text-zinc-300'
@@ -538,21 +1040,12 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                                         {ret > 0 ? '+' : ''}{ret.toFixed(1)}%
                                                     </span>
                                                 </td>
-
-                                                {/* 승률 / 거래수 */}
                                                 <td className="py-3.5 px-3 text-center whitespace-nowrap text-zinc-300">
                                                     <div className="font-bold">{st.metrics.win_rate_pct.toFixed(0)}%</div>
                                                     <div className="text-[10px] text-zinc-500">{st.metrics.total_trades}회 매매</div>
                                                 </td>
-
-                                                {/* 수정 사유 & 손실 원인 분석 */}
                                                 <td className="py-3.5 px-3 text-zinc-300 leading-relaxed max-w-sm">
                                                     <p className="text-xs">{st.reason}</p>
-                                                    {st.loss_analysis && (
-                                                        <div className="mt-1 text-[11px] text-amber-300/80 font-medium">
-                                                            🔍 {st.loss_analysis.main_loss_cause}
-                                                        </div>
-                                                    )}
                                                 </td>
                                             </tr>
                                         );
@@ -562,26 +1055,19 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                         </div>
                     </div>
 
-                    {/* 3. 🛡️ 최근 1년 블라인드 검증 (과적합 방지 알림) */}
+                    {/* 3. 최근 1년 블라인드 검증 */}
                     <div className="bg-[#0e1424] border border-sky-500/30 rounded-2xl p-5 sm:p-6 shadow-xl space-y-3">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                                 <ShieldCheck className="w-5 h-5 text-sky-400" />
                                 <h4 className="text-sm sm:text-base font-bold text-white">
-                                    4. 최근 1년 블라인드 검증 (과적합 확인용 미사용 기간)
+                                    4. 최근 구간 블라인드 검증 (과적합 확인용 미사용 기간)
                                 </h4>
                             </div>
-                            <span className="text-xs text-sky-300 font-medium">
-                                {result.out_of_sample_1year.period}
-                            </span>
+                            <span className="text-xs text-sky-300 font-medium">{result.out_of_sample_1year.period}</span>
                         </div>
 
-                        <p className="text-xs text-zinc-300 leading-relaxed">
-                            규칙을 고칠 때 일부러 쓰지 않고 남겨둔 <strong className="text-sky-300">최근 1년 실제 주가</strong>에 다시 돌려본 결과입니다.
-                            과거 주가에만 딱 들어맞는 억지 규칙(과적합)인지 객관적으로 판별합니다.
-                        </p>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                             <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 flex items-center justify-between">
                                 <span className="text-xs text-zinc-400">규칙 고치기 전 (처음 기준)</span>
                                 <span className={`text-base font-bold ${
@@ -594,9 +1080,8 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                     </span>
                                 </span>
                             </div>
-
                             <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 flex items-center justify-between">
-                                <span className="text-xs text-zinc-400">규칙 고친 후 (3차 최적 기준)</span>
+                                <span className="text-xs text-zinc-400">규칙 고친 후 (3차 최종 기준)</span>
                                 <span className={`text-base font-bold ${
                                     result.out_of_sample_1year.after_tune.return_pct >= 0 ? 'text-emerald-400' : 'text-rose-400'
                                 }`}>
@@ -609,68 +1094,191 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                             </div>
                         </div>
 
-                        {/* 과적합 경고/안정성 배너 */}
                         <div className={`p-3.5 rounded-xl border flex items-start gap-2.5 text-xs ${
                             result.out_of_sample_1year.status === 'OVERFITTING_WARNING'
                                 ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
-                                : result.out_of_sample_1year.status === 'STABLE_IMPROVEMENT'
-                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
-                                : 'bg-zinc-800/40 border-white/10 text-zinc-300'
+                                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
                         }`}>
                             <Info className="w-4 h-4 shrink-0 mt-0.5" />
                             <div>{result.out_of_sample_1year.warning_message}</div>
                         </div>
                     </div>
 
-                    {/* 4. 🎯 대표이사 자동매매 등록 액션 바 */}
-                    <div className="bg-gradient-to-r from-violet-900/40 via-purple-900/30 to-indigo-900/40 border-2 border-violet-400/50 rounded-2xl p-5 sm:p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 rounded text-[11px] font-black bg-emerald-400 text-slate-950">
-                                    검증 완료
-                                </span>
+                    {/* 4. 🎯 가상매매 vs 실전매매 선택 & 자동매매 등록 패널 */}
+                    <div className={`border-2 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-5 transition-all ${
+                        deployMode === 'REAL'
+                            ? 'bg-gradient-to-br from-rose-950/45 via-slate-900 to-amber-950/30 border-rose-500/60'
+                            : 'bg-gradient-to-br from-emerald-950/40 via-slate-900 to-indigo-950/40 border-emerald-500/50'
+                    }`}>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="px-2.5 py-0.5 rounded text-[11px] font-black bg-emerald-400 text-slate-950">
+                                        검증 완료
+                                    </span>
+                                    <span className="text-xs font-bold text-zinc-300">
+                                        [{result.stock_name || result.symbol}] 자동매매 모드 선택
+                                    </span>
+                                </div>
                                 <h4 className="text-base sm:text-lg font-black text-white">
-                                    이 최적화 규칙으로 실전/모의 자동매매를 실행하시겠습니까?
+                                    가상매매와 실전매매 중 어떤 방식으로 작동시킬까요?
                                 </h4>
                             </div>
-                            <p className="text-xs text-zinc-300">
-                                등록 즉시 대표이사 집무실의 <strong className="text-emerald-300">트레이딩 운용팀</strong> 및 자동매매 엔진에 실시간 탑재되어 
-                                조건 충족 시(급락 포착) 안전 분할 매수 및 익절/손절이 집행됩니다.
-                            </p>
+
+                            {/* 가상매매 vs 실전매매 선택 스위치 */}
+                            <div className="inline-flex p-1 rounded-2xl bg-black/60 border border-white/15 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setDeployMode('PAPER');
+                                        setAllocationKrw(2000000);
+                                        setDeploySuccess(null);
+                                    }}
+                                    className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                                        deployMode === 'PAPER'
+                                            ? 'bg-emerald-500 text-slate-950 shadow-md'
+                                            : 'text-zinc-400 hover:text-white'
+                                    }`}
+                                >
+                                    <FlaskConical className="w-3.5 h-3.5" />
+                                    <span>🧪 가상매매 (모의)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setDeployMode('REAL');
+                                        setAllocationKrw(500000);
+                                        setRealConfirmChecked(false);
+                                        setDeploySuccess(null);
+                                    }}
+                                    className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                                        deployMode === 'REAL'
+                                            ? 'bg-rose-500 text-white shadow-md'
+                                            : 'text-zinc-400 hover:text-white'
+                                    }`}
+                                >
+                                    <Flame className="w-3.5 h-3.5" />
+                                    <span>🔥 실전매매 (실계좌)</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto shrink-0">
-                            {deploySuccess ? (
-                                <div className="flex items-center gap-2">
+                        {/* 1회 투자금 설정 */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-black/40 border border-white/10 rounded-xl p-4">
+                            <div className="space-y-1.5">
+                                <div className="text-xs font-bold text-zinc-200">
+                                    💰 1회 자동 매수 투자금 ({deployMode === 'REAL' ? '실전 계좌 한도' : '모의 계좌 투자금'})
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {[300000, 500000, 1000000, 2000000, 5000000].map((amt) => (
+                                        <button
+                                            key={amt}
+                                            type="button"
+                                            onClick={() => setAllocationKrw(amt)}
+                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
+                                                allocationKrw === amt
+                                                    ? deployMode === 'REAL'
+                                                        ? 'bg-rose-500 text-white'
+                                                        : 'bg-emerald-500 text-slate-950'
+                                                    : 'bg-white/5 text-zinc-300 hover:bg-white/10 border border-white/10'
+                                            }`}
+                                        >
+                                            {(amt / 10000).toLocaleString()}만원
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    step="100000"
+                                    min="50000"
+                                    value={allocationKrw}
+                                    onChange={(e) => setAllocationKrw(Math.max(50000, parseInt(e.target.value || '50000', 10)))}
+                                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/15 text-sm font-mono font-bold text-white focus:outline-none focus:border-emerald-400"
+                                />
+                                <span className="text-xs font-bold text-zinc-400 shrink-0">원</span>
+                            </div>
+                        </div>
+
+                        {/* 실전매매 전용 안전장치 */}
+                        {deployMode === 'REAL' && (
+                            <div className="p-4 rounded-xl bg-rose-500/15 border border-rose-500/40 space-y-2.5 text-xs text-rose-100">
+                                <div className="font-black text-rose-300 flex items-center gap-1.5">
+                                    <ShieldAlert className="w-4 h-4 shrink-0" />
+                                    <span>실전매매 주의: 한국투자증권 실계좌({kisAccountMasked || '계좌 확인 필요'})로 실제 주문이 전송됩니다.</span>
+                                </div>
+                                <label className="flex items-start gap-2 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={realConfirmChecked}
+                                        onChange={(e) => setRealConfirmChecked(e.target.checked)}
+                                        className="mt-0.5 accent-rose-500"
+                                    />
+                                    <span>
+                                        정규장 중 당일 -{result.tuning_steps[3]?.buy_dip ?? 3.8}% 급락 조건 충족 시 1회 {allocationKrw.toLocaleString()}원 한도로 실제 매수 주문이 발주됨을 확인합니다.
+                                    </span>
+                                </label>
+                                {!labSettings.real_enabled && (
+                                    <label className="flex items-start gap-2 cursor-pointer select-none text-amber-200">
+                                        <input
+                                            type="checkbox"
+                                            checked={autoEnableRealMaster}
+                                            onChange={(e) => setAutoEnableRealMaster(e.target.checked)}
+                                            className="mt-0.5 accent-amber-400"
+                                        />
+                                        <span>등록과 동시에 상단 [🔥 실전매매 마스터 스위치]도 바로 ON으로 켜기</span>
+                                    </label>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <p className="text-xs text-zinc-300">
+                                {deployMode === 'REAL'
+                                    ? '🔥 실전매매 엔진이 45초마다 실시간 시세를 감시하고 조건 충족 시 한투 실전 주문을 집행합니다.'
+                                    : '🧪 가상매매 엔진이 실제 주가와 똑같은 조건으로 모의 자동매매를 24시간 실시간 감시·집행합니다.'}
+                            </p>
+
+                            <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+                                {deploySuccess && (
                                     <button
                                         type="button"
                                         onClick={() => setShowDeployModal(true)}
-                                        className="px-4 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer"
+                                        className="px-4 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
                                     >
-                                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                        <span>등록 완료 (상세 안내 모달 열기)</span>
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        <span>등록 상세 보기</span>
                                     </button>
-                                </div>
-                            ) : (
+                                )}
                                 <button
                                     type="button"
                                     onClick={handleDeployToAutoTrader}
-                                    disabled={deploying}
-                                    className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-black shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                                    disabled={deploying || (deployMode === 'REAL' && !realConfirmChecked)}
+                                    className={`w-full sm:w-auto px-6 py-3.5 rounded-xl text-sm font-black shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 ${
+                                        deployMode === 'REAL'
+                                            ? 'bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-400 hover:to-orange-400 text-white shadow-rose-500/30'
+                                            : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/25'
+                                    }`}
                                 >
                                     {deploying ? (
                                         <>
                                             <RefreshCw className="w-4 h-4 animate-spin" />
-                                            <span>자동매매 봇 탑재 중...</span>
+                                            <span>엔진 탑재 중...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Zap className="w-4 h-4 fill-slate-950" />
-                                            <span>🎯 이 검증된 규칙으로 자동매매 등록</span>
+                                            <Zap className="w-4 h-4" />
+                                            <span>
+                                                {deployMode === 'REAL'
+                                                    ? '🔥 실전매매로 자동매매 등록'
+                                                    : '🧪 가상매매로 자동매매 등록'}
+                                            </span>
                                         </>
                                     )}
                                 </button>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -679,114 +1287,100 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
             {/* 자동매매 등록 완료 알림 모달 */}
             {showDeployModal && result && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-                    <div className="bg-[#0f172a] border-2 border-emerald-500/40 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden">
-                        {/* 배경 블러 효과 */}
-                        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-56 h-56 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
-
-                        {/* 헤더 */}
+                    <div className={`bg-[#0f172a] border-2 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden ${
+                        deployMode === 'REAL' ? 'border-rose-500/50' : 'border-emerald-500/45'
+                    }`}>
                         <div className="relative z-10 flex items-start justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl shadow-inner">
-                                    🚀
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl">
+                                    {deployMode === 'REAL' ? '🔥' : '🧪'}
                                 </div>
                                 <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-400 text-slate-950">
-                                            엔진 탑재 완료
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                                            deployMode === 'REAL' ? 'bg-rose-500 text-white' : 'bg-emerald-400 text-slate-950'
+                                        }`}>
+                                            {deployMode === 'REAL' ? '실전매매 엔진 탑재 완료' : '가상매매 엔진 탑재 완료'}
                                         </span>
                                         <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
                                             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                            24시간 실시간 감시 작동 중
+                                            45초 주기 실시간 감시 작동 중
                                         </span>
                                     </div>
                                     <h3 className="text-xl sm:text-2xl font-black text-white mt-1">
-                                        [{result.symbol}] 전략 등록 완료!
+                                        {result.stock_name || result.symbol} ({result.symbol})
                                     </h3>
                                 </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setShowDeployModal(false)}
-                                className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                                className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/10 cursor-pointer"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        {/* 등록된 전략 세부 규칙 요약 카드 */}
-                        <div className="relative z-10 bg-slate-900/80 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3">
+                        {/* 등록된 규칙 요약 */}
+                        <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3">
                             <div className="text-xs font-bold text-zinc-300 flex items-center justify-between">
-                                <span>📋 AI 자율 교정 최적화 매매 규칙</span>
-                                <span className="text-[11px] text-violet-400">규칙 3차 교정 적용</span>
+                                <span>📋 자동매매 엔진에 탑재된 최종 규칙</span>
+                                <span className="text-amber-300">1회 {allocationKrw.toLocaleString()}원</span>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
+                            <div className="grid grid-cols-3 gap-2 text-center">
                                 <div className="p-3 rounded-xl bg-black/40 border border-white/5">
-                                    <div className="text-[11px] text-zinc-400 mb-0.5">매수 진입 신호</div>
+                                    <div className="text-[11px] text-zinc-400 mb-0.5">매수 조건</div>
                                     <div className="text-sm font-bold text-sky-400">
-                                        당일 -{result.tuning_steps[result.tuning_steps.length - 1]?.buy_dip ?? 3.8}% 급락
+                                        -{result.tuning_steps[result.tuning_steps.length - 1]?.buy_dip ?? 3.8}% 급락
                                     </div>
-                                    <div className="text-[10px] text-zinc-500 mt-0.5">익일 시초가 분할 매수</div>
                                 </div>
-
                                 <div className="p-3 rounded-xl bg-black/40 border border-white/5">
-                                    <div className="text-[11px] text-zinc-400 mb-0.5">목표 익절선</div>
+                                    <div className="text-[11px] text-zinc-400 mb-0.5">자동 익절</div>
                                     <div className="text-sm font-bold text-emerald-400">
                                         +{result.tuning_steps[result.tuning_steps.length - 1]?.take_profit ?? 6.2}%
                                     </div>
-                                    <div className="text-[10px] text-zinc-500 mt-0.5">추세 반등 목표가</div>
                                 </div>
-
                                 <div className="p-3 rounded-xl bg-black/40 border border-white/5">
-                                    <div className="text-[11px] text-zinc-400 mb-0.5">리스크 손절선</div>
+                                    <div className="text-[11px] text-zinc-400 mb-0.5">자동 손절</div>
                                     <div className="text-sm font-bold text-rose-400">
                                         -{result.tuning_steps[result.tuning_steps.length - 1]?.stop_loss ?? 4.0}%
                                     </div>
-                                    <div className="text-[10px] text-zinc-500 mt-0.5">손실 제한 안전장치</div>
                                 </div>
                             </div>
+
+                            {lastDeployedInfo?.strategy?.monitor_status && (
+                                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-200 font-semibold">
+                                    📡 현재 상태: {lastDeployedInfo.strategy.monitor_status}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Q&A 카드: 왜 당장 매수되지 않는가? */}
-                        <div className="relative z-10 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2 text-zinc-200">
-                            <div className="font-bold text-amber-300 flex items-center gap-1.5">
-                                <span>💡</span>
-                                <span>"지금 바로 주식이 안 사지는데 왜 아무 변화가 없나요?"</span>
-                            </div>
-                            <p className="leading-relaxed text-zinc-300 text-[11px] sm:text-xs">
-                                대표님, 정상적으로 잘 가동 중입니다! 이 전략은 아무 때나 무작정 사는 게 아니라, 
-                                <strong className="text-amber-300"> "장중 -{result.tuning_steps[result.tuning_steps.length - 1]?.buy_dip ?? 3.8}% 이상 급락했을 때만"</strong> 
-                                저가에 줍는 안전한 조건부 규칙입니다. 조건에 도달할 때까지 봇이 숨죽여 감시하다가 조건이 충족되는 순간 즉시 자동으로 발주합니다.
-                            </p>
-                        </div>
-
-                        {/* 액션 버튼 */}
-                        <div className="relative z-10 flex flex-col sm:flex-row gap-2.5 pt-1">
+                        <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
                             <button
                                 type="button"
                                 onClick={() => {
                                     setShowDeployModal(false);
-                                    window.location.href = '/ceo-office?tab=trading';
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
-                                className="flex-1 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs sm:text-sm font-bold transition-all shadow-lg shadow-violet-600/30 flex items-center justify-center gap-2 cursor-pointer"
+                                className="flex-1 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs sm:text-sm font-bold transition-all cursor-pointer"
                             >
-                                <span>💼 트레이딩 운용팀에서 확인</span>
+                                📡 상단 실시간 감시 현황 보기
                             </button>
                             <button
                                 type="button"
                                 onClick={() => {
                                     setShowDeployModal(false);
-                                    window.location.href = '/auto-trader';
+                                    window.location.href = '/admin/auto-trade';
                                 }}
-                                className="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-zinc-200 border border-white/10 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                className="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-zinc-200 border border-white/10 text-xs sm:text-sm font-bold transition-all cursor-pointer"
                             >
-                                <span>🤖 자동매매 콘솔로 이동</span>
+                                🤖 자동매매 관리 콘솔로 이동
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setShowDeployModal(false)}
-                                className="py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white text-xs sm:text-sm font-medium transition-all cursor-pointer"
+                                className="py-3 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white text-xs sm:text-sm font-medium cursor-pointer"
                             >
                                 닫기
                             </button>
