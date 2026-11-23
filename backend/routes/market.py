@@ -5705,7 +5705,7 @@ def _generate_wall_street_council(doc: dict, include_deep: bool = False) -> dict
                     "외국인·기관 자금이 빠져나가고 주가 흐름이 하락으로 꺾였으니, 손실을 짧게 끊고 현금을 지켜야 합니다."
                 ),
                 "detailed_analysis": {
-                    "headline": f"'{name}'은 수급과 가격 모멘텀이 모두 약세 구간에 있어, 신규 투자 비중 0%(현금 100% 방어)를 권고합니다.",
+                    "headline": f"'{name}'{subj_p} 수급과 가격 모멘텀이 모두 약세 구간에 있어, 신규 투자 비중 0%(현금 100% 방어)를 권고합니다.",
                     "checks": druck_checks,
                     "report_evidence": flow_summary,
                     "reversal_condition": "외국인·기관 3거래일 연속 동반 순매수 전환 + 주가가 20일 이동평균선을 거래량과 함께 돌파할 때 즉시 공략합니다.",
@@ -5921,7 +5921,7 @@ def _generate_wall_street_council(doc: dict, include_deep: bool = False) -> dict
                 "status": "good",
                 "detail": (
                     f"현재 주당순이익 {eps_str} ➔ 시장 추정 {cns_eps_str}"
-                    + (f" ({eps_growth:+.1f}% 증가 전망)" if eps_growth is not None else "")
+                    + (f" ({eps_growth:+.1f}% {'증가 전망' if eps_growth >= 0 else '소폭 조정 전망'})" if eps_growth is not None else "")
                     + (f" · 연간 매출 YoY {rev_yoy:+.1f}%, 영업이익 YoY {op_yoy:+.1f}%." if (rev_yoy is not None and op_yoy is not None) else ".")
                 ),
             },
@@ -5993,7 +5993,7 @@ def _generate_wall_street_council(doc: dict, include_deep: bool = False) -> dict
                 "vote": "BUY", "vote_label": "🟢 매수 (사자)", "confidence": 86,
                 "reason": f"{name}{subj_p} 치명적 재무 리스크가 제한적이며 현재가({curr_price.split(' ')[0]}) 대비 상승여력({upside})이 돋보입니다.",
                 "detailed_analysis": {
-                    "headline": f"'{name}'은 재무 안정성({debt_line})과 리스크 대비 보상 비율({upside})이 우수해 분할 매수 적합 판정입니다.",
+                    "headline": f"'{name}'{subj_p} 재무 안정성({debt_line})과 리스크 대비 보상 비율({upside})이 우수해 분할 매수 적합 판정입니다.",
                     "checks": munger_buy_checks,
                     "report_evidence": f"[{broker}] {report_excerpt}",
                     "reversal_condition": "대규모 유상증자·적자 전환·부채 급증 등 펀더멘털 훼손 공시 발생 시 즉시 매수 의견을 철회합니다.",
