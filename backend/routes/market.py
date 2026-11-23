@@ -5000,6 +5000,7 @@ def _build_weekly_review_and_calendar(
 
 
 _WALLST_SNAP_CACHE: Dict[str, Any] = {}
+_WALLST_FIN_CACHE: Dict[str, Any] = {}
 
 
 def _parse_float_safe(val: Any) -> Optional[float]:
@@ -5014,124 +5015,294 @@ def _parse_float_safe(val: Any) -> Optional[float]:
         return None
 
 
-def _get_stock_financial_and_flow_snapshot(stock_code: str, curr_price_str: str = "") -> Dict[str, Any]:
-    """
-    월가 5대 거장 세부 근거용 실제 재무(PER/PBR/EPS/추정EPS/ROE/배당/시총) ·
-    52주 고저점 위치 · 최근 5거래일 외국인/기관 수급 실시간 스냅샷 조회 (20분 캐시)
-    """
-    code = str(stock_code or "").strip().upper()
+def _get_kr_annual_financials(code: str) -> Dict[str, Any]:
+    """네이버 모바일 연간 재무제표 API에서 최근 4개년 매출·영업이익·영업이익률·ROE·부채비율 조회 (1시간 캐시)"""
     if not code or not re.match(r"^\d{6}$", code):
         return {}
-
     now = time.time()
-    hit = _WALLST_SNAP_CACHE.get(code)
-    if hit and now - hit[0] < 1200:
+    hit = _WALLST_FIN_CACHE.get(code)
+    if hit and now - hit[0] < 3600:
         return hit[1]
 
-    snap: Dict[str, Any] = {}
+    out: Dict[str, Any] = {}
     try:
         import requests
         r = requests.get(
-            f"https://m.stock.naver.com/api/stock/{code}/integration",
+            f"https://m.stock.naver.com/api/stock/{code}/finance/annual",
             headers={"User-Agent": "Mozilla/5.0"},
-            timeout=2.5,
+            timeout=3.0,
         )
         if r.status_code == 200:
-            j = r.json() or {}
-            infos = {x.get("code"): str(x.get("value") or "").strip() for x in (j.get("totalInfos") or [])}
-            snap["market_cap"] = infos.get("marketValue") or ""
-            snap["per_str"] = infos.get("per") or "N/A"
-            snap["cns_per_str"] = infos.get("cnsPer") or "N/A"
-            snap["pbr_str"] = infos.get("pbr") or "N/A"
-            snap["eps_str"] = infos.get("eps") or "N/A"
-            snap["cns_eps_str"] = infos.get("cnsEps") or "N/A"
-            snap["bps_str"] = infos.get("bps") or "N/A"
-            snap["dividend_yield_str"] = infos.get("dividendYieldRatio") or "N/A"
-            snap["foreign_rate_str"] = infos.get("foreignRate") or "N/A"
-            snap["high_52w_str"] = infos.get("highPriceOf52Weeks") or ""
-            snap["low_52w_str"] = infos.get("lowPriceOf52Weeks") or ""
+            fi = (r.json() or {}).get("financeInfo") or {}
+            title_list = fi.get("trTitleList") or []
+            periods = []
+            for t in title_list[-4:]:
+                k = str(t.get("key") or "")
+                lbl = str(t.get("title") or k).strip().rstrip(".")
+                is_est = bool(t.get("isConsensus") == "Y")
+                periods.append({"key": k, "label": f"{lbl}(E)" if is_est else lbl, "is_est": is_est})
 
-            per_v = _parse_float_safe(snap["per_str"])
-            cns_per_v = _parse_float_safe(snap["cns_per_str"])
-            pbr_v = _parse_float_safe(snap["pbr_str"])
-            eps_v = _parse_float_safe(snap["eps_str"])
-            cns_eps_v = _parse_float_safe(snap["cns_eps_str"])
-            h52 = _parse_float_safe(snap["high_52w_str"])
-            l52 = _parse_float_safe(snap["low_52w_str"])
-            last_p = _parse_float_safe(curr_price_str.split(" ")[0] if curr_price_str else "") or _parse_float_safe(infos.get("lastClosePrice"))
+            row_map: Dict[str, Dict[str, str]] = {}
+            for row in fi.get("rowList") or []:
+                rk = str(row.get("title") or "").strip()
+                cols = row.get("columns") or {}
+                row_map[rk] = {ck: str((cv or {}).get("value") or "-").strip() for ck, cv in cols.items()}
 
-            snap["per_num"] = per_v
-            snap["cns_per_num"] = cns_per_v
-            snap["pbr_num"] = pbr_v
-            snap["eps_num"] = eps_v
-            snap["cns_eps_num"] = cns_eps_v
-            snap["is_loss_making"] = (eps_v is not None and eps_v < 0) or (per_v is None and snap["per_str"] == "N/A")
+            def _series(metric_name: str) -> List[str]:
+                m = row_map.get(metric_name) or {}
+                return [m.get(p["key"], "-") for p in periods]
 
-            # 추정 ROE = PBR / PER * 100 (또는 EPS / BPS * 100)
-            bps_v = _parse_float_safe(snap["bps_str"])
-            if eps_v is not None and bps_v and bps_v > 0:
-                roe_val = round((eps_v / bps_v) * 100.0, 1)
-                snap["roe_num"] = roe_val
-                snap["roe_str"] = f"{roe_val:+.1f}%"
-            elif per_v and per_v > 0 and pbr_v and pbr_v > 0:
-                roe_val = round((pbr_v / per_v) * 100.0, 1)
-                snap["roe_num"] = roe_val
-                snap["roe_str"] = f"{roe_val:+.1f}%"
-            else:
-                snap["roe_num"] = None
-                snap["roe_str"] = "적자/미산출"
+            rev_s = _series("매출액")
+            op_s = _series("영업이익")
+            ni_s = _series("당기순이익")
+            opm_s = _series("영업이익률")
+            roe_s = _series("ROE")
+            debt_s = _series("부채비율")
 
-            # EPS 증감률 (추정EPS vs 현재EPS)
-            if eps_v is not None and cns_eps_v is not None and abs(eps_v) > 0:
-                if eps_v > 0:
+            # 최근 유효 실적 vs 직전 실적 성장률 계산
+            def _latest_two(arr: List[str]):
+                nums = [_parse_float_safe(x) for x in arr]
+                valid = [(i, v) for i, v in enumerate(nums) if v is not None]
+                return valid
+
+            rev_v = _latest_two(rev_s)
+            op_v = _latest_two(op_s)
+            opm_v = _latest_two(opm_s)
+            roe_v = _latest_two(roe_s)
+            debt_v = _latest_two(debt_s)
+
+            rev_yoy = None
+            if len(rev_v) >= 2 and rev_v[-2][1] and rev_v[-2][1] > 0:
+                rev_yoy = round(((rev_v[-1][1] - rev_v[-2][1]) / rev_v[-2][1]) * 100.0, 1)
+            op_yoy = None
+            if len(op_v) >= 2 and op_v[-2][1] and op_v[-2][1] > 0:
+                op_yoy = round(((op_v[-1][1] - op_v[-2][1]) / op_v[-2][1]) * 100.0, 1)
+
+            out = {
+                "periods": [p["label"] for p in periods],
+                "revenue": rev_s,
+                "operating_profit": op_s,
+                "net_income": ni_s,
+                "opm": opm_s,
+                "roe": roe_s,
+                "debt_ratio": debt_s,
+                "latest_rev": rev_s[rev_v[-1][0]] if rev_v else "-",
+                "latest_op": op_s[op_v[-1][0]] if op_v else "-",
+                "latest_opm_num": opm_v[-1][1] if opm_v else None,
+                "latest_roe_num": roe_v[-1][1] if roe_v else None,
+                "latest_debt_num": debt_v[-1][1] if debt_v else None,
+                "prev_debt_num": debt_v[-2][1] if len(debt_v) >= 2 else None,
+                "rev_yoy_pct": rev_yoy,
+                "op_yoy_pct": op_yoy,
+            }
+    except Exception as _fe:
+        print(f"[WallStAnnualFin] {code} warning: {_fe}")
+
+    if out:
+        _WALLST_FIN_CACHE[code] = (now, out)
+    return out
+
+
+def _get_stock_financial_and_flow_snapshot(
+    stock_code: str,
+    curr_price_str: str = "",
+    include_annual: bool = False,
+) -> Dict[str, Any]:
+    """
+    월가 5대 거장 세부 근거용 실제 재무(PER/PBR/EPS/추정EPS/ROE/배당/시총) ·
+    52주 고저점 위치 · 최근 5거래일 일별 외국인/기관 수급 · (선택) 4개년 재무제표 실시간 조회
+    """
+    code = str(stock_code or "").strip().upper()
+    if not code:
+        return {}
+
+    now = time.time()
+    is_kr = bool(re.match(r"^\d{6}$", code))
+    hit = _WALLST_SNAP_CACHE.get(code)
+    snap: Dict[str, Any] = {}
+
+    if hit and now - hit[0] < 1200:
+        snap = dict(hit[1])
+    elif is_kr:
+        try:
+            import requests
+            r = requests.get(
+                f"https://m.stock.naver.com/api/stock/{code}/integration",
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=3.0,
+            )
+            if r.status_code == 200:
+                j = r.json() or {}
+                infos = {x.get("code"): str(x.get("value") or "").strip() for x in (j.get("totalInfos") or [])}
+                snap["market_cap"] = infos.get("marketValue") or ""
+                snap["per_str"] = infos.get("per") or "N/A"
+                snap["cns_per_str"] = infos.get("cnsPer") or "N/A"
+                snap["pbr_str"] = infos.get("pbr") or "N/A"
+                snap["eps_str"] = infos.get("eps") or "N/A"
+                snap["cns_eps_str"] = infos.get("cnsEps") or "N/A"
+                snap["bps_str"] = infos.get("bps") or "N/A"
+                snap["dividend_yield_str"] = infos.get("dividendYieldRatio") or "N/A"
+                snap["foreign_rate_str"] = infos.get("foreignRate") or "N/A"
+                snap["high_52w_str"] = infos.get("highPriceOf52Weeks") or ""
+                snap["low_52w_str"] = infos.get("lowPriceOf52Weeks") or ""
+
+                per_v = _parse_float_safe(snap["per_str"])
+                cns_per_v = _parse_float_safe(snap["cns_per_str"])
+                pbr_v = _parse_float_safe(snap["pbr_str"])
+                eps_v = _parse_float_safe(snap["eps_str"])
+                cns_eps_v = _parse_float_safe(snap["cns_eps_str"])
+                h52 = _parse_float_safe(snap["high_52w_str"])
+                l52 = _parse_float_safe(snap["low_52w_str"])
+                last_p = _parse_float_safe(curr_price_str.split(" ")[0] if curr_price_str else "") or _parse_float_safe(infos.get("lastClosePrice"))
+
+                snap["per_num"] = per_v
+                snap["cns_per_num"] = cns_per_v
+                snap["pbr_num"] = pbr_v
+                snap["eps_num"] = eps_v
+                snap["cns_eps_num"] = cns_eps_v
+                snap["last_price_num"] = last_p
+                snap["is_loss_making"] = (eps_v is not None and eps_v < 0) or (per_v is None and snap["per_str"] == "N/A")
+
+                bps_v = _parse_float_safe(snap["bps_str"])
+                if eps_v is not None and bps_v and bps_v > 0:
+                    roe_val = round((eps_v / bps_v) * 100.0, 1)
+                    snap["roe_num"] = roe_val
+                    snap["roe_str"] = f"{roe_val:+.1f}%"
+                elif per_v and per_v > 0 and pbr_v and pbr_v > 0:
+                    roe_val = round((pbr_v / per_v) * 100.0, 1)
+                    snap["roe_num"] = roe_val
+                    snap["roe_str"] = f"{roe_val:+.1f}%"
+                else:
+                    snap["roe_num"] = None
+                    snap["roe_str"] = "적자/미산출"
+
+                if eps_v is not None and cns_eps_v is not None and eps_v > 0:
                     snap["eps_growth_pct"] = round(((cns_eps_v - eps_v) / eps_v) * 100.0, 1)
                 else:
                     snap["eps_growth_pct"] = None
-            else:
-                snap["eps_growth_pct"] = None
 
-            # 52주 고점 대비 낙폭 & 밴드 내 위치
-            if last_p and h52 and h52 > 0:
-                snap["drawdown_52w_pct"] = round(((last_p - h52) / h52) * 100.0, 1)
-            if last_p and h52 and l52 and h52 > l52:
-                snap["pos_52w_pct"] = round(((last_p - l52) / (h52 - l52)) * 100.0, 1)
+                if last_p and h52 and h52 > 0:
+                    snap["drawdown_52w_pct"] = round(((last_p - h52) / h52) * 100.0, 1)
+                if last_p and h52 and l52 and h52 > l52:
+                    snap["pos_52w_pct"] = round(((last_p - l52) / (h52 - l52)) * 100.0, 1)
 
-            # 최근 5거래일 외국인 / 기관 순매수 합계
-            deals = (j.get("dealTrendInfos") or [])[:5]
-            if deals:
-                f_sum = 0
-                o_sum = 0
-                for d in deals:
-                    fv = _parse_float_safe(d.get("foreignerPureBuyQuant"))
-                    ov = _parse_float_safe(d.get("organPureBuyQuant"))
-                    if fv is not None:
-                        f_sum += int(fv)
-                    if ov is not None:
-                        o_sum += int(ov)
-                snap["foreign_5d_net"] = f_sum
-                snap["organ_5d_net"] = o_sum
-                snap["flow_days"] = len(deals)
-                latest_d = deals[0]
-                snap["latest_flow_date"] = str(latest_d.get("bizdate") or "")
-                snap["latest_foreign_net"] = int(_parse_float_safe(latest_d.get("foreignerPureBuyQuant")) or 0)
-                snap["latest_organ_net"] = int(_parse_float_safe(latest_d.get("organPureBuyQuant")) or 0)
-    except Exception as _e:
-        print(f"[WallStSnapshot] {code} fetch warning: {_e}")
+                # 최근 5거래일 일자별 외국인 / 기관 / 개인 수급표
+                deals = (j.get("dealTrendInfos") or [])[:5]
+                if deals:
+                    f_sum = 0
+                    o_sum = 0
+                    daily_flows = []
+                    for d in deals:
+                        fv = int(_parse_float_safe(d.get("foreignerPureBuyQuant")) or 0)
+                        ov = int(_parse_float_safe(d.get("organPureBuyQuant")) or 0)
+                        iv = int(_parse_float_safe(d.get("individualPureBuyQuant")) or 0)
+                        f_sum += fv
+                        o_sum += ov
+                        bd = str(d.get("bizdate") or "")
+                        bd_fmt = f"{bd[4:6]}/{bd[6:8]}" if len(bd) == 8 else bd
+                        daily_flows.append({
+                            "date": bd_fmt,
+                            "close": str(d.get("closePrice") or ""),
+                            "foreign": fv,
+                            "organ": ov,
+                            "individual": iv,
+                            "foreign_ratio": str(d.get("foreignerHoldRatio") or ""),
+                        })
+                    snap["foreign_5d_net"] = f_sum
+                    snap["organ_5d_net"] = o_sum
+                    snap["flow_days"] = len(deals)
+                    snap["daily_flows"] = daily_flows
+                    snap["latest_flow_date"] = daily_flows[0]["date"]
+                    snap["latest_foreign_net"] = daily_flows[0]["foreign"]
+                    snap["latest_organ_net"] = daily_flows[0]["organ"]
+        except Exception as _e:
+            print(f"[WallStSnapshot] {code} fetch warning: {_e}")
+        if snap:
+            _WALLST_SNAP_CACHE[code] = (now, snap)
+    elif re.match(r"^[A-Z]{1,6}(?:-[A-Z])?$", code):
+        # 미국주식/ETF: yfinance 실제 재무 지표 스냅샷
+        try:
+            import yfinance as yf
+            info = yf.Ticker(code).info or {}
+            per_v = info.get("trailingPE")
+            fper_v = info.get("forwardPE")
+            pbr_v = info.get("priceToBook")
+            eps_v = info.get("trailingEps")
+            feps_v = info.get("forwardEps")
+            roe_raw = info.get("returnOnEquity")
+            opm_raw = info.get("operatingMargins")
+            dte_raw = info.get("debtToEquity")
+            div_raw = info.get("dividendYield")
+            mcap_raw = info.get("marketCap")
+            h52 = info.get("fiftyTwoWeekHigh")
+            l52 = info.get("fiftyTwoWeekLow")
+            last_p = info.get("currentPrice") or info.get("regularMarketPrice")
 
-    if snap:
-        _WALLST_SNAP_CACHE[code] = (now, snap)
+            snap["per_num"] = round(float(per_v), 2) if per_v else None
+            snap["per_str"] = f"{float(per_v):.2f}배" if per_v else "N/A"
+            snap["cns_per_num"] = round(float(fper_v), 2) if fper_v else None
+            snap["cns_per_str"] = f"{float(fper_v):.2f}배" if fper_v else "N/A"
+            snap["pbr_num"] = round(float(pbr_v), 2) if pbr_v else None
+            snap["pbr_str"] = f"{float(pbr_v):.2f}배" if pbr_v else "N/A"
+            snap["eps_num"] = round(float(eps_v), 2) if eps_v is not None else None
+            snap["eps_str"] = f"${float(eps_v):.2f}" if eps_v is not None else "N/A"
+            snap["cns_eps_num"] = round(float(feps_v), 2) if feps_v is not None else None
+            snap["cns_eps_str"] = f"${float(feps_v):.2f}" if feps_v is not None else "N/A"
+            snap["roe_num"] = round(float(roe_raw) * 100.0, 1) if roe_raw is not None else None
+            snap["roe_str"] = f"{float(roe_raw)*100.0:+.1f}%" if roe_raw is not None else "N/A"
+            snap["opm_num"] = round(float(opm_raw) * 100.0, 1) if opm_raw is not None else None
+            snap["debt_num"] = round(float(dte_raw), 1) if dte_raw is not None else None
+            snap["dividend_yield_str"] = f"{float(div_raw):.2f}%" if div_raw else "N/A"
+            if mcap_raw:
+                snap["market_cap"] = f"${float(mcap_raw)/1e9:,.1f}B"
+            snap["high_52w_str"] = f"${float(h52):,.2f}" if h52 else ""
+            snap["low_52w_str"] = f"${float(l52):,.2f}" if l52 else ""
+            snap["last_price_num"] = float(last_p) if last_p else None
+            snap["is_loss_making"] = bool(eps_v is not None and float(eps_v) < 0)
+            if last_p and h52 and float(h52) > 0:
+                snap["drawdown_52w_pct"] = round(((float(last_p) - float(h52)) / float(h52)) * 100.0, 1)
+            if last_p and h52 and l52 and float(h52) > float(l52):
+                snap["pos_52w_pct"] = round(((float(last_p) - float(l52)) / (float(h52) - float(l52))) * 100.0, 1)
+            if eps_v and feps_v and float(eps_v) > 0:
+                snap["eps_growth_pct"] = round(((float(feps_v) - float(eps_v)) / float(eps_v)) * 100.0, 1)
+        except Exception as _ue:
+            print(f"[WallStSnapshot-US] {code} warning: {_ue}")
+        if snap:
+            _WALLST_SNAP_CACHE[code] = (now, snap)
+
+    if include_annual and is_kr:
+        ann = _get_kr_annual_financials(code)
+        if ann:
+            snap["annual_financials"] = ann
+            # 네이버 공식 연간 ROE가 있으면 더 정확한 공식 ROE 우선 반영
+            if ann.get("latest_roe_num") is not None:
+                snap["official_roe_num"] = ann["latest_roe_num"]
+                snap["roe_num"] = ann["latest_roe_num"]
+                snap["roe_str"] = f"{ann['latest_roe_num']:.2f}%"
+            if ann.get("latest_opm_num") is not None:
+                snap["opm_num"] = ann["latest_opm_num"]
+            if ann.get("latest_debt_num") is not None:
+                snap["debt_num"] = ann["latest_debt_num"]
     return snap
 
 
-def _generate_wall_street_council(doc: dict) -> dict:
+def _generate_wall_street_council(doc: dict, include_deep: bool = False) -> dict:
     """
     VIRATTT AI 헤지펀드(ai-hedge-fund) 아키텍처 연동:
     월가 5대 전설(워런 버핏, 찰리 멍거, 벤저민 그레이엄, 피터 린치, 스탠리 드러켄밀러)의
-    종목별 실제 재무·52주 주가 위치·최근 5일 외인·기관 수급·리포트 원문 기반
-    투표(사자/팔자/중립), 확신도(0~100), 핵심 근거, 클릭 시 펼쳐지는 세부 분석 리포트(detailed_analysis) 산출.
+    종목별 실제 4개년 재무제표·PER/PBR/ROE/부채비율·52주 주가 위치·최근 5일 일별 외인·기관 수급·
+    기업 사업 개요·증권사 리포트 원문 기반 초구체적 심층 분석 생성.
     """
     name = str(doc.get("stock_name", "")).strip() or "해당 종목"
-    code = str(doc.get("stock_code", "")).strip()
+    code = str(doc.get("stock_code", "")).strip().upper()
+    if not code and name:
+        try:
+            from stock_names import STOCK_MAP
+            code = str(STOCK_MAP.get(name) or "").strip()
+        except Exception:
+            pass
+    subj_p = _kr_topic_particle(name)  # 자연스러운 조사 ('은' / '는')
+
     curr_price = str(doc.get("current_price", "")).strip() or "실시간 조회"
     target_price = str(doc.get("target_price", "")).strip() or "제시안함"
     upside = str(doc.get("upside_pct", "")).strip() or "집계 중"
@@ -5155,12 +5326,18 @@ def _generate_wall_street_council(doc: dict) -> dict:
         or any(k in raw_title for k in ["하향", "중립", "부진", "적자", "둔화", "우려", "쇼크", "하회"])
     )
 
-    # 실제 재무·수급·52주 위치 스냅샷 조회 (국내주식 20분 캐시)
-    snap = _get_stock_financial_and_flow_snapshot(code, curr_price) if (not is_macro and code) else {}
+    # 실제 재무·수급·52주 위치·(심층 시 4개년 재무제표 & 기업 개요/테마) 조회
+    snap = _get_stock_financial_and_flow_snapshot(code, curr_price, include_annual=include_deep) if (not is_macro and code) else {}
+    company_prof = _get_kr_company_profile_and_themes(code, name, raw_title) if (include_deep and not is_macro and code and re.match(r"^\d{6}$", code)) else {}
+    ann = snap.get("annual_financials") or {}
+    daily_flows = snap.get("daily_flows") or []
+
     per_str = snap.get("per_str", "N/A")
+    cns_per_str = snap.get("cns_per_str", "N/A")
     pbr_str = snap.get("pbr_str", "N/A")
     eps_str = snap.get("eps_str", "N/A")
     cns_eps_str = snap.get("cns_eps_str", "N/A")
+    bps_str = snap.get("bps_str", "N/A")
     roe_str = snap.get("roe_str", "집계 중")
     div_str = snap.get("dividend_yield_str", "N/A")
     mcap_str = snap.get("market_cap", "")
@@ -5178,9 +5355,60 @@ def _generate_wall_street_council(doc: dict) -> dict:
     per_num = snap.get("per_num")
     pbr_num = snap.get("pbr_num")
     roe_num = snap.get("roe_num")
+    opm_num = snap.get("opm_num")
+    debt_num = snap.get("debt_num")
+    prev_debt_num = ann.get("prev_debt_num")
     eps_growth = snap.get("eps_growth_pct")
+    rev_yoy = ann.get("rev_yoy_pct")
+    op_yoy = ann.get("op_yoy_pct")
 
-    # 구체적 경계/하향 트리거 사유 추출 (왜 관망/축소 판정이 나왔는지 100% 투명 공개!)
+    # 구체적 계산 지표: 그레이엄 넘버 (PER × PBR), 피터 린치 PEG, 현재가 기반 손절가(-3.5%)/1차 익절가
+    graham_num = round(per_num * pbr_num, 1) if (per_num and pbr_num and per_num > 0 and pbr_num > 0) else None
+    growth_basis = eps_growth if (eps_growth and eps_growth > 0) else (op_yoy if (op_yoy and op_yoy > 0) else rev_yoy)
+    peg_num = round(per_num / growth_basis, 2) if (per_num and per_num > 0 and growth_basis and growth_basis > 1.0) else None
+
+    curr_p_num = _parse_float_safe(curr_price.split(" ")[0] if curr_price else "") or snap.get("last_price_num")
+    target_p_num = _parse_float_safe(target_price)
+    is_kr_code = bool(re.match(r"^\d{6}$", code))
+    stop_price_str = ""
+    tp1_price_str = ""
+    profit_10m_str = ""
+    if curr_p_num and curr_p_num > 0:
+        if is_kr_code:
+            sl_p = int(round((curr_p_num * 0.965) / 10.0) * 10)
+            stop_price_str = f"{sl_p:,}원"
+            if target_p_num and target_p_num > curr_p_num:
+                t1_p = int(round((curr_p_num + (target_p_num - curr_p_num) * 0.5) / 10.0) * 10)
+                tp1_price_str = f"{t1_p:,}원"
+                up_calc = ((target_p_num - curr_p_num) / curr_p_num) * 100.0
+                profit_10m_str = f"약 {int(10000000 * (up_calc / 100.0)):+,}원"
+            else:
+                tp1_price_str = f"{int(round((curr_p_num * 1.15) / 10.0) * 10):,}원"
+        else:
+            stop_price_str = f"${curr_p_num * 0.965:,.2f}"
+            tp1_price_str = f"${(curr_p_num + (target_p_num - curr_p_num) * 0.5) if (target_p_num and target_p_num > curr_p_num) else curr_p_num * 1.15:,.2f}"
+
+    # 4개년 실적 한 줄 요약 문자열
+    fin_trend_line = ""
+    if ann and ann.get("periods"):
+        p_arr = ann["periods"]
+        r_arr = ann.get("revenue", [])
+        o_arr = ann.get("operating_profit", [])
+        m_arr = ann.get("opm", [])
+        pairs = [f"{p_arr[i]} 매출 {r_arr[i]}억(영익 {o_arr[i]}억 · 마진 {m_arr[i]}%)" for i in range(len(p_arr)) if r_arr[i] != "-"]
+        if pairs:
+            fin_trend_line = " ➔ ".join(pairs[-3:])
+
+    # 부채비율 문구
+    debt_line = (
+        f"부채비율 {debt_num:.1f}%" + (f" (전년 {prev_debt_num:.1f}% 대비 {'감소·개선' if debt_num < prev_debt_num else '증가'})" if prev_debt_num else "")
+        if debt_num is not None else "재무 건전성 모니터링 중"
+    )
+    comp_desc = company_prof.get("company_summary") or ""
+    theme_tags = company_prof.get("theme_tags") or []
+    theme_desc = company_prof.get("theme_summary") or ""
+
+    # 구체적 경계/하향 트리거 사유 추출
     trigger_reasons: List[str] = []
     kw_explain_map = [
         ("하회", "실적이 시장 기대치(컨센서스)를 밑돈다는 증권사 하회 경고"),
@@ -5205,169 +5433,216 @@ def _generate_wall_street_council(doc: dict) -> dict:
     if o5_net is not None and o5_net < 0:
         trigger_reasons.append(f"최근 {flow_days}거래일 기관 누적 {o5_net:,}주 순매도 출회")
     if dd_52w is not None and dd_52w <= -25.0:
-        trigger_reasons.append(f"52주 최고가({h52_str}원) 대비 {dd_52w:.1f}% 하락한 장기 약세/조정 추세")
+        trigger_reasons.append(f"52주 최고가({h52_str}) 대비 {dd_52w:.1f}% 하락한 장기 약세/조정 추세")
     if not trigger_reasons and is_bearish:
         trigger_reasons.append("증권사 리포트 상 단기 보수적 경계 신호가 감지되어 방어 모드 발동")
 
     # 공통 수급 요약 문구
     if f5_net is not None and o5_net is not None:
-        flow_summary = f"최근 {flow_days}일 외국인 {f5_net:+,}주 · 기관 {o5_net:+,}주 (외인 지분율 {frgn_rate})"
+        flow_summary = (
+            f"최근 {flow_days}거래일 누적 외국인 {f5_net:+,}주 · 기관 {o5_net:+,}주 "
+            f"(직전일 외국인 {f1_net:+,}주 · 기관 {o1_net:+,}주 / 외국인 지분율 {frgn_rate})"
+        )
         flow_status = "danger" if (f5_net < 0 and o5_net < 0) else ("warn" if (f5_net < 0 or o5_net < 0) else "good")
     else:
-        flow_summary = f"당일 주가 {change_pct:+.2f}% 변동 · 수급 방향성 경계 감시 중"
+        flow_summary = f"당일 주가 {change_pct:+.2f}% 변동 · 실시간 수급 방향성 감시 중"
         flow_status = "danger" if change_pct <= -2.0 else ("warn" if change_pct < 0 else "good")
 
     dd_summary = (
-        f"52주 고점({h52_str}원) 대비 {dd_52w:+.1f}% (52주 최저 {l52_str}원 · 밴드 하단 {pos_52w:.0f}%)"
+        f"52주 최고가({h52_str}) 대비 {dd_52w:+.1f}% · 52주 최저가({l52_str}) 기준 밴드 {pos_52w:.0f}% 위치"
         if (dd_52w is not None and pos_52w is not None and h52_str)
         else f"현재가 {curr_price} / 목표가 {target_price} (괴리율 {upside})"
     )
 
-    if is_bearish:
-        # ── [하향/실적부진/경계 리포트] 5대 거장 종목별 구체적 세부 근거 생성 ──
-        primary_cause = trigger_reasons[0]
-        report_excerpt = raw_title or headline[:90]
+    report_excerpt = raw_title or headline[:90]
 
-        # 1) 워런 버핏
+    if is_bearish:
+        primary_cause = trigger_reasons[0]
+
         buffett_checks = [
             {
-                "label": "① 실적·마진(해자) 훼손 신호",
+                "label": "① 실적·마진(경제적 해자) 훼손 신호",
                 "value": "경계 발동",
                 "status": "danger",
-                "detail": f"리포트 원제 「{report_excerpt}」에서 {primary_cause}가 확인되었습니다. 버핏은 가격 결정력과 영업이익률이 흔들리는 시기에는 절대 신규 진입하지 않습니다.",
-            },
-            {
-                "label": "② 수익성(ROE · 주당순이익 EPS)",
-                "value": f"ROE {roe_str} / EPS {eps_str}",
-                "status": "danger" if (is_loss or (roe_num is not None and roe_num < 8)) else ("warn" if (roe_num is not None and roe_num < 15) else "good"),
                 "detail": (
-                    f"{name}은 현재 주당순이익이 적자({eps_str}) 상태로, 버핏의 1번 원칙인 '꾸준한 자기자본이익률(ROE 15% 이상)과 안정적 현금 창출' 기준을 충족하지 못합니다."
-                    if is_loss else
-                    f"{name}의 추정 ROE는 {roe_str}(EPS {eps_str}) 수준이나, 최근 실적 눈높이 하향으로 향후 마진율 방어 여부를 최소 1~2개 분기 더 확인해야 합니다."
+                    f"증권사 리포트 「{report_excerpt}」에서 {primary_cause}가 포착되었습니다. "
+                    + (f"본업 구조: {comp_desc} " if comp_desc else "")
+                    + "버핏은 기업의 가격 결정력과 영업이익률이 흔들리는 국면에서는 확실한 회복 증거가 나올 때까지 신규 진입을 멈춥니다."
                 ),
             },
             {
-                "label": "③ 밸류에이션(PER) 가격 매력",
-                "value": f"PER {per_str}",
+                "label": "② 최근 3~4개년 매출·영업이익률(마진) 추이",
+                "value": f"영업이익률 {opm_num:.1f}%" if opm_num is not None else f"ROE {roe_str}",
+                "status": "good" if (opm_num is not None and opm_num >= 12) else ("warn" if (opm_num is not None and opm_num >= 5) else "danger"),
+                "detail": (
+                    f"실제 연간 실적 흐름: {fin_trend_line}. "
+                    + (f"매출 전년비 {rev_yoy:+.1f}%, 영업이익 {op_yoy:+.1f}% 흐름을 보였으나, 단기 분기 실적 하회 우려가 해소되는지 확인이 필요합니다." if (rev_yoy is not None and op_yoy is not None) else "단기 이익률 하락이 일시적인지 구조적인지 1~2개 분기 검증이 필요합니다.")
+                    if fin_trend_line else
+                    f"{name}{subj_p} 현재 추정 ROE {roe_str}(EPS {eps_str}) 수준이며, 최근 실적 눈높이 하향으로 향후 마진 방어력을 추가 확인해야 합니다."
+                ),
+            },
+            {
+                "label": "③ 자기자본이익률(ROE) & 부채 건전성",
+                "value": f"ROE {roe_str}" + (f" · 부채 {debt_num:.0f}%" if debt_num is not None else ""),
+                "status": "danger" if (is_loss or (roe_num is not None and roe_num < 6)) else ("warn" if (roe_num is not None and roe_num < 15) else "good"),
+                "detail": (
+                    f"{name}{subj_p} 주당순이익 적자({eps_str}) 상태로 버핏의 핵심 기준(ROE 15% 이상)에 크게 미달합니다. {debt_line}."
+                    if is_loss else
+                    f"현재 ROE는 {roe_str}로 버핏의 우량주 기준(15% 이상) 대비 {'우수한 편이나 단기 둔화 경계 구간' if (roe_num is not None and roe_num >= 15) else '다소 낮은 수준'}입니다. 재무 안정성은 {debt_line}입니다."
+                ),
+            },
+            {
+                "label": "④ 밸류에이션(PER) & 밸류 트랩 점검",
+                "value": f"PER {per_str} (추정 {cns_per_str})",
                 "status": "danger" if (is_loss or (per_num is not None and per_num > 25)) else ("warn" if (per_num is not None and per_num > 15) else "good"),
                 "detail": (
-                    f"현재 당기 적자 상태로 PER 산출이 어렵({per_str})고 현금 흐름 회복 시점이 불투명해, 지금 가격에서는 확실한 복리 수익을 기대하기 어렵습니다."
+                    f"당기 적자로 PER 산출이 어렵고({per_str}) 현금흐름 회복 시점이 불투명해, 지금 가격에서는 확실한 복리 수익을 담보하기 어렵습니다."
                     if is_loss else (
-                        f"현재 PER이 {per_str}로 이익 대비 주가 부담이 남아 있는 상태에서 실적 둔화 우려까지 겹쳐, 지금 가격에서는 확실한 복리 수익을 기대하기 어렵습니다."
+                        f"현재 PER이 {per_str}(추정 {cns_per_str})로 이익 대비 가격 부담이 남아 있는 상태에서 실적 하회 경고가 나와 보수적 관망이 안전합니다."
                         if (per_num is not None and per_num > 20) else
-                        f"현재 PER은 {per_str} 수준이지만, 향후 실적 추정치가 더 낮아지면(E 감소) 체감 PER이 오히려 비싸지는 '밸류 트랩(저평가 함정)' 위험이 있습니다."
+                        f"표면 PER은 {per_str}(추정 {cns_per_str})이나, 이익 추정치(E)가 추가로 낮아지면 체감 PER이 오히려 비싸지는 '밸류 트랩(저평가 함정)'을 경계해야 합니다."
                     )
                 ),
             },
         ]
 
-        # 2) 찰리 멍거
         munger_checks = [
             {
-                "label": "① '어디서 망할 수 있는가' 리스크 감사",
-                "value": f"경계 사유 {len(trigger_reasons)}건",
+                "label": "① '어디서 돈을 잃을 수 있는가' 리스크 감사",
+                "value": f"경계 신호 {len(trigger_reasons)}건",
                 "status": "danger",
-                "detail": f"핵심 리스크: {' / '.join(trigger_reasons[:2])}. 멍거는 호재보다 치명적 약점이 하나라도 보이면 과감히 '패스(Pass)'합니다.",
+                "detail": f"감지된 구체적 위험: {' / '.join(trigger_reasons[:3])}. 멍거는 호재가 아무리 커 보여도 치명적 결함이 확인되면 즉시 '패스(관망)'합니다.",
             },
             {
-                "label": "② 주가 추세 & 52주 낙폭 점검",
+                "label": "② 재무 생존력 (부채비율 & 수익 방어)",
+                "value": f"부채 {debt_num:.1f}%" if debt_num is not None else f"EPS {eps_str}",
+                "status": "good" if (debt_num is not None and debt_num < 100 and not is_loss) else ("danger" if (is_loss or (debt_num is not None and debt_num > 200)) else "warn"),
+                "detail": f"{debt_line}. " + (f"기업 개요: {comp_desc}" if comp_desc else "불황기에도 버틸 수 있는 현금 체력 확인이 우선입니다."),
+            },
+            {
+                "label": "③ 52주 고점 대비 낙폭 & 칼날 잡기 경계",
                 "value": f"{dd_52w:+.1f}% (고점比)" if dd_52w is not None else f"당일 {change_pct:+.2f}%",
                 "status": "danger" if (dd_52w is not None and dd_52w <= -30) else "warn",
-                "detail": f"{dd_summary}. 많이 떨어졌다는 이유만으로 덥석 사는 것은 '떨어지는 칼날 잡기'가 될 수 있습니다.",
+                "detail": f"{dd_summary}. 많이 떨어졌다는 이유만으로 진입하는 것은 가장 흔한 '저가 매수 착시(떨어지는 칼날)'입니다.",
             },
             {
-                "label": "③ 대외·업황 부담 요인",
-                "value": overseas_badge.replace("🌏 ", "") if overseas_badge else "업황 둔화 경계",
+                "label": "④ 대외 매크로 & 업황 변수",
+                "value": (theme_tags[0] if theme_tags else (overseas_badge.replace("🌏 ", "") if overseas_badge else "업황 둔화")),
                 "status": "warn",
-                "detail": risk_op or f"{name}의 업황 회복 시점이 불투명하므로, 확실한 턴어라운드 증거가 나올 때까지 현금을 쥐고 기다리는 것이 최선입니다.",
+                "detail": (theme_desc + " " if theme_desc else "") + (risk_op or "업황 반등의 실물 증거(수주·실적 전환)가 나오기 전까지 인내심을 갖고 현금을 지켜야 합니다."),
             },
         ]
 
-        # 3) 벤저민 그레이엄
         graham_checks = [
             {
-                "label": "① 목표주가 대비 안전마진",
+                "label": "① 목표주가 대비 안전마진 계산",
                 "value": f"{curr_price.split(' ')[0]} ➔ {target_price} ({upside})",
                 "status": "danger" if ("-" in upside and "%" in upside) else "warn",
                 "detail": (
-                    f"목표주가({target_price}) 대비 상승여력이 {upside}로 낮아져 주가를 받쳐줄 안전 에어백이 부족합니다."
+                    f"현재가({curr_price})가 목표주가({target_price}) 대비 {upside}로 안전 에어백이 사라진 상태입니다."
                     if ("-" in upside and "%" in upside) else
-                    f"표면상 목표가({target_price}, {upside})와 괴리는 있으나, 실적 하회 리포트 이후 목표가 추가 하향 가능성이 있어 안전마진을 보수적으로 할인 적용합니다."
+                    f"표면상 목표가({target_price}, {upside}" + (f", 1천만원 기준 {profit_10m_str}" if profit_10m_str else "") + ") 괴리는 있으나, 실적 하회 리포트 이후 목표가가 추가로 낮아질 위험을 감안해 보수적 할인 적용이 필요합니다."
                 ),
             },
             {
-                "label": "② 자산가치 대비 주가 (PBR 기준 1.5배)",
-                "value": f"PBR {pbr_str} (BPS {snap.get('bps_str', 'N/A')})",
+                "label": "② 청산가치 대비 주가 (PBR 기준 1.5배 이하)",
+                "value": f"PBR {pbr_str} (BPS {bps_str})",
                 "status": "danger" if (pbr_num is not None and pbr_num >= 3.0) else ("warn" if (pbr_num is not None and pbr_num > 1.5) else "good"),
                 "detail": (
-                    f"현재 PBR이 {pbr_str}로 그레이엄의 보수적 기준(1.5배 이하)보다 높아, 청산가치 관점의 하방 경직성이 얇습니다."
+                    f"현재 PBR이 {pbr_str}(주당순자산 {bps_str})로 그레이엄의 보수적 기준(1.5배 이하)을 크게 웃돌아 자산가치 기반 하방 방어력이 얇습니다."
                     if (pbr_num is not None and pbr_num > 1.5) else
-                    f"PBR({pbr_str})은 비교적 낮으나 실적 둔화가 겹쳐 단기 바닥 확인 전까지 중립 관망이 안전합니다."
+                    f"PBR({pbr_str}, BPS {bps_str})은 청산가치 관점에서 부담이 낮으나, 실적 둔화 구간이라 바닥 확인 전까지 중립 대기가 합리적입니다."
                 ),
             },
             {
-                "label": "③ 배당 방어력 & 바닥권 위치",
+                "label": "③ 그레이엄 복합 안전지수 (PER × PBR ≤ 22.5)",
+                "value": f"{graham_num}" if graham_num is not None else "산출 불가(적자)",
+                "status": "good" if (graham_num is not None and graham_num <= 22.5) else ("warn" if (graham_num is not None and graham_num <= 40) else "danger"),
+                "detail": (
+                    f"벤저민 그레이엄의 전설적 저평가 기준인 'PER × PBR ≤ 22.5' 대비 현재 {graham_num}로, {'저평가 기준은 충족하지만 실적 하향 리스크 해소가 선행되어야 합니다.' if graham_num <= 22.5 else '보수적 가치투자 기준(22.5)을 초과하여 안전마진이 충분하지 않습니다.'}"
+                    if graham_num is not None else
+                    "적자(PER N/A) 상태로 그레이엄 복합 안전지수(22.5 이하)를 통과하지 못했습니다."
+                ),
+            },
+            {
+                "label": "④ 배당 방어력 & 52주 저점 지지력",
                 "value": f"배당 {div_str}",
                 "status": "warn" if div_str == "N/A" else "good",
-                "detail": f"배당수익률 {div_str} · {dd_summary}. 바닥 지지선에서 거래량이 줄며 가격 안정을 찾을 때까지 신규 진입을 보류합니다.",
+                "detail": f"배당수익률 {div_str} · {dd_summary}. 52주 저점 부근에서 거래량 감소와 쌍바닥 안착을 확인할 때까지 신규 진입을 보류합니다.",
             },
         ]
 
-        # 4) 피터 린치
         lynch_checks = [
             {
-                "label": "① 실적 성장 스토리 점검",
+                "label": "① 실적 성장 스토리 훼손 여부",
                 "value": "성장 둔화 경고",
                 "status": "danger",
-                "detail": f"「{report_excerpt}」에서 확인되듯 핵심 성장 엔진의 일시 둔화 또는 기대치 하회가 포착되었습니다. 린치는 스토리가 꺾인 주식에 절대 물타기하지 않습니다.",
+                "detail": f"「{report_excerpt}」 리포트에서 성장 속도 둔화 또는 시장 기대치 하회가 확인되었습니다. 린치는 성장 스토리에 금이 간 종목에 절대 물타기하지 않습니다.",
             },
             {
-                "label": "② 이익 성장 추이 (현재 EPS ➔ 추정 EPS)",
-                "value": f"{eps_str} ➔ {cns_eps_str}",
+                "label": "② 매출·영업이익 성장률 & EPS 추이",
+                "value": f"EPS {eps_str} ➔ 추정 {cns_eps_str}",
                 "status": "danger" if (is_loss or (eps_growth is not None and eps_growth < 5)) else "warn",
                 "detail": (
-                    f"현재 EPS({eps_str})와 시장 추정 EPS({cns_eps_str}) 흐름을 볼 때, 확실한 실적 턴어라운드 확인 전까지 섣부른 진입은 기회비용이 큽니다."
+                    f"현재 EPS {eps_str} ➔ 시장 추정 EPS {cns_eps_str}"
+                    + (f" ({eps_growth:+.1f}%)" if eps_growth is not None else "")
+                    + (f" / 연간 매출 YoY {rev_yoy:+.1f}% · 영업이익 YoY {op_yoy:+.1f}%." if (rev_yoy is not None and op_yoy is not None) else ".")
+                    + " 이익 성장 가속이 재확인될 때까지 진입을 미룹니다."
                 ),
             },
             {
-                "label": "③ 물타기(추가 매수) 리스크",
+                "label": "③ 피터 린치 PEG 지표 (PER ÷ 성장률 ≤ 1.0)",
+                "value": f"PEG {peg_num}" if peg_num is not None else "성장 둔화(산출보류)",
+                "status": "good" if (peg_num is not None and peg_num <= 1.0) else ("warn" if (peg_num is not None and peg_num <= 1.8) else "danger"),
+                "detail": (
+                    f"이익 성장률 대비 주가 수준인 PEG가 {peg_num}입니다. (1.0 이하 초저평가, 2.0 이상 고평가) 단기 실적 하향 위험을 고려하면 보수적 접근이 필수입니다."
+                    if peg_num is not None else
+                    "이익 성장률이 마이너스이거나 적자 구간이어서 GARP(합리적 가격의 성장주) 매수 조건을 충족하지 못합니다."
+                ),
+            },
+            {
+                "label": "④ 물타기(추가 매수) 금지 원칙",
                 "value": "물타기 절대 금지",
                 "status": "danger",
-                "detail": "주가가 30~50% 빠졌다고 더 못 떨어지는 법은 없습니다. 분기 실적 발표에서 '예상치 상회(어닝 서프라이즈)'가 확인된 뒤에 사도 늦지 않습니다.",
+                "detail": "주가가 고점 대비 많이 빠졌다고 무조건 바닥은 아닙니다. 다음 분기 실적 발표에서 '기대치 상회(어닝 서프라이즈)'가 숫자로 찍힌 뒤에 사도 충분합니다.",
             },
         ]
 
-        # 5) 스탠리 드러켄밀러
         druck_checks = [
             {
-                "label": f"① 외국인·기관 큰손 수급 (최근 {flow_days}일)",
+                "label": f"① 외국인·기관 큰손 수급 (최근 {flow_days}거래일)",
                 "value": f"외인 {f5_net:+,}주 / 기관 {o5_net:+,}주" if (f5_net is not None and o5_net is not None) else f"당일 {change_pct:+.2f}%",
                 "status": flow_status,
-                "detail": f"{flow_summary}. 드러켄밀러는 큰손 자금(유동성)이 빠져나가는 종목과는 절대 맞서 싸우지 않습니다.",
+                "detail": f"{flow_summary}. 드러켄밀러는 큰손 자금이 빠져나가는 흐름에 역행하지 않고, 유동성이 돌아설 때까지 현금을 지킵니다.",
             },
             {
-                "label": "② 주가 추세 & 모멘텀 방향",
+                "label": "② 당일 모멘텀 & 52주 추세 방향",
                 "value": f"당일 {change_pct:+.2f}%",
                 "status": "danger" if change_pct < 0 else "warn",
-                "detail": f"{dd_summary}. 하락 추세가 완전히 멈추고 상승 변곡점이 확인되기 전까지 현금 100% 보유가 최고의 수익 전략입니다.",
+                "detail": f"{dd_summary}. 하락 추세가 멈추고 20일 이동평균선을 거래량 동반 돌파하기 전까지 신규 비중 0%가 정석입니다.",
             },
             {
-                "label": "③ 리스크 관리 & 손절 원칙",
-                "value": "신규 비중 0% / 손절 -3.5%",
+                "label": "③ 섹터 테마 & 대외 자금 환경",
+                "value": " · ".join(theme_tags[:2]) if theme_tags else "모멘텀 약화",
+                "status": "warn",
+                "detail": theme_desc or "주도 섹터로의 자금 쏠림이 뚜렷한 장세에서는 수급이 이탈한 종목보다 신고가 주도주에 집중해야 합니다.",
+            },
+            {
+                "label": "④ 기계적 손절 방어선(-3.5%) & 현금 관리",
+                "value": f"손절선 {stop_price_str}" if stop_price_str else "신규 비중 0%",
                 "status": "danger",
-                "detail": "틀렸을 때 손실을 짧게 끊고 현금을 지켜야 다음 진짜 주도주에 크게 베팅할 수 있습니다. 보유 중이라면 -3.5% 손절선을 엄수하세요.",
+                "detail": (
+                    f"신규 진입은 0주(현금 100% 방어)를 권고합니다. 이미 보유 중이라면 현재가 기준 -3.5% 손절선({stop_price_str}) 이탈 시 미련 없이 원금을 방어하세요."
+                    if stop_price_str else
+                    "손실을 짧게 끊고 현금을 지켜야 다음 대세 상승장에서 크게 베팅할 수 있습니다."
+                ),
             },
         ]
 
         analysts = [
             {
-                "id": "buffett",
-                "name": "워런 버핏",
-                "role": "경제적 해자 & 지속가능 ROE",
-                "avatar": "👴",
-                "vote": "SELL",
-                "vote_label": "🔴 관망/축소",
-                "confidence": 88,
+                "id": "buffett", "name": "워런 버핏", "role": "경제적 해자 & 지속가능 ROE", "avatar": "👴",
+                "vote": "SELL", "vote_label": "🔴 관망/축소", "confidence": 88,
                 "reason": (
                     f"「{report_excerpt[:26]}」 경고가 확인됐고 수익성(ROE {roe_str}·PER {per_str}) 방어력을 재점검해야 해 무리한 매수를 피합니다."
                     if snap else
@@ -5379,35 +5654,25 @@ def _generate_wall_street_council(doc: dict) -> dict:
                     "report_evidence": f"[{broker}] {report_excerpt}" + (f" — {research_op[:140]}" if research_op else ""),
                     "reversal_condition": "분기 영업이익률과 ROE가 반등하고, 증권사 실적 추정치가 다시 상향 전환될 때 매수로 전환합니다.",
                     "action_for_non_holder": "신규 매수 보류(0주). 실적 바닥 통과 확인 전까지 현금을 지키며 관심종목에서만 추적하세요.",
-                    "action_for_holder": "비중이 크다면 반등 시 일부 축소(리스크 경감)하고, 단기 손절 방어선(-3.5%) 이탈 시 기계적 대응을 권장합니다.",
+                    "action_for_holder": f"비중이 크다면 반등 시 일부 축소하고, 손절 방어선({stop_price_str or '-3.5%'}) 이탈 시 기계적 대응을 권장합니다.",
                 },
             },
             {
-                "id": "munger",
-                "name": "찰리 멍거",
-                "role": "위대한 기업 & 리스크 배제",
-                "avatar": "👓",
-                "vote": "SELL",
-                "vote_label": "🔴 관망/축소",
-                "confidence": 85,
+                "id": "munger", "name": "찰리 멍거", "role": "위대한 기업 & 리스크 배제", "avatar": "👓",
+                "vote": "SELL", "vote_label": "🔴 관망/축소", "confidence": 85,
                 "reason": f"{primary_cause[:38]} 등 하방 리스크가 확인되었으니, 성급한 저가 매수 대신 지켜봅니다.",
                 "detailed_analysis": {
                     "headline": f"'{name}'에서 {len(trigger_reasons)}건의 명확한 경계 신호가 포착되어 '잃지 않는 투자' 원칙상 관망/축소를 권고합니다.",
                     "checks": munger_checks,
                     "report_evidence": f"[{broker}] {report_excerpt}",
-                    "reversal_condition": "업황 둔화 악재가 실적에 완전히 반영(악재 소멸)되고, 경영진의 수익성 개선 가이던스가 입증될 때 재검토합니다.",
+                    "reversal_condition": "업황 둔화 악재가 실적에 완전히 반영(악재 소멸)되고, 수익성 개선이 숫자로 입증될 때 재검토합니다.",
                     "action_for_non_holder": "주가가 많이 빠졌다는 이유만으로 진입하는 '저가 매수 착시'를 피하고 완전 관망하세요.",
                     "action_for_holder": "추가 물타기는 금지하고, 보유 비중을 전체 포트폴리오의 10% 이하로 관리하세요.",
                 },
             },
             {
-                "id": "graham",
-                "name": "벤저민 그레이엄",
-                "role": "딥 밸류 & 안전마진",
-                "avatar": "📜",
-                "vote": "HOLD",
-                "vote_label": "🟡 중립",
-                "confidence": 65,
+                "id": "graham", "name": "벤저민 그레이엄", "role": "딥 밸류 & 안전마진", "avatar": "📜",
+                "vote": "HOLD", "vote_label": "🟡 중립", "confidence": 65,
                 "reason": f"PBR {pbr_str}·목표가({target_price}) 기준 안전 에어백을 보수적으로 재검증해야 하므로 바닥 확인까지 보류합니다.",
                 "detailed_analysis": {
                     "headline": f"'{name}'의 자산가치(PBR {pbr_str})와 목표가({target_price}) 안전마진이 실적 하향 위험에 노출되어 중립 대기합니다.",
@@ -5419,13 +5684,8 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 },
             },
             {
-                "id": "lynch",
-                "name": "피터 린치",
-                "role": "합리적 성장주 (GARP)",
-                "avatar": "👜",
-                "vote": "SELL",
-                "vote_label": "🔴 매도/보류",
-                "confidence": 90,
+                "id": "lynch", "name": "피터 린치", "role": "합리적 성장주 (GARP)", "avatar": "👜",
+                "vote": "SELL", "vote_label": "🔴 매도/보류", "confidence": 90,
                 "reason": f"성장 엔진 둔화({report_excerpt[:24]})가 감지된 종목은 추가 하락 위험이 크니 섣부른 물타기를 금합니다.",
                 "detailed_analysis": {
                     "headline": f"'{name}'의 실적 성장 모멘텀에 제동이 걸려, 성장 스토리 회복 전까지 매도/보류 의견을 제시합니다.",
@@ -5437,13 +5697,8 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 },
             },
             {
-                "id": "druckenmiller",
-                "name": "스탠리 드러켄밀러",
-                "role": "매크로 변곡점 & 모멘텀",
-                "avatar": "⚡",
-                "vote": "SELL",
-                "vote_label": "🔴 비중 0%",
-                "confidence": 92,
+                "id": "druckenmiller", "name": "스탠리 드러켄밀러", "role": "매크로 변곡점 & 모멘텀", "avatar": "⚡",
+                "vote": "SELL", "vote_label": "🔴 비중 0%", "confidence": 92,
                 "reason": (
                     f"최근 {flow_days}일 외인({f5_net:+,}주)·기관({o5_net:+,}주) 수급이 흔들리고 추세가 약해 현금을 지켜야 합니다."
                     if (f5_net is not None and o5_net is not None) else
@@ -5455,7 +5710,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                     "report_evidence": flow_summary,
                     "reversal_condition": "외국인·기관 3거래일 연속 동반 순매수 전환 + 주가가 20일 이동평균선을 거래량과 함께 돌파할 때 즉시 공략합니다.",
                     "action_for_non_holder": "비중 0% 유지! 추세가 완전히 상방으로 돌아선 것을 눈으로 확인한 뒤 올라타도 충분합니다.",
-                    "action_for_holder": "하락 추세에서는 현금이 최고의 무기입니다. 손절 방어선(-3.5%) 이탈 시 기계적으로 현금화하세요.",
+                    "action_for_holder": f"하락 추세에서는 현금이 최고의 무기입니다. 손절 방어선({stop_price_str or '-3.5%'}) 이탈 시 기계적으로 현금화하세요.",
                 },
             },
         ]
@@ -5466,9 +5721,9 @@ def _generate_wall_street_council(doc: dict) -> dict:
         consensus_title = "전원 매수 보류 & 100% 현금 방어"
         consensus_conclusion = (
             f"5대 거장 모두가 {name}의 핵심 경계 사유({', '.join(trigger_reasons[:2])})를 근거로 방어 판정을 내렸습니다. "
-            f"각 거장 카드를 클릭하시면 재무 수치(PER·PBR·ROE), 최근 {flow_days}일 외인·기관 수급, 매수 전환 조건까지 세부 근거를 확인하실 수 있습니다."
+            f"각 거장 카드를 클릭하시면 4개년 실적, PER·PBR·ROE·부채비율, 최근 {flow_days}일 외인·기관 일별 수급까지 세부 근거를 확인하실 수 있습니다."
         )
-        ceo_action_guide = "신규 매수 0주 (지출 0원) · 기존 보유분 있다면 비중 축소 또는 즉시 손절 방어선(-3.5%) 점검"
+        ceo_action_guide = f"신규 매수 0주 (지출 0원) · 기존 보유분 있다면 비중 축소 또는 손절 방어선({stop_price_str or '-3.5%'}) 점검"
 
     elif is_macro:
         analysts = [
@@ -5482,7 +5737,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                         {"label": "① 매크로 소음 필터링", "value": "단기 변동 경계", "status": "warn", "detail": "금리·환율 발표 직후의 과잉 반응에 추격 매매하지 않고 기업 본업 경쟁력을 먼저 봅니다."},
                         {"label": "② 현금 여력 유지", "value": "현금 85% 확보", "status": "good", "detail": "시장이 흔들릴 때 1등 우량주를 바겐세일 가격에 담을 실탄을 유지합니다."},
                     ],
-                    "report_evidence": raw_title or headline[:120],
+                    "report_evidence": report_excerpt,
                     "reversal_condition": "지표 충격으로 우량주 주가가 본질가치 대비 크게 할인될 때 분할 매수를 확대합니다.",
                     "action_for_non_holder": "지수 전체 추격보다 핵심 1등 실적주 눌림목에만 선별 접근하세요.",
                     "action_for_holder": "실적이 탄탄한 보유 우량주는 매크로 노이즈에 흔들리지 말고 유지하세요.",
@@ -5497,7 +5752,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                     "checks": [
                         {"label": "① 생존력 우선 점검", "value": "부채 낮은 우량주", "status": "good", "detail": "고금리·고환율 국면에서도 자체 현금흐름으로 버틸 수 있는 기업만 남깁니다."},
                     ],
-                    "report_evidence": raw_title or headline[:120],
+                    "report_evidence": report_excerpt,
                     "reversal_condition": "거시 불확실성이 걷히고 우량 기업의 가격 메리트가 커질 때 비중을 확대합니다.",
                     "action_for_non_holder": "무리한 레버리지·신용 매수를 피하고 보수적으로 분할 접근하세요.",
                     "action_for_holder": "재무가 취약한 종목은 정리하고 핵심 우량주 중심으로 압축하세요.",
@@ -5512,7 +5767,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                     "checks": [
                         {"label": "① 안전마진 확보 전략", "value": "3회 분할 진입", "status": "good", "detail": "한 번에 전액 매수하지 않고 3단계 분할 매수로 평균 단가를 낮춥니다."},
                     ],
-                    "report_evidence": raw_title or headline[:120],
+                    "report_evidence": report_excerpt,
                     "reversal_condition": "과열 급등 시에는 신규 매수를 멈추고 이익을 분할 실현합니다.",
                     "action_for_non_holder": "지지선 부근에서 정액 3회 분할 매수로 차분히 모아보세요.",
                     "action_for_holder": "안전마진이 유지되는 저평가 자산은 장기 보유가 유리합니다.",
@@ -5527,7 +5782,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                     "checks": [
                         {"label": "① 거시 수혜 업종 선별", "value": "실적 성장주 우선", "status": "good", "detail": "환율·금리·정책 흐름의 직접 수혜를 받는 수출/AI/전력 성장주를 우선 검토합니다."},
                     ],
-                    "report_evidence": raw_title or headline[:120],
+                    "report_evidence": report_excerpt,
                     "reversal_condition": "수혜 섹터의 실적 성장률이 둔화되면 즉시 비중을 축소합니다.",
                     "action_for_non_holder": "거시 수혜 섹터 내 1등 실적주 위주로 소액 분할 진입하세요.",
                     "action_for_holder": "실적 성장세가 유지되는 한 추세를 끝까지 따라가세요.",
@@ -5542,7 +5797,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
                     "checks": [
                         {"label": "① 매크로 유동성 방향", "value": "변곡점 포착", "status": "good", "detail": "환율·금리·원자재 흐름이 유리하게 돌아서는 섹터에 기관·외국인 자금이 집중됩니다."},
                     ],
-                    "report_evidence": raw_title or headline[:120],
+                    "report_evidence": report_excerpt,
                     "reversal_condition": "거시 지표가 예상 밖 역행(금리·환율 급등) 시 손절 원칙으로 즉시 비중을 줄입니다.",
                     "action_for_non_holder": "주도 섹터 대장주로 포트폴리오의 15% 이내에서 기민하게 분할 진입하세요.",
                     "action_for_holder": "모멘텀이 꺾이지 않는 한 수익을 극대화하되 트레일링 스탑을 걸어두세요.",
@@ -5558,41 +5813,192 @@ def _generate_wall_street_council(doc: dict) -> dict:
         ceo_action_guide = "수혜 섹터 중심 15% 이내 선별 분할 진입 · 변동성 확대 시 현금 85%로 방어"
 
     else:
-        # ── [긍정/우량 성장주 리포트] 5대 거장 종목별 실제 수치 기반 매수 세부 근거 ──
-        report_excerpt = raw_title or headline[:90]
+        # ── [긍정/우량주 리포트] 5대 거장 종목별 4개 초구체적 수치 기반 매수 세부 근거 ──
+        buffett_buy_checks = [
+            {
+                "label": "① 독점 사업 경쟁력 (경제적 해자)",
+                "value": company_prof.get("sector_name") or "핵심 우량주",
+                "status": "good",
+                "detail": (comp_desc + " " if comp_desc else f"{name}{subj_p} 해당 산업 내 확고한 브랜드와 점유율을 보유하고 있습니다. ") + f"증권사({broker})가 「{report_excerpt}」를 통해 본업 경쟁력 강화를 확인했습니다.",
+            },
+            {
+                "label": "② 최근 3~4개년 매출·영업이익률 추이",
+                "value": f"영업이익률 {opm_num:.1f}%" if opm_num is not None else f"ROE {roe_str}",
+                "status": "good" if (opm_num is not None and opm_num >= 10) else ("warn" if opm_num is not None else "good"),
+                "detail": (
+                    f"실제 연간 실적: {fin_trend_line}. "
+                    + (f"매출 전년비 {rev_yoy:+.1f}% · 영업이익 {op_yoy:+.1f}%로 본업 현금 창출력이 숫자로 증명되고 있습니다." if (rev_yoy is not None and op_yoy is not None) else "꾸준한 매출과 영업이익 마진을 유지 중입니다.")
+                    if fin_trend_line else
+                    f"현재 주당순이익 {eps_str}, 추정 ROE {roe_str}로 수익성 개선 흐름이 이어지고 있습니다."
+                ),
+            },
+            {
+                "label": "③ 자기자본이익률(ROE) & 부채 건전성",
+                "value": f"ROE {roe_str}" + (f" · 부채 {debt_num:.0f}%" if debt_num is not None else ""),
+                "status": "good" if (not is_loss and (debt_num is None or debt_num < 120)) else "warn",
+                "detail": f"실제 ROE {roe_str} · {debt_line}. " + ("부채 부담이 낮아져 이익이 그대로 주주 가치로 쌓이는 건강한 구조입니다." if (debt_num is not None and debt_num < 100) else "영업이익 확대를 통해 자기자본 수익성이 점진적으로 개선되는 구간입니다."),
+            },
+            {
+                "label": "④ PER 밸류에이션 & 목표가 괴리율",
+                "value": f"PER {per_str} / 상승여력 {upside}",
+                "status": "good" if (per_num is not None and per_num <= 20) else "warn",
+                "detail": f"현재가 {curr_price} 기준 PER {per_str}(추정 {cns_per_str})이며, 목표주가 {target_price}({upside}) 대비 본업 가치 저평가 매력이 큽니다.",
+            },
+        ]
+
+        munger_buy_checks = [
+            {
+                "label": "① 시가총액 & 기업 안정성 감사",
+                "value": mcap_str or "검증된 상장사",
+                "status": "good",
+                "detail": f"시가총액 {mcap_str or '상위권'} 규모로 기관·외국인(지분율 {frgn_rate})이 검증하는 우량 기업입니다. {debt_line}.",
+            },
+            {
+                "label": "② 52주 고저점 대비 가격 매력",
+                "value": f"{dd_52w:+.1f}% (고점比)" if dd_52w is not None else upside,
+                "status": "good",
+                "detail": f"{dd_summary}. 과열 추격 구간이 아니라 가격 메리트가 충분히 확보된 구간입니다.",
+            },
+            {
+                "label": "③ 핵심 테마 & 산업 구조적 수혜",
+                "value": " · ".join(theme_tags[:2]) if theme_tags else "실적 개선주",
+                "status": "good",
+                "detail": theme_desc or f"{name}{subj_p} 속한 산업의 구조적 수요 회복과 실적 레버리지가 동반되는 구간입니다.",
+            },
+            {
+                "label": "④ 꼭 체크할 단기 리스크 요인",
+                "value": "분할·손절 관리",
+                "status": "warn",
+                "detail": risk_op or f"단기 변동성에 대비해 한 번에 몰빵하지 말고 3회 분할 진입 및 손절 방어선({stop_price_str or '-3.5%'})을 지키세요.",
+            },
+        ]
+
+        graham_buy_checks = [
+            {
+                "label": "① 목표주가 대비 안전마진 (기대수익)",
+                "value": f"{upside} (목표 {target_price})",
+                "status": "good" if "+" in upside else "warn",
+                "detail": f"현재가({curr_price.split(' ')[0]}) 대비 증권사 적정가치({target_price})까지 {upside}의 넉넉한 안전마진이 열려 있습니다." + (f" (1,000만 원 투자 시 목표가 기준 기대수익 {profit_10m_str})" if profit_10m_str else ""),
+            },
+            {
+                "label": "② 청산가치 대비 주가 (PBR · BPS)",
+                "value": f"PBR {pbr_str} (BPS {bps_str})",
+                "status": "good" if (pbr_num is not None and pbr_num <= 1.8) else "warn",
+                "detail": (
+                    f"현재 PBR이 {pbr_str}(주당순자산 {bps_str})로 그레이엄의 가치투자 기준에 부합하는 든든한 자산가치 하방 지지력을 보유했습니다."
+                    if (pbr_num is not None and pbr_num <= 1.8) else
+                    f"PBR은 {pbr_str}(BPS {bps_str})이나 높은 수익성과 목표가 괴리율({upside})이 하방 안전마진을 보완합니다."
+                ),
+            },
+            {
+                "label": "③ 그레이엄 복합 안전지수 (PER × PBR ≤ 22.5)",
+                "value": f"{graham_num}" if graham_num is not None else f"PER {per_str}",
+                "status": "good" if (graham_num is not None and graham_num <= 22.5) else "warn",
+                "detail": (
+                    f"PER({per_str}) × PBR({pbr_str}) = {graham_num}로, 그레이엄의 전설적 저평가 기준(22.5 이하)을 {'완벽히 통과한 딥 밸류 우량주입니다!' if graham_num <= 22.5 else '다소 상회하므로 3회 분할 매수로 평단가 안전마진을 확보하세요.'}"
+                    if graham_num is not None else
+                    f"추정 PER({cns_per_str}) 및 목표가({target_price}) 기준으로 분할 진입이 합리적입니다."
+                ),
+            },
+            {
+                "label": "④ 배당수익률 & 52주 저점 지지력",
+                "value": f"배당 {div_str}",
+                "status": "good" if div_str != "N/A" else "warn",
+                "detail": f"배당수익률 {div_str} · {dd_summary}. 1차 익절 목표({tp1_price_str or '목표가 중간선'}) 도달 시 절반(50%) 분할 익절로 안전하게 수익을 확정하세요.",
+            },
+        ]
+
+        lynch_buy_checks = [
+            {
+                "label": "① 핵심 성장 스토리 & 리포트 촉매",
+                "value": "성장 모멘텀",
+                "status": "good",
+                "detail": f"[{broker}] 「{report_excerpt}」. " + (research_op[:140] if research_op else "본업 수요 증가와 실적 개선이 주가 재평가로 이어지는 초입입니다."),
+            },
+            {
+                "label": "② 매출·영업이익 성장 속도 & EPS 추이",
+                "value": f"{eps_str} ➔ 추정 {cns_eps_str}",
+                "status": "good",
+                "detail": (
+                    f"현재 주당순이익 {eps_str} ➔ 시장 추정 {cns_eps_str}"
+                    + (f" ({eps_growth:+.1f}% 증가 전망)" if eps_growth is not None else "")
+                    + (f" · 연간 매출 YoY {rev_yoy:+.1f}%, 영업이익 YoY {op_yoy:+.1f}%." if (rev_yoy is not None and op_yoy is not None) else ".")
+                ),
+            },
+            {
+                "label": "③ 피터 린치 PEG 지표 (PER ÷ 이익성장률 ≤ 1.0)",
+                "value": f"PEG {peg_num}" if peg_num is not None else f"추정PER {cns_per_str}",
+                "status": "good" if (peg_num is not None and peg_num <= 1.2) else "warn",
+                "detail": (
+                    f"성장률 대비 주가 수준인 PEG가 {peg_num}로, {'1.0 전후의 전형적인 저평가 성장주(GARP) 구간입니다!' if peg_num <= 1.2 else '성장 속도를 감안해 장중 눌림목에서 분할 매집하는 전략이 유리합니다.'}"
+                    if peg_num is not None else
+                    f"추정 PER {cns_per_str} 수준으로 향후 이익 증가를 감안한 성장 대비 가격 매력이 유효합니다."
+                ),
+            },
+            {
+                "label": "④ 실전 보유 및 수익 극대화 전략",
+                "value": f"1차 익절 {tp1_price_str}" if tp1_price_str else "분할 매수·보유",
+                "status": "good",
+                "detail": "실적 상향 추세가 살아있는 동안 조급하게 팔지 말고, 1차 목표 구간에서 절반만 수익 실현 후 나머지로 큰 추세를 즐기세요.",
+            },
+        ]
+
+        druck_buy_checks = [
+            {
+                "label": f"① 외국인·기관 수급 (최근 {flow_days}거래일)",
+                "value": f"외인 {f5_net:+,}주 / 기관 {o5_net:+,}주" if (f5_net is not None and o5_net is not None) else f"당일 {change_pct:+.2f}%",
+                "status": flow_status,
+                "detail": f"{flow_summary}. " + ("외국인·기관 수급 유입과 함께 상승 탄력이 붙는 구간입니다." if flow_status == "good" else "단기 수급 혼조가 있으므로 시초가 추격 대신 오전 10시 이후 지지선 안착을 확인하며 진입하세요."),
+            },
+            {
+                "label": "② 당일 모멘텀 & 52주 추세 위치",
+                "value": f"당일 {change_pct:+.2f}%",
+                "status": "good" if change_pct >= 0 else "warn",
+                "detail": f"{dd_summary}. 목표주가({target_price}) 상향 모멘텀이 추세 반전을 뒷받침합니다.",
+            },
+            {
+                "label": "③ 핵심 테마 & 시장 자금 흐름",
+                "value": " · ".join(theme_tags[:2]) if theme_tags else "실적 주도주",
+                "status": "good",
+                "detail": theme_desc or "실적 개선이 숫자로 확인되는 종목에 기관·외국인 패시브 자금이 선별 유입됩니다.",
+            },
+            {
+                "label": "④ 정확한 손절가(-3.5%) & 1차 익절가 플랜",
+                "value": f"손절 {stop_price_str} / 1차 {tp1_price_str}" if stop_price_str else "손절 -3.5% 엄수",
+                "status": "good",
+                "detail": (
+                    f"진입 후 기계적 손절 방어선 {stop_price_str}(-3.5%)을 엄수하고, 1차 익절가 {tp1_price_str} 도달 시 보유 물량의 50%를 분할 익절하는 비대칭 손익비 전략입니다."
+                    if stop_price_str else
+                    "진입 후 -3.5% 손절선을 지키는 조건으로 적극 분할 공략합니다."
+                ),
+            },
+        ]
+
         analysts = [
             {
                 "id": "buffett", "name": "워런 버핏", "role": "경제적 해자 & 지속가능 ROE", "avatar": "👴",
                 "vote": "BUY", "vote_label": "🟢 매수 (사자)", "confidence": 88,
-                "reason": f"{name}은 탄탄한 본업 경쟁력과 실적 모멘텀(목표가 {target_price}, {upside})이 확인되어 분할 매수가 유효합니다.",
+                "reason": f"{name}{subj_p} 탄탄한 본업 경쟁력과 실적 모멘텀(목표가 {target_price}, {upside})이 확인되어 분할 매수가 유효합니다.",
                 "detailed_analysis": {
-                    "headline": f"'{name}'의 독점적 시장 지위와 현금 창출력이 목표주가({target_price}) 상향을 뒷받침합니다.",
-                    "checks": [
-                        {"label": "① 수익성(ROE · EPS)", "value": f"ROE {roe_str} / EPS {eps_str}", "status": "good" if not is_loss else "warn", "detail": f"현재 주당순이익 {eps_str}, 추정 ROE {roe_str} 수준으로 안정적인 수익 구조를 점검했습니다."},
-                        {"label": "② 밸류에이션(PER)", "value": f"PER {per_str}", "status": "good" if (per_num is not None and per_num <= 20) else "warn", "detail": f"목표주가({target_price}, 상승여력 {upside}) 대비 본업 경쟁력 기준 가격 매력이 열려 있습니다."},
-                        {"label": "③ 핵심 사업 모멘텀", "value": "긍정 리포트", "status": "good", "detail": f"[{broker}] {report_excerpt}"},
-                    ],
+                    "headline": f"'{name}'의 확고한 시장 지위와 실적 체력(PER {per_str} · ROE {roe_str})이 목표주가({target_price}) 상승여력을 뒷받침합니다.",
+                    "checks": buffett_buy_checks,
                     "report_evidence": f"[{broker}] {report_excerpt}",
-                    "reversal_condition": "분기 영업이익률이 급락하거나 경쟁 심화로 시장 점유율이 하락할 경우 관망으로 전환합니다.",
+                    "reversal_condition": "분기 영업이익률이 뚜렷하게 꺾이거나, 경쟁 심화로 본업 점유율·현금흐름이 훼손될 경우 관망으로 전환합니다.",
                     "action_for_non_holder": "시초가 추격 매수는 피하고, 장중 눌림목 지지선에서 3회 분할 매수로 천천히 모아가세요.",
-                    "action_for_holder": "본업 해자가 유지되는 한 1차 목표가까지 여유 있게 홀딩하세요.",
+                    "action_for_holder": f"본업 해자가 유지되는 한 1차 익절가({tp1_price_str or '목표가 중간선'})까지 여유 있게 홀딩하세요.",
                 },
             },
             {
                 "id": "munger", "name": "찰리 멍거", "role": "위대한 기업 & 리스크 배제", "avatar": "👓",
                 "vote": "BUY", "vote_label": "🟢 매수 (사자)", "confidence": 86,
-                "reason": f"{name}은 치명적 재무 리스크가 제한적이며 현재가({curr_price.split(' ')[0]}) 대비 상승여력({upside})이 돋보입니다.",
+                "reason": f"{name}{subj_p} 치명적 재무 리스크가 제한적이며 현재가({curr_price.split(' ')[0]}) 대비 상승여력({upside})이 돋보입니다.",
                 "detailed_analysis": {
-                    "headline": f"'{name}'은 뚜렷한 사업 경쟁력과 리스크 대비 보상 비율이 우수해 분할 매수 적합 판정입니다.",
-                    "checks": [
-                        {"label": "① 시가총액 & 기업 체급", "value": mcap_str or "핵심 상장사", "status": "good", "detail": f"안정적 사업 기반과 증권사 커버리지({broker})가 뒷받침되는 검증된 종목입니다."},
-                        {"label": "② 주가 위치(52주 밴드)", "value": f"{dd_52w:+.1f}% (고점比)" if dd_52w is not None else upside, "status": "good", "detail": dd_summary},
-                        {"label": "③ 리스크 점검", "value": "관리 가능", "status": "warn", "detail": risk_op or "분할 매수와 손절 방어선(-3.5%) 원칙만 지키면 하방 위험이 제한적입니다."},
-                    ],
+                    "headline": f"'{name}'은 재무 안정성({debt_line})과 리스크 대비 보상 비율({upside})이 우수해 분할 매수 적합 판정입니다.",
+                    "checks": munger_buy_checks,
                     "report_evidence": f"[{broker}] {report_excerpt}",
-                    "reversal_condition": "대규모 유상증자·적자 전환 등 펀더멘털 훼손 공시 발생 시 즉시 매수로의 입장을 철회합니다.",
+                    "reversal_condition": "대규모 유상증자·적자 전환·부채 급증 등 펀더멘털 훼손 공시 발생 시 즉시 매수 의견을 철회합니다.",
                     "action_for_non_holder": "1회 예산 한도 내에서 30%씩 3회로 나누어 합리적인 가격에 편입하세요.",
-                    "action_for_holder": "단기 흔들림에 매도하지 말고 기업 가치 상승을 기다리세요.",
+                    "action_for_holder": "단기 흔들림에 흔들리지 말고 기업 가치 상승이 주가에 반영되길 기다리세요.",
                 },
             },
             {
@@ -5603,14 +6009,11 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "reason": f"목표가({target_price}, {upside}) 및 PBR {pbr_str} 기준 하방을 받쳐주는 안전마진이 확보되었습니다.",
                 "detailed_analysis": {
                     "headline": f"현재가({curr_price.split(' ')[0]}) 대비 목표주가({target_price})까지 {upside}의 안전마진이 열려 있습니다.",
-                    "checks": [
-                        {"label": "① 목표가 괴리율(안전마진)", "value": f"{upside} (목표 {target_price})", "status": "good" if "+" in upside else "warn", "detail": f"증권사 적정가치({target_price}) 대비 현재가가 할인 구간에 머물러 있습니다."},
-                        {"label": "② PBR · 배당 방어력", "value": f"PBR {pbr_str} / 배당 {div_str}", "status": "good" if (pbr_num is not None and pbr_num <= 2.0) else "warn", "detail": f"BPS {snap.get('bps_str', 'N/A')} 기준 자산가치와 배당({div_str})을 점검했습니다."},
-                    ],
+                    "checks": graham_buy_checks,
                     "report_evidence": f"현재가 {curr_price} ➔ 목표주가 {target_price} ({upside})",
-                    "reversal_condition": "주가가 목표주가에 근접해 안전마진이 10% 미만으로 좁혀지면 분할 익절로 전환합니다.",
-                    "action_for_non_holder": "장중 1~2% 눌림목 지지선에서 안전마진을 더 키우며 분할 진입하세요.",
-                    "action_for_holder": "1차 목표 수익률 도달 시 절반(50%) 분할 익절로 안전하게 수익을 확정하세요.",
+                    "reversal_condition": "주가가 목표주가에 근접해 안전마진이 10% 미만으로 좁혀지면 신규 매수를 멈추고 분할 익절로 전환합니다.",
+                    "action_for_non_holder": "장중 1~2% 눌림목 지지선에서 안전마진을 더 키우며 3회 분할 진입하세요.",
+                    "action_for_holder": f"1차 목표가({tp1_price_str or '목표가 중간'}) 도달 시 절반(50%) 분할 익절로 원금과 수익을 안전하게 지키세요.",
                 },
             },
             {
@@ -5618,13 +6021,10 @@ def _generate_wall_street_council(doc: dict) -> dict:
                 "vote": "BUY", "vote_label": "🟢 성장주 매수", "confidence": 92,
                 "reason": f"「{report_excerpt[:26]}」 성장 스토리가 뚜렷하고 추정 EPS({cns_eps_str}) 기준 성장 대비 주가가 매력적입니다.",
                 "detailed_analysis": {
-                    "headline": f"'{name}'의 실적 성장 촉매와 밸류에이션 매력이 동시에 포착된 전형적인 GARP 매수 구간입니다.",
-                    "checks": [
-                        {"label": "① 핵심 성장 스토리", "value": "성장 가속", "status": "good", "detail": f"[{broker}] {report_excerpt}"},
-                        {"label": "② EPS 성장성 점검", "value": f"{eps_str} ➔ 추정 {cns_eps_str}", "status": "good", "detail": f"추정 PER {snap.get('cns_per_str', per_str)} 수준으로 향후 이익 증가를 고려한 주가 부담이 낮습니다."},
-                    ],
+                    "headline": f"'{name}'의 실적 성장 촉매와 밸류에이션 매력이 동시에 포착된 전형적인 GARP(합리적 성장주) 매수 구간입니다.",
+                    "checks": lynch_buy_checks,
                     "report_evidence": f"[{broker}] {report_excerpt}",
-                    "reversal_condition": "신규 수주나 매출 성장률이 기대치에 못 미치기 시작하면 즉시 비중을 축소합니다.",
+                    "reversal_condition": "신규 수주나 분기 매출 성장률이 시장 기대치에 못 미치기 시작하면 즉시 비중을 축소합니다.",
                     "action_for_non_holder": "실적 모멘텀 초입에 3회 분할 매수로 포지션을 구축하세요.",
                     "action_for_holder": "실적 상향 추세가 이어지는 한 수익을 충분히 길게 가져가세요.",
                 },
@@ -5638,15 +6038,12 @@ def _generate_wall_street_council(doc: dict) -> dict:
                     "외국인과 기관 큰손 돈이 바닥에서 강하게 쏟아져 들어오며 주가가 상승으로 방향을 튼 최고의 매수 타이밍입니다."
                 ),
                 "detailed_analysis": {
-                    "headline": f"'{name}'의 수급 변곡점과 리서치 목표가({target_price}) 모멘텀이 맞물려 적극 공략 구간입니다.",
-                    "checks": [
-                        {"label": f"① 외국인·기관 수급 (최근 {flow_days}일)", "value": f"외인 {f5_net:+,}주 / 기관 {o5_net:+,}주" if (f5_net is not None and o5_net is not None) else f"당일 {change_pct:+.2f}%", "status": flow_status, "detail": flow_summary},
-                        {"label": "② 추세 & 손절 방어선", "value": f"당일 {change_pct:+.2f}% / 손절 -3.5%", "status": "good" if change_pct >= 0 else "warn", "detail": f"{dd_summary}. 진입 후 -3.5% 손절선을 지키는 조건으로 적극 공략합니다."},
-                    ],
+                    "headline": f"'{name}'의 리서치 목표가({target_price}) 모멘텀과 비대칭 손익비(손절 {stop_price_str or '-3.5%'} vs 1차 {tp1_price_str or '익절'})가 매력적입니다.",
+                    "checks": druck_buy_checks,
                     "report_evidence": flow_summary,
-                    "reversal_condition": "외국인·기관 대량 동반 매도 전환 및 20일선 이탈 시 즉시 손절·현금화합니다.",
+                    "reversal_condition": f"외국인·기관 대량 동반 매도 전환 및 손절 방어선({stop_price_str or '-3.5%'}) 이탈 시 즉시 현금화합니다.",
                     "action_for_non_holder": "오전 10시 이후 지지선 안착을 확인하고 3회 분할 매수로 진입하세요.",
-                    "action_for_holder": "추세가 살아있는 동안 홀딩하되 목표가 도달 시 50% 분할 익절하세요.",
+                    "action_for_holder": f"추세가 살아있는 동안 홀딩하되 1차 익절가({tp1_price_str or '+15%'}) 도달 시 50% 분할 익절하세요.",
                 },
             },
         ]
@@ -5655,7 +6052,7 @@ def _generate_wall_street_council(doc: dict) -> dict:
         consensus_badge = "🟢 만장일치 적극 매수 (5인 찬성)"
         consensus_text = f"5대 거장 만장일치 추천 ➔ 포트폴리오 목표 비중 {target_allocation}%, 분할 매수 적합"
         consensus_title = "만장일치 적극 매수 & 분할 편입"
-        consensus_conclusion = f"{name}은 버핏의 독점 비법 소스(안정적 현금 창출)와 멍거의 무결점 사업 모델, 그레이엄의 든든한 안전 에어백, 린치의 수주 폭증 성장성, 드러켄밀러의 큰손 수급 턴어라운드가 완벽히 맞아떨어졌습니다. 각 거장 카드를 클릭하시면 재무·수급 세부 근거를 직접 확인하실 수 있습니다."
+        consensus_conclusion = f"{name}{subj_p} 버핏의 본업 경쟁력(ROE {roe_str})과 멍거의 리스크 점검, 그레이엄의 안전마진({upside}), 린치의 성장 스토리, 드러켄밀러의 수급 모멘텀이 조화를 이뤘습니다. 각 거장 카드를 클릭하시면 4개년 재무제표와 최근 {flow_days}일 외인·기관 수급까지 세부 근거를 확인하실 수 있습니다."
         ceo_action_guide = "10만원 한도 내 실시간 분할 매수 집행 (오전 10시 지지선 확인 후 1차 30% ➔ 2차 40% ➔ 3차 30%)"
 
     return {
@@ -5668,6 +6065,9 @@ def _generate_wall_street_council(doc: dict) -> dict:
         "consensus_conclusion": consensus_conclusion,
         "ceo_action_guide": ceo_action_guide,
         "bearish_triggers": trigger_reasons,
+        "company_profile": company_prof,
+        "annual_financials": ann,
+        "daily_flows": daily_flows,
         "snapshot": {
             "stock_name": name,
             "stock_code": code,
@@ -5677,10 +6077,18 @@ def _generate_wall_street_council(doc: dict) -> dict:
             "change_pct": change_pct,
             "market_cap": mcap_str,
             "per": per_str,
+            "cns_per": cns_per_str,
             "pbr": pbr_str,
             "eps": eps_str,
             "cns_eps": cns_eps_str,
+            "bps": bps_str,
             "roe": roe_str,
+            "opm": f"{opm_num:.1f}%" if opm_num is not None else "N/A",
+            "debt_ratio": f"{debt_num:.1f}%" if debt_num is not None else "N/A",
+            "graham_number": graham_num,
+            "peg": peg_num,
+            "stop_price": stop_price_str,
+            "tp1_price": tp1_price_str,
             "dividend_yield": div_str,
             "foreign_rate": frgn_rate,
             "drawdown_52w_pct": dd_52w,
@@ -5695,6 +6103,21 @@ def _generate_wall_street_council(doc: dict) -> dict:
         "risk_limit_rule": "1회 운용 예산(10만원) 한도 엄수 · 단일 종목 몰빵 금지 · 3회 분할 매수 준수",
         "framework_badge": "VIRATTT AI Hedge Fund Multi-Agent System",
     }
+
+
+@router.post("/ceo-office/council-deep")
+def post_ceo_office_council_deep(payload: Dict[str, Any] = Body(...)):
+    """
+    월가 5대 거장 모달 오픈 시 실시간 호출되는 초구체적 심층 분석 API:
+    4개년 연간 재무제표(매출/영업이익/마진/ROE/부채비율) + 최근 5거래일 일별 외인·기관 수급 +
+    공식 기업 사업 개요·테마 + 거장 5인 각자의 4가지 수치 기반 세부 근거를 100% 실시간으로 반환합니다.
+    """
+    try:
+        doc = payload.get("doc") if isinstance(payload.get("doc"), dict) else payload
+        council = _generate_wall_street_council(doc, include_deep=True)
+        return {"status": "ok", "council": council}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @router.get("/ceo-office")

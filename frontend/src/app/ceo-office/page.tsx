@@ -442,6 +442,14 @@ function getWallStreetCouncil(doc: any) {
 
     const isBearish = Boolean(doc?.is_bearish_or_downgrade) || headline.includes('하향') || (upside.includes('-') && upside.includes('%')) || headline.includes('중립');
 
+    const hasBatchim = (() => {
+        if (!name) return true;
+        const code = name.charCodeAt(name.length - 1);
+        if (code >= 0xAC00 && code <= 0xD7A3) return (code - 0xAC00) % 28 !== 0;
+        return false;
+    })();
+    const topicP = hasBatchim ? '은' : '는';
+
     if (isBearish) {
         return {
             analysts: [
@@ -463,7 +471,7 @@ function getWallStreetCouncil(doc: any) {
     } else {
         return {
             analysts: [
-                { id: "buffett", name: "워런 버핏", role: "경제적 해자 & ROE", avatar: "👴", vote: "BUY", vote_label: "🟢 매수 (사자)", confidence: 88, reason: `${name}은 남들이 못 따라 하는 독점 기술과 1등 지배력이 있어, 매달 현금을 아주 안정적으로 잘 법니다.` },
+                { id: "buffett", name: "워런 버핏", role: "경제적 해자 & ROE", avatar: "👴", vote: "BUY", vote_label: "🟢 매수 (사자)", confidence: 88, reason: `${name}${topicP} 남들이 못 따라 하는 독점 기술과 1등 지배력이 있어, 매달 현금을 아주 안정적으로 잘 법니다.` },
                 { id: "munger", name: "찰리 멍거", role: "위대한 기업 & 리스크 배제", avatar: "👓", vote: "BUY", vote_label: "🟢 매수 (사자)", confidence: 86, reason: "망할 위험(부채·치명적 경쟁)이 거의 없는 훌륭한 사업인데, 지금 주가도 거품 없이 아주 착한 가격입니다." },
                 { id: "graham", name: "벤저민 그레이엄", role: "딥 밸류 & 안전마진", avatar: "📜", vote: upside.includes('+') ? "BUY" : "HOLD", vote_label: upside.includes('+') ? "🟢 안전마진 확보" : "🟡 중립", confidence: 78, reason: targetPrice && targetPrice !== "제시안함" ? `목표가(${targetPrice}) 대비 주가가 많이 싸서, 밑으로 떨어질 위험을 막아주는 안전 에어백이 아주 튼튼합니다.` : "회사가 가진 자산에 비해 주가가 바닥권이라, 밑으로 떨어질 위험을 막아주는 안전 에어백이 단단합니다." },
                 { id: "lynch", name: "피터 린치", role: "합리적 성장주 (GARP)", avatar: "👜", vote: "BUY", vote_label: "🟢 성장주 매수", confidence: 92, reason: "일감(주문서)이 쏟아져 매년 가파르게 크고 있는데, 주가는 성장 속도에 비해 아직 너무 저렴한 바겐세일 상태입니다." },
@@ -474,7 +482,7 @@ function getWallStreetCouncil(doc: any) {
             consensus_badge: "🟢 만장일치 적극 매수 (5인 찬성)",
             consensus_summary: `5대 거장 만장일치 추천 ➔ 포트폴리오 목표 비중 18%, 3회 분할 매수 적합`,
             consensus_title: "만장일치 적극 매수 & 분할 편입",
-            consensus_conclusion: `${name}은 버핏의 독점 비법 소스(안정적 현금 창출)와 멍거의 무결점 사업 모델, 그레이엄의 든든한 안전 에어백, 린치의 수주 폭증 성장성, 드러켄밀러의 큰손 수급 턴어라운드가 완벽히 맞아떨어졌습니다. 5대 거장 전원 일치로 실시간 현재가 기준 안전 분할 매수를 강력 권고합니다.`,
+            consensus_conclusion: `${name}${topicP} 버핏의 독점 비법 소스(안정적 현금 창출)와 멍거의 무결점 사업 모델, 그레이엄의 든든한 안전 에어백, 린치의 수주 폭증 성장성, 드러켄밀러의 큰손 수급 턴어라운드가 완벽히 맞아떨어졌습니다. 5대 거장 전원 일치로 실시간 현재가 기준 안전 분할 매수를 강력 권고합니다.`,
             ceo_action_guide: "10만원 한도 내 실시간 분할 매수 집행 (오전 10시 지지선 확인 후 1차 30% ➔ 2차 40% ➔ 3차 30%)",
             risk_limit_rule: "1회 운용 예산(10만원) 한도 엄수 · 단일 종목 몰빵 금지 · 3회 분할 매수 준수"
         };
@@ -4372,6 +4380,41 @@ export default function CeoOfficePage() {
         council: any;
         activeAnalystId: string;
     } | null>(null);
+    const [councilDeepLoading, setCouncilDeepLoading] = useState<boolean>(false);
+
+    // 월가 5대 거장 심층 근거 모달 오픈 시 4개년 재무·5일 수급·기업 개요 실시간 로드
+    useEffect(() => {
+        if (!selectedCouncilDetail) return;
+        const curCouncil = selectedCouncilDetail.council;
+        // 이미 4개년 재무 또는 심층 스냅샷을 불러온 경우 중복 호출 생략
+        if (curCouncil?._deepLoaded) return;
+        let cancelled = false;
+        const loadDeep = async () => {
+            setCouncilDeepLoading(true);
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/market/ceo-office/council-deep`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ doc: selectedCouncilDetail.doc }),
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!cancelled && data.status === 'ok' && data.council) {
+                    setSelectedCouncilDetail((prev) =>
+                        prev ? { ...prev, council: { ...data.council, _deepLoaded: true } } : prev
+                    );
+                }
+            } catch (err) {
+                console.error('Deep council fetch failed:', err);
+            } finally {
+                if (!cancelled) setCouncilDeepLoading(false);
+            }
+        };
+        loadDeep();
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedCouncilDetail?.doc?.doc_id, selectedCouncilDetail?.doc?.stock_name]);
     const [signMap, setSignMap] = useState<Record<string, { status: SignStatus; signedAt: string }>>({});
     const getCeoEmail = useCallback(() => {
         if (user?.email) return user.email;
@@ -11177,6 +11220,9 @@ export default function CeoOfficePage() {
                 const isSell = activeA.vote === 'SELL';
                 const isBuy = activeA.vote === 'BUY';
                 const snap = modalCouncil?.snapshot || {};
+                const compProf = modalCouncil?.company_profile || {};
+                const ann = modalCouncil?.annual_financials || {};
+                const dailyFlows = Array.isArray(modalCouncil?.daily_flows) ? modalCouncil.daily_flows : [];
                 const det = activeA.detailed_analysis || {
                     headline: activeA.reason,
                     checks: [
@@ -11188,7 +11234,9 @@ export default function CeoOfficePage() {
                         },
                     ],
                     report_evidence: modalDoc?.title || modalDoc?.easy_headline || '',
-                    reversal_condition: '실적 추정치 상향 및 외국인·기관 동반 순매수 전환 시 재평가합니다.',
+                    reversal_condition: isBuy
+                        ? '분기 영업이익률이 뚜렷하게 꺾이거나, 외국인·기관 대량 동반 매도와 손절선 이탈 시 관망/축소로 전환합니다.'
+                        : '실적 추정치 상향 및 외국인·기관 동반 순매수 전환 시 재평가합니다.',
                     action_for_non_holder: isSell ? '신규 진입을 보류하고 현금을 안전하게 보관하세요.' : '장중 눌림목 지지선에서 3회 분할 매수로 접근하세요.',
                     action_for_holder: isSell ? '추가 물타기는 피하고 손절 방어선(-3.5%)을 준수하세요.' : '1차 목표가 도달 시 50% 분할 익절로 수익을 확보하세요.',
                 };
@@ -11201,7 +11249,7 @@ export default function CeoOfficePage() {
                         onClick={() => setSelectedCouncilDetail(null)}
                     >
                         <div
-                            className={`w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0a1020] border-2 shadow-2xl p-5 sm:p-7 space-y-5 ${
+                            className={`w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl bg-[#0a1020] border-2 shadow-2xl p-5 sm:p-7 space-y-5 ${
                                 isSell ? 'border-rose-500/50' : isBuy ? 'border-emerald-500/50' : 'border-amber-500/50'
                             }`}
                             onClick={(e) => e.stopPropagation()}
@@ -11219,9 +11267,19 @@ export default function CeoOfficePage() {
                                         }`}>
                                             {activeA.vote_label} · 확신도 {activeA.confidence}점
                                         </span>
-                                        <span className="text-xs text-zinc-400 font-bold">
+                                        <span className="text-xs text-zinc-300 font-black">
                                             {modalDoc?.stock_name || snap.stock_name} {snap.stock_code ? `(${snap.stock_code})` : ''}
                                         </span>
+                                        {compProf?.sector_name && (
+                                            <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 text-[10px] font-bold">
+                                                업종 · {compProf.sector_name}
+                                            </span>
+                                        )}
+                                        {councilDeepLoading && (
+                                            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/40 text-[10px] font-black animate-pulse">
+                                                ⏳ 실시간 4개년 재무·5일 수급·기업개요 불러오는 중...
+                                            </span>
+                                        )}
                                     </div>
                                     <h3 className="text-lg sm:text-2xl font-black text-white flex items-center gap-2">
                                         <span>{activeA.avatar}</span>
@@ -11242,6 +11300,7 @@ export default function CeoOfficePage() {
                             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                                 {analystsList.map((tabA: any) => {
                                     const active = tabA.id === activeA.id;
+                                    const dot = tabA.vote === 'BUY' ? '🟢' : tabA.vote === 'SELL' ? '🔴' : '🟡';
                                     return (
                                         <button
                                             key={tabA.id}
@@ -11255,74 +11314,143 @@ export default function CeoOfficePage() {
                                         >
                                             <span>{tabA.avatar}</span>
                                             <span>{tabA.name}</span>
+                                            <span className="text-[10px] opacity-85">{dot}</span>
                                         </button>
                                     );
                                 })}
                             </div>
 
+                            {/* 2.5 기업 사업 소개 & 핵심 테마 (실시간 WiseReport + 테마 매칭) */}
+                            {(compProf?.company_summary || (Array.isArray(compProf?.theme_tags) && compProf.theme_tags.length > 0)) && (
+                                <div className="p-3.5 rounded-2xl bg-indigo-950/25 border border-indigo-400/25 space-y-2 text-xs">
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <span className="font-black text-indigo-300 flex items-center gap-1.5">
+                                            <span>🏢 이 회사는 무슨 회사인가요?</span>
+                                        </span>
+                                        {Array.isArray(compProf?.theme_tags) && compProf.theme_tags.length > 0 && (
+                                            <div className="flex items-center gap-1 flex-wrap">
+                                                {compProf.theme_tags.map((tg: string, idx: number) => (
+                                                    <span
+                                                        key={idx}
+                                                        className="px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-200 border border-violet-400/30 text-[10px] font-black"
+                                                    >
+                                                        {tg}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {compProf?.company_summary && (
+                                        <p className="text-zinc-200 leading-relaxed break-keep">{compProf.company_summary}</p>
+                                    )}
+                                    {compProf?.theme_summary && (
+                                        <p className="text-[11px] text-indigo-200/80 leading-relaxed break-keep pt-1 border-t border-white/5">
+                                            🎯 핵심 테마 포인트: {compProf.theme_summary}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                             {/* 3. 종목 실제 재무·주가·수급 스냅샷 6칸 */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 bg-black/45 border border-white/10 rounded-2xl p-3.5 text-xs">
-                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
-                                    <div className="text-[10px] text-zinc-400 font-bold">현재가 ➔ 목표주가</div>
-                                    <div className="font-black text-white font-mono mt-0.5 text-[11px] sm:text-xs">
-                                        {(snap.current_price || modalDoc?.current_price || '-').split(' ')[0]} ➔{' '}
-                                        <span className="text-amber-300">{snap.target_price || modalDoc?.target_price || '-'}</span>
+                            <div className="space-y-2.5">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 bg-black/45 border border-white/10 rounded-2xl p-3.5 text-xs">
+                                    <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-zinc-400 font-bold">현재가 ➔ 목표주가</div>
+                                        <div className="font-black text-white font-mono mt-0.5 text-[11px] sm:text-xs">
+                                            {(snap.current_price || modalDoc?.current_price || '-').split(' ')[0]} ➔{' '}
+                                            <span className="text-amber-300">{snap.target_price || modalDoc?.target_price || '-'}</span>
+                                        </div>
+                                        <div className="text-[10px] text-rose-300 font-bold mt-0.5">
+                                            괴리율 {snap.upside_pct || modalDoc?.upside_pct || '-'}
+                                        </div>
                                     </div>
-                                    <div className="text-[10px] text-rose-300 font-bold mt-0.5">
-                                        괴리율 {snap.upside_pct || modalDoc?.upside_pct || '-'}
+                                    <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-zinc-400 font-bold">PER / PBR (밸류에이션)</div>
+                                        <div className="font-black text-white font-mono mt-0.5">
+                                            {snap.per || 'N/A'} / {snap.pbr || 'N/A'}
+                                        </div>
+                                        <div className="text-[10px] text-zinc-400 mt-0.5 font-mono">
+                                            추정PER {snap.cns_per || 'N/A'} · 배당 {snap.dividend_yield || 'N/A'}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-zinc-400 font-bold">ROE · 영업이익률 · 부채</div>
+                                        <div className="font-black text-sky-300 font-mono mt-0.5">
+                                            ROE {snap.roe || '집계 중'}
+                                        </div>
+                                        <div className="text-[10px] text-zinc-400 mt-0.5 font-mono">
+                                            마진 {snap.opm || 'N/A'} · 부채 {snap.debt_ratio || 'N/A'}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-zinc-400 font-bold">52주 고점 대비 / 주당이익(EPS)</div>
+                                        <div className={`font-black font-mono mt-0.5 ${
+                                            typeof snap.drawdown_52w_pct === 'number' && snap.drawdown_52w_pct <= -25 ? 'text-rose-400' : 'text-amber-300'
+                                        }`}>
+                                            {typeof snap.drawdown_52w_pct === 'number' ? `${snap.drawdown_52w_pct > 0 ? '+' : ''}${snap.drawdown_52w_pct}%` : '실시간 추적'}
+                                            {snap.high_52w ? <span className="text-[10px] text-zinc-400 font-normal"> (고점 {snap.high_52w})</span> : null}
+                                        </div>
+                                        <div className="text-[10px] text-zinc-400 mt-0.5 font-mono">
+                                            EPS {snap.eps || 'N/A'}{snap.cns_eps && snap.cns_eps !== 'N/A' ? ` ➔ ${snap.cns_eps}` : ''}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-zinc-400 font-bold">최근 {snap.flow_days || 5}일 외국인 수급</div>
+                                        <div className={`font-black font-mono mt-0.5 ${
+                                            typeof f5 === 'number' ? (f5 >= 0 ? 'text-emerald-400' : 'text-rose-400') : 'text-zinc-300'
+                                        }`}>
+                                            {typeof f5 === 'number' ? `${f5 > 0 ? '+' : ''}${f5.toLocaleString()}주` : '집계 중'}
+                                        </div>
+                                        <div className="text-[10px] text-zinc-400 mt-0.5">
+                                            외인 지분 {snap.foreign_rate || 'N/A'}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                        <div className="text-[10px] text-zinc-400 font-bold">최근 {snap.flow_days || 5}일 기관 수급</div>
+                                        <div className={`font-black font-mono mt-0.5 ${
+                                            typeof o5 === 'number' ? (o5 >= 0 ? 'text-emerald-400' : 'text-rose-400') : 'text-zinc-300'
+                                        }`}>
+                                            {typeof o5 === 'number' ? `${o5 > 0 ? '+' : ''}${o5.toLocaleString()}주` : '집계 중'}
+                                        </div>
+                                        <div className="text-[10px] text-zinc-400 mt-0.5">
+                                            시총 {snap.market_cap || '-'}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
-                                    <div className="text-[10px] text-zinc-400 font-bold">PER / PBR (밸류에이션)</div>
-                                    <div className="font-black text-white font-mono mt-0.5">
-                                        {snap.per || 'N/A'} / {snap.pbr || 'N/A'}
+
+                                {/* 3.5 핵심 실전 가격선 & 거장 핵심 지표 바 */}
+                                {(snap.stop_price || snap.tp1_price || snap.graham_number != null || snap.peg != null) && (
+                                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold">
+                                        {snap.stop_price && (
+                                            <span className="px-2.5 py-1 rounded-xl bg-rose-950/50 border border-rose-500/35 text-rose-200 font-mono">
+                                                🛡️ 손절 방어선(-3.5%): <strong className="text-rose-300">{snap.stop_price}</strong>
+                                            </span>
+                                        )}
+                                        {snap.tp1_price && (
+                                            <span className="px-2.5 py-1 rounded-xl bg-emerald-950/50 border border-emerald-500/35 text-emerald-200 font-mono">
+                                                🎯 1차 분할익절(50%): <strong className="text-emerald-300">{snap.tp1_price}</strong>
+                                            </span>
+                                        )}
+                                        {snap.graham_number != null && (
+                                            <span className={`px-2.5 py-1 rounded-xl border font-mono ${
+                                                snap.graham_number <= 22.5
+                                                    ? 'bg-emerald-950/40 border-emerald-500/35 text-emerald-200'
+                                                    : 'bg-amber-950/40 border-amber-500/35 text-amber-200'
+                                            }`}>
+                                                📜 그레이엄지수(PER×PBR): <strong>{snap.graham_number}</strong> {snap.graham_number <= 22.5 ? '(저평가 통과)' : '(기준 22.5 초과)'}
+                                            </span>
+                                        )}
+                                        {snap.peg != null && (
+                                            <span className={`px-2.5 py-1 rounded-xl border font-mono ${
+                                                snap.peg <= 1.2
+                                                    ? 'bg-sky-950/40 border-sky-500/35 text-sky-200'
+                                                    : 'bg-amber-950/40 border-amber-500/35 text-amber-200'
+                                            }`}>
+                                                👜 피터린치 PEG: <strong>{snap.peg}</strong> {snap.peg <= 1.2 ? '(저평가 성장주)' : '(눌림목 분할)'}
+                                            </span>
+                                        )}
                                     </div>
-                                    <div className="text-[10px] text-zinc-400 mt-0.5">
-                                        배당 {snap.dividend_yield || 'N/A'}
-                                    </div>
-                                </div>
-                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
-                                    <div className="text-[10px] text-zinc-400 font-bold">추정 ROE / 주당이익(EPS)</div>
-                                    <div className="font-black text-sky-300 font-mono mt-0.5">
-                                        {snap.roe || '집계 중'}
-                                    </div>
-                                    <div className="text-[10px] text-zinc-400 mt-0.5 font-mono">
-                                        EPS {snap.eps || 'N/A'}
-                                    </div>
-                                </div>
-                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
-                                    <div className="text-[10px] text-zinc-400 font-bold">52주 고점 대비 위치</div>
-                                    <div className={`font-black font-mono mt-0.5 ${
-                                        typeof snap.drawdown_52w_pct === 'number' && snap.drawdown_52w_pct <= -25 ? 'text-rose-400' : 'text-amber-300'
-                                    }`}>
-                                        {typeof snap.drawdown_52w_pct === 'number' ? `${snap.drawdown_52w_pct > 0 ? '+' : ''}${snap.drawdown_52w_pct}%` : '실시간 추적'}
-                                    </div>
-                                    <div className="text-[10px] text-zinc-400 mt-0.5 font-mono">
-                                        {snap.high_52w ? `최고 ${snap.high_52w}원` : (snap.market_cap || '체급 점검')}
-                                    </div>
-                                </div>
-                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
-                                    <div className="text-[10px] text-zinc-400 font-bold">최근 {snap.flow_days || 5}일 외국인 수급</div>
-                                    <div className={`font-black font-mono mt-0.5 ${
-                                        typeof f5 === 'number' ? (f5 >= 0 ? 'text-emerald-400' : 'text-rose-400') : 'text-zinc-300'
-                                    }`}>
-                                        {typeof f5 === 'number' ? `${f5 > 0 ? '+' : ''}${f5.toLocaleString()}주` : '집계 중'}
-                                    </div>
-                                    <div className="text-[10px] text-zinc-400 mt-0.5">
-                                        외인 지분 {snap.foreign_rate || 'N/A'}
-                                    </div>
-                                </div>
-                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
-                                    <div className="text-[10px] text-zinc-400 font-bold">최근 {snap.flow_days || 5}일 기관 수급</div>
-                                    <div className={`font-black font-mono mt-0.5 ${
-                                        typeof o5 === 'number' ? (o5 >= 0 ? 'text-emerald-400' : 'text-rose-400') : 'text-zinc-300'
-                                    }`}>
-                                        {typeof o5 === 'number' ? `${o5 > 0 ? '+' : ''}${o5.toLocaleString()}주` : '집계 중'}
-                                    </div>
-                                    <div className="text-[10px] text-zinc-400 mt-0.5">
-                                        시총 {snap.market_cap || '-'}
-                                    </div>
-                                </div>
+                                )}
                             </div>
 
                             {/* 4. 거장 핵심 판정 한 줄 결론 */}
@@ -11336,10 +11464,12 @@ export default function CeoOfficePage() {
                                 💡 {det.headline}
                             </div>
 
-                            {/* 5. 구체적 팩트 체크리스트 (3~4항목) */}
+                            {/* 5. 구체적 팩트 체크리스트 (4항목) */}
                             <div className="space-y-2.5">
-                                <div className="text-xs font-black text-zinc-300">
-                                    📋 {activeA.name}이 &apos;{activeA.vote_label}&apos;을 결정한 구체적 세부 근거
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="text-xs font-black text-zinc-200">
+                                        📋 {activeA.name}이 &apos;{activeA.vote_label}&apos;을 결정한 구체적 세부 근거 ({(det.checks || []).length}개 항목)
+                                    </div>
                                 </div>
                                 {(det.checks || []).map((chk: any, cIdx: number) => {
                                     const stBadge = chk.status === 'danger'
@@ -11367,20 +11497,143 @@ export default function CeoOfficePage() {
                                         </div>
                                     );
                                 })}
+                                {councilDeepLoading && (det.checks || []).length <= 1 && (
+                                    <div className="p-4 rounded-2xl bg-slate-900/60 border border-amber-400/30 text-xs text-amber-200 animate-pulse">
+                                        ⏳ 실제 4개년 재무제표 · 그레이엄 안전지수 · PEG · 최근 5일 외인/기관 수급 데이터를 불러와 4가지 세부 근거를 계산하고 있습니다...
+                                    </div>
+                                )}
                             </div>
+
+                            {/* 5.5 📊 최근 4개년 연간 재무 실적표 (실시간 네이버 금융 연동) */}
+                            {Array.isArray(ann?.periods) && ann.periods.length > 0 && (
+                                <div className="rounded-2xl bg-slate-950/80 border border-white/10 p-4 space-y-2.5">
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <div className="text-xs font-black text-sky-300">
+                                            📊 최근 {ann.periods.length}개년 실제 연간 재무 실적표 (단위: 억원 / %)
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] font-mono">
+                                            {typeof ann.rev_yoy_pct === 'number' && (
+                                                <span className={`px-2 py-0.5 rounded border ${ann.rev_yoy_pct >= 0 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30'}`}>
+                                                    매출 YoY {ann.rev_yoy_pct > 0 ? '+' : ''}{ann.rev_yoy_pct}%
+                                                </span>
+                                            )}
+                                            {typeof ann.op_yoy_pct === 'number' && (
+                                                <span className={`px-2 py-0.5 rounded border ${ann.op_yoy_pct >= 0 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30'}`}>
+                                                    영익 YoY {ann.op_yoy_pct > 0 ? '+' : ''}{ann.op_yoy_pct}%
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-[11px] font-mono border-collapse">
+                                            <thead>
+                                                <tr className="border-b border-white/10 text-zinc-400">
+                                                    <th className="py-1.5 px-2 text-left font-sans font-bold">재무 항목</th>
+                                                    {ann.periods.map((p: string, idx: number) => (
+                                                        <th key={idx} className="py-1.5 px-2 text-right font-bold">{p}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5 text-zinc-200">
+                                                {[
+                                                    { label: '매출액 (억)', arr: ann.revenue, highlight: 'text-white font-bold' },
+                                                    { label: '영업이익 (억)', arr: ann.operating_profit, highlight: 'text-amber-300 font-bold' },
+                                                    { label: '당기순이익 (억)', arr: ann.net_income, highlight: 'text-zinc-200' },
+                                                    { label: '영업이익률 (%)', arr: ann.opm, highlight: 'text-sky-300 font-bold', suffix: '%' },
+                                                    { label: 'ROE (%)', arr: ann.roe, highlight: 'text-emerald-300 font-bold', suffix: '%' },
+                                                    { label: '부채비율 (%)', arr: ann.debt_ratio, highlight: 'text-zinc-300', suffix: '%' },
+                                                ].map((row, rIdx) => (
+                                                    <tr key={rIdx} className="hover:bg-white/[0.02]">
+                                                        <td className="py-1.5 px-2 font-sans text-zinc-400 font-bold whitespace-nowrap">{row.label}</td>
+                                                        {(row.arr || []).map((val: string, vIdx: number) => (
+                                                            <td key={vIdx} className={`py-1.5 px-2 text-right whitespace-nowrap ${row.highlight}`}>
+                                                                {val && val !== '-' ? `${val}${row.suffix || ''}` : '-'}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 5.6 💰 최근 5거래일 일자별 외국인·기관·개인 수급표 */}
+                            {dailyFlows.length > 0 && (
+                                <div className="rounded-2xl bg-slate-950/80 border border-white/10 p-4 space-y-2.5">
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <div className="text-xs font-black text-emerald-300">
+                                            💰 최근 {dailyFlows.length}거래일 일자별 외국인·기관·개인 실제 수급 (단위: 주)
+                                        </div>
+                                        <span className="text-[10px] text-zinc-400">초록(+) 순매수 · 빨강(-) 순매도</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-[11px] font-mono border-collapse">
+                                            <thead>
+                                                <tr className="border-b border-white/10 text-zinc-400">
+                                                    <th className="py-1.5 px-2 text-left font-sans font-bold">거래일</th>
+                                                    <th className="py-1.5 px-2 text-right font-sans font-bold">종가</th>
+                                                    <th className="py-1.5 px-2 text-right font-sans font-bold">외국인</th>
+                                                    <th className="py-1.5 px-2 text-right font-sans font-bold">기관</th>
+                                                    <th className="py-1.5 px-2 text-right font-sans font-bold">개인</th>
+                                                    <th className="py-1.5 px-2 text-right font-sans font-bold">외인 지분</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                                {dailyFlows.map((fl: any, fIdx: number) => (
+                                                    <tr key={fIdx} className="hover:bg-white/[0.02]">
+                                                        <td className="py-1.5 px-2 text-zinc-300 font-bold">{fl.date}</td>
+                                                        <td className="py-1.5 px-2 text-right text-white">{fl.close}</td>
+                                                        <td className={`py-1.5 px-2 text-right font-bold ${fl.foreign > 0 ? 'text-emerald-400' : fl.foreign < 0 ? 'text-rose-400' : 'text-zinc-400'}`}>
+                                                            {fl.foreign > 0 ? '+' : ''}{Number(fl.foreign || 0).toLocaleString()}
+                                                        </td>
+                                                        <td className={`py-1.5 px-2 text-right font-bold ${fl.organ > 0 ? 'text-emerald-400' : fl.organ < 0 ? 'text-rose-400' : 'text-zinc-400'}`}>
+                                                            {fl.organ > 0 ? '+' : ''}{Number(fl.organ || 0).toLocaleString()}
+                                                        </td>
+                                                        <td className={`py-1.5 px-2 text-right ${fl.individual > 0 ? 'text-sky-300' : fl.individual < 0 ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                                                            {fl.individual > 0 ? '+' : ''}{Number(fl.individual || 0).toLocaleString()}
+                                                        </td>
+                                                        <td className="py-1.5 px-2 text-right text-zinc-400">{fl.foreign_ratio || '-'}</td>
+                                                    </tr>
+                                                ))}
+                                                {(typeof f5 === 'number' || typeof o5 === 'number') && (
+                                                    <tr className="border-t border-white/15 bg-white/[0.03] font-black">
+                                                        <td className="py-1.5 px-2 font-sans text-amber-300" colSpan={2}>{dailyFlows.length}일 누적 합계</td>
+                                                        <td className={`py-1.5 px-2 text-right ${typeof f5 === 'number' ? (f5 >= 0 ? 'text-emerald-300' : 'text-rose-300') : 'text-zinc-400'}`}>
+                                                            {typeof f5 === 'number' ? `${f5 > 0 ? '+' : ''}${f5.toLocaleString()}` : '-'}
+                                                        </td>
+                                                        <td className={`py-1.5 px-2 text-right ${typeof o5 === 'number' ? (o5 >= 0 ? 'text-emerald-300' : 'text-rose-300') : 'text-zinc-400'}`}>
+                                                            {typeof o5 === 'number' ? `${o5 > 0 ? '+' : ''}${o5.toLocaleString()}` : '-'}
+                                                        </td>
+                                                        <td className="py-1.5 px-2 text-right text-zinc-500" colSpan={2}>실시간 거래소 집계</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* 6. 판정에 직접 반영된 증권사 리포트 근거 */}
                             {det.report_evidence && (
                                 <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-400/30 text-xs space-y-1">
-                                    <div className="font-black text-indigo-300">📰 판정에 반영된 리서치·수급 근거</div>
+                                    <div className="font-black text-indigo-300">📰 판정에 반영된 증권사 리서치·수급 근거</div>
                                     <p className="text-zinc-200 leading-relaxed break-keep">{det.report_evidence}</p>
                                 </div>
                             )}
 
-                            {/* 7. 매수로 바뀔 반전 조건 & 미보유자/보유자 행동 지침 */}
+                            {/* 7. 의견 전환 조건 & 미보유자/보유자 행동 지침 */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                                <div className="p-4 rounded-2xl bg-sky-950/30 border border-sky-500/30 space-y-1.5">
-                                    <div className="font-black text-sky-300">🔄 언제 &apos;매수&apos;로 의견이 바뀔까요?</div>
+                                <div className={`p-4 rounded-2xl border space-y-1.5 ${
+                                    isBuy
+                                        ? 'bg-amber-950/30 border-amber-500/35'
+                                        : 'bg-sky-950/30 border-sky-500/30'
+                                }`}>
+                                    <div className={`font-black ${isBuy ? 'text-amber-300' : 'text-sky-300'}`}>
+                                        {isBuy
+                                            ? "⚠️ 언제 '관망/매도'로 의견이 바뀔까요? (경계 시그널)"
+                                            : "🔄 언제 '매수'로 의견이 바뀔까요? (반전 조건)"}
+                                    </div>
                                     <p className="text-zinc-200 leading-relaxed break-keep">{det.reversal_condition}</p>
                                 </div>
                                 <div className="p-4 rounded-2xl bg-emerald-950/25 border border-emerald-500/30 space-y-2">
