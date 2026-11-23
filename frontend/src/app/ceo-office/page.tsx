@@ -4367,6 +4367,11 @@ export default function CeoOfficePage() {
     const [weeklySubView, setWeeklySubView] = useState<'both' | 'review' | 'calendar'>('both');
     const [weeklyReview, setWeeklyReview] = useState<any>(null);
     const [weeklyCalendar, setWeeklyCalendar] = useState<any>(null);
+    const [selectedCouncilDetail, setSelectedCouncilDetail] = useState<{
+        doc: any;
+        council: any;
+        activeAnalystId: string;
+    } | null>(null);
     const [signMap, setSignMap] = useState<Record<string, { status: SignStatus; signedAt: string }>>({});
     const getCeoEmail = useCallback(() => {
         if (user?.email) return user.email;
@@ -7214,14 +7219,45 @@ export default function CeoOfficePage() {
                                                                                 </div>
 
                                                                                 {/* 5대 거장 개별 분석 상세 카드 헤더 */}
-                                                                                <div className="flex items-center justify-between pt-1">
+                                                                                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                                                                                     <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300">
                                                                                         <span className="text-amber-400">👥</span>
                                                                                         <span>거장 5인 개별 분석 상세 근거</span>
                                                                                         <span className="text-[10px] text-zinc-500 font-normal">(각 대가별 철학 기반 세부 평가)</span>
                                                                                     </div>
-                                                                                    <span className="text-[10px] text-zinc-400">카드를 호버하면 3초 핵심 철학 확인</span>
+                                                                                    <span className="text-[10.5px] text-amber-300 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                                                                                        👆 카드를 클릭하면 실제 재무·수급·리포트 세부 근거 확인
+                                                                                    </span>
                                                                                 </div>
+
+                                                                                {/* 관망/축소·경계 판정 시 핵심 발동 사유 요약 바 */}
+                                                                                {Array.isArray(council.bearish_triggers) && council.bearish_triggers.length > 0 && council.target_allocation_pct === 0 && (
+                                                                                    <div className="bg-rose-950/35 border border-rose-500/35 rounded-xl p-3 space-y-1.5">
+                                                                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                                            <span className="text-[11px] font-black text-rose-300 flex items-center gap-1.5">
+                                                                                                <span>🚨</span>
+                                                                                                <span>왜 &apos;관망/축소&apos; 판정이 내려졌나요? (감지된 핵심 사유 {council.bearish_triggers.length}건)</span>
+                                                                                            </span>
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                onClick={() => setSelectedCouncilDetail({ doc: activeDoc, council, activeAnalystId: council.analysts?.[0]?.id || 'buffett' })}
+                                                                                                className="text-[11px] font-black text-amber-300 hover:text-amber-200 underline underline-offset-2 cursor-pointer"
+                                                                                            >
+                                                                                                5인 세부 근거 전체 펼치기 →
+                                                                                            </button>
+                                                                                        </div>
+                                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                                            {council.bearish_triggers.slice(0, 4).map((tr: string, tIdx: number) => (
+                                                                                                <span
+                                                                                                    key={tIdx}
+                                                                                                    className="text-[10.5px] font-bold text-rose-100 bg-rose-500/20 border border-rose-400/30 px-2.5 py-1 rounded-lg break-keep"
+                                                                                                >
+                                                                                                    • {tr}
+                                                                                                </span>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
 
                                                                                 {/* 5대 거장 카드 그리드 (버핏 · 멍거 · 그레이엄 · 린치 · 드러켄밀러) */}
                                                                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
@@ -7229,10 +7265,10 @@ export default function CeoOfficePage() {
                                                                                         const isBuy = a.vote === 'BUY';
                                                                                         const isSell = a.vote === 'SELL';
                                                                                         const cardBorder = isBuy
-                                                                                            ? 'border-emerald-500/35 hover:border-emerald-400/60 bg-gradient-to-b from-emerald-950/20 via-black/60 to-black/80'
+                                                                                            ? 'border-emerald-500/35 hover:border-emerald-400/80 bg-gradient-to-b from-emerald-950/20 via-black/60 to-black/80'
                                                                                             : isSell
-                                                                                            ? 'border-rose-500/35 hover:border-rose-400/60 bg-gradient-to-b from-rose-950/20 via-black/60 to-black/80'
-                                                                                            : 'border-amber-500/30 hover:border-amber-400/50 bg-gradient-to-b from-amber-950/15 via-black/60 to-black/80';
+                                                                                            ? 'border-rose-500/35 hover:border-rose-400/80 bg-gradient-to-b from-rose-950/20 via-black/60 to-black/80'
+                                                                                            : 'border-amber-500/30 hover:border-amber-400/80 bg-gradient-to-b from-amber-950/15 via-black/60 to-black/80';
 
                                                                                         const badgeColor = isBuy
                                                                                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
@@ -7257,7 +7293,16 @@ export default function CeoOfficePage() {
                                                                                         return (
                                                                                             <div
                                                                                                 key={a.id}
-                                                                                                className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md flex flex-col justify-between ${cardBorder}`}
+                                                                                                role="button"
+                                                                                                tabIndex={0}
+                                                                                                onClick={() => setSelectedCouncilDetail({ doc: activeDoc, council, activeAnalystId: a.id })}
+                                                                                                onKeyDown={(e) => {
+                                                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                                                        e.preventDefault();
+                                                                                                        setSelectedCouncilDetail({ doc: activeDoc, council, activeAnalystId: a.id });
+                                                                                                    }
+                                                                                                }}
+                                                                                                className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md hover:-translate-y-0.5 hover:shadow-lg flex flex-col justify-between cursor-pointer group/card ${cardBorder}`}
                                                                                             >
                                                                                                 <div className="space-y-2">
                                                                                                     {/* 1행: 아바타 + 거장 풀네임 (단독 1행 100% 너비 확보로 글자 잘림 완전 방지) */}
@@ -7324,6 +7369,19 @@ export default function CeoOfficePage() {
                                                                                                     <div className="text-[11px] text-zinc-200 font-medium leading-relaxed break-keep p-2 rounded-lg bg-black/40 border border-white/5 min-h-[58px] flex items-center">
                                                                                                         {a.reason}
                                                                                                     </div>
+                                                                                                </div>
+
+                                                                                                {/* 6행: 세부 근거 팝업 열기 버튼 */}
+                                                                                                <div className={`mt-2.5 pt-2 border-t border-white/10 text-center text-[10.5px] font-black flex items-center justify-center gap-1 transition-colors ${
+                                                                                                    isSell
+                                                                                                        ? 'text-rose-300 group-hover/card:text-rose-200'
+                                                                                                        : isBuy
+                                                                                                        ? 'text-emerald-300 group-hover/card:text-emerald-200'
+                                                                                                        : 'text-amber-300 group-hover/card:text-amber-200'
+                                                                                                }`}>
+                                                                                                    <span>🔍</span>
+                                                                                                    <span>{isSell ? '관망/축소 세부 근거 보기' : isBuy ? '매수 세부 근거 보기' : '중립 세부 근거 보기'}</span>
+                                                                                                    <span>→</span>
                                                                                                 </div>
                                                                                             </div>
                                                                                         );
@@ -11108,6 +11166,237 @@ export default function CeoOfficePage() {
                     본 「AI 증권사 대표이사 전자결재 & 자율 보고 시스템」은 제도권 증권사 리서치센터가 발간한 공개 컨센서스 리포트와 거래소의 객관적 시세·수급 데이터를 자동으로 요약·상정하는 시뮬레이션 시스템입니다. 모든 최종 투자 판단(결재)과 책임은 이용자 본인에게 있습니다.
                 </div>
             </div>
+
+            {/* 🔍 월가 5대 거장 심층 분석 세부 근거 모달 */}
+            {selectedCouncilDetail && (() => {
+                const { doc: modalDoc, council: modalCouncil, activeAnalystId } = selectedCouncilDetail;
+                const analystsList = Array.isArray(modalCouncil?.analysts) ? modalCouncil.analysts : [];
+                const activeA = analystsList.find((x: any) => x.id === activeAnalystId) || analystsList[0];
+                if (!activeA) return null;
+
+                const isSell = activeA.vote === 'SELL';
+                const isBuy = activeA.vote === 'BUY';
+                const snap = modalCouncil?.snapshot || {};
+                const det = activeA.detailed_analysis || {
+                    headline: activeA.reason,
+                    checks: [
+                        {
+                            label: '핵심 판정 근거',
+                            value: activeA.vote_label,
+                            status: isSell ? 'danger' : isBuy ? 'good' : 'warn',
+                            detail: activeA.reason,
+                        },
+                    ],
+                    report_evidence: modalDoc?.title || modalDoc?.easy_headline || '',
+                    reversal_condition: '실적 추정치 상향 및 외국인·기관 동반 순매수 전환 시 재평가합니다.',
+                    action_for_non_holder: isSell ? '신규 진입을 보류하고 현금을 안전하게 보관하세요.' : '장중 눌림목 지지선에서 3회 분할 매수로 접근하세요.',
+                    action_for_holder: isSell ? '추가 물타기는 피하고 손절 방어선(-3.5%)을 준수하세요.' : '1차 목표가 도달 시 50% 분할 익절로 수익을 확보하세요.',
+                };
+                const f5 = snap.foreign_5d_net;
+                const o5 = snap.organ_5d_net;
+
+                return (
+                    <div
+                        className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+                        onClick={() => setSelectedCouncilDetail(null)}
+                    >
+                        <div
+                            className={`w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0a1020] border-2 shadow-2xl p-5 sm:p-7 space-y-5 ${
+                                isSell ? 'border-rose-500/50' : isBuy ? 'border-emerald-500/50' : 'border-amber-500/50'
+                            }`}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* 1. 상단 헤더 */}
+                            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
+                                <div>
+                                    <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border ${
+                                            isSell
+                                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                                : isBuy
+                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                        }`}>
+                                            {activeA.vote_label} · 확신도 {activeA.confidence}점
+                                        </span>
+                                        <span className="text-xs text-zinc-400 font-bold">
+                                            {modalDoc?.stock_name || snap.stock_name} {snap.stock_code ? `(${snap.stock_code})` : ''}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-lg sm:text-2xl font-black text-white flex items-center gap-2">
+                                        <span>{activeA.avatar}</span>
+                                        <span>{activeA.name}의 심층 분석 세부 근거</span>
+                                    </h3>
+                                    <p className="text-xs text-zinc-400 mt-0.5">{activeA.role}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedCouncilDetail(null)}
+                                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-zinc-200 text-xs font-black cursor-pointer shrink-0"
+                                >
+                                    ✕ 닫기
+                                </button>
+                            </div>
+
+                            {/* 2. 5대 거장 빠른 전환 탭 */}
+                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                                {analystsList.map((tabA: any) => {
+                                    const active = tabA.id === activeA.id;
+                                    return (
+                                        <button
+                                            key={tabA.id}
+                                            type="button"
+                                            onClick={() => setSelectedCouncilDetail({ ...selectedCouncilDetail, activeAnalystId: tabA.id })}
+                                            className={`shrink-0 px-3 py-2 rounded-xl text-xs font-black border transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                active
+                                                    ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md'
+                                                    : 'bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10'
+                                            }`}
+                                        >
+                                            <span>{tabA.avatar}</span>
+                                            <span>{tabA.name}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* 3. 종목 실제 재무·주가·수급 스냅샷 6칸 */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 bg-black/45 border border-white/10 rounded-2xl p-3.5 text-xs">
+                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                    <div className="text-[10px] text-zinc-400 font-bold">현재가 ➔ 목표주가</div>
+                                    <div className="font-black text-white font-mono mt-0.5 text-[11px] sm:text-xs">
+                                        {(snap.current_price || modalDoc?.current_price || '-').split(' ')[0]} ➔{' '}
+                                        <span className="text-amber-300">{snap.target_price || modalDoc?.target_price || '-'}</span>
+                                    </div>
+                                    <div className="text-[10px] text-rose-300 font-bold mt-0.5">
+                                        괴리율 {snap.upside_pct || modalDoc?.upside_pct || '-'}
+                                    </div>
+                                </div>
+                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                    <div className="text-[10px] text-zinc-400 font-bold">PER / PBR (밸류에이션)</div>
+                                    <div className="font-black text-white font-mono mt-0.5">
+                                        {snap.per || 'N/A'} / {snap.pbr || 'N/A'}
+                                    </div>
+                                    <div className="text-[10px] text-zinc-400 mt-0.5">
+                                        배당 {snap.dividend_yield || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                    <div className="text-[10px] text-zinc-400 font-bold">추정 ROE / 주당이익(EPS)</div>
+                                    <div className="font-black text-sky-300 font-mono mt-0.5">
+                                        {snap.roe || '집계 중'}
+                                    </div>
+                                    <div className="text-[10px] text-zinc-400 mt-0.5 font-mono">
+                                        EPS {snap.eps || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                    <div className="text-[10px] text-zinc-400 font-bold">52주 고점 대비 위치</div>
+                                    <div className={`font-black font-mono mt-0.5 ${
+                                        typeof snap.drawdown_52w_pct === 'number' && snap.drawdown_52w_pct <= -25 ? 'text-rose-400' : 'text-amber-300'
+                                    }`}>
+                                        {typeof snap.drawdown_52w_pct === 'number' ? `${snap.drawdown_52w_pct > 0 ? '+' : ''}${snap.drawdown_52w_pct}%` : '실시간 추적'}
+                                    </div>
+                                    <div className="text-[10px] text-zinc-400 mt-0.5 font-mono">
+                                        {snap.high_52w ? `최고 ${snap.high_52w}원` : (snap.market_cap || '체급 점검')}
+                                    </div>
+                                </div>
+                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                    <div className="text-[10px] text-zinc-400 font-bold">최근 {snap.flow_days || 5}일 외국인 수급</div>
+                                    <div className={`font-black font-mono mt-0.5 ${
+                                        typeof f5 === 'number' ? (f5 >= 0 ? 'text-emerald-400' : 'text-rose-400') : 'text-zinc-300'
+                                    }`}>
+                                        {typeof f5 === 'number' ? `${f5 > 0 ? '+' : ''}${f5.toLocaleString()}주` : '집계 중'}
+                                    </div>
+                                    <div className="text-[10px] text-zinc-400 mt-0.5">
+                                        외인 지분 {snap.foreign_rate || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="bg-white/[0.03] rounded-xl p-2.5 border border-white/5">
+                                    <div className="text-[10px] text-zinc-400 font-bold">최근 {snap.flow_days || 5}일 기관 수급</div>
+                                    <div className={`font-black font-mono mt-0.5 ${
+                                        typeof o5 === 'number' ? (o5 >= 0 ? 'text-emerald-400' : 'text-rose-400') : 'text-zinc-300'
+                                    }`}>
+                                        {typeof o5 === 'number' ? `${o5 > 0 ? '+' : ''}${o5.toLocaleString()}주` : '집계 중'}
+                                    </div>
+                                    <div className="text-[10px] text-zinc-400 mt-0.5">
+                                        시총 {snap.market_cap || '-'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 4. 거장 핵심 판정 한 줄 결론 */}
+                            <div className={`p-4 rounded-2xl border text-sm font-bold leading-relaxed break-keep ${
+                                isSell
+                                    ? 'bg-rose-950/35 border-rose-500/40 text-rose-100'
+                                    : isBuy
+                                    ? 'bg-emerald-950/35 border-emerald-500/40 text-emerald-100'
+                                    : 'bg-amber-950/30 border-amber-500/40 text-amber-100'
+                            }`}>
+                                💡 {det.headline}
+                            </div>
+
+                            {/* 5. 구체적 팩트 체크리스트 (3~4항목) */}
+                            <div className="space-y-2.5">
+                                <div className="text-xs font-black text-zinc-300">
+                                    📋 {activeA.name}이 &apos;{activeA.vote_label}&apos;을 결정한 구체적 세부 근거
+                                </div>
+                                {(det.checks || []).map((chk: any, cIdx: number) => {
+                                    const stBadge = chk.status === 'danger'
+                                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                        : chk.status === 'good'
+                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                        : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                                    const stIcon = chk.status === 'danger' ? '🔴 위험' : chk.status === 'good' ? '🟢 양호' : '🟡 경계';
+                                    return (
+                                        <div key={cIdx} className="p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 space-y-1.5">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <span className="text-xs sm:text-sm font-black text-white">{chk.label}</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs font-mono font-black text-amber-300 bg-black/50 px-2 py-0.5 rounded border border-white/10">
+                                                        {chk.value}
+                                                    </span>
+                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${stBadge}`}>
+                                                        {stIcon}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-zinc-300 leading-relaxed break-keep">
+                                                {chk.detail}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* 6. 판정에 직접 반영된 증권사 리포트 근거 */}
+                            {det.report_evidence && (
+                                <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-400/30 text-xs space-y-1">
+                                    <div className="font-black text-indigo-300">📰 판정에 반영된 리서치·수급 근거</div>
+                                    <p className="text-zinc-200 leading-relaxed break-keep">{det.report_evidence}</p>
+                                </div>
+                            )}
+
+                            {/* 7. 매수로 바뀔 반전 조건 & 미보유자/보유자 행동 지침 */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                <div className="p-4 rounded-2xl bg-sky-950/30 border border-sky-500/30 space-y-1.5">
+                                    <div className="font-black text-sky-300">🔄 언제 &apos;매수&apos;로 의견이 바뀔까요?</div>
+                                    <p className="text-zinc-200 leading-relaxed break-keep">{det.reversal_condition}</p>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-emerald-950/25 border border-emerald-500/30 space-y-2">
+                                    <div className="font-black text-emerald-300">🛡️ 대표님 실전 행동 가이드</div>
+                                    <div className="text-zinc-200 leading-relaxed break-keep">
+                                        <strong className="text-amber-300">• 미보유 시:</strong> {det.action_for_non_holder}
+                                    </div>
+                                    <div className="text-zinc-200 leading-relaxed break-keep pt-1 border-t border-white/10">
+                                        <strong className="text-rose-300">• 이미 보유 중:</strong> {det.action_for_holder}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }
