@@ -48,7 +48,7 @@ export default function GuideDividendPage() {
               배당(Dividend)이란 무엇인가요?
             </h2>
             <p className="text-lg mb-6">
-              **배당**이란 기업이 한 해(혹은 분기) 동안 영업 활동을 통해 벌어들인 이익의 일부를, 회사에 투자해 준 주주들에게 현금(또는 주식)으로 돌려주는 것을 말합니다. 은행에 예금을 맡기면 이자를 받는 것과 비슷한 개념으로 이해할 수 있지만, 은행 이자와 달리 배당금은 기업의 실적과 정책에 따라 매번 달라질 수 있습니다.
+              <strong className="text-white">배당</strong>이란 기업이 한 해(혹은 분기) 동안 영업 활동을 통해 벌어들인 이익의 일부를, 회사에 투자해 준 주주들에게 현금(또는 주식)으로 돌려주는 것을 말합니다. 은행에 예금을 맡기면 이자를 받는 것과 비슷한 개념으로 이해할 수 있지만, 은행 이자와 달리 배당금은 기업의 실적과 정책에 따라 매번 달라질 수 있습니다.
             </p>
             <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6 mb-6">
               <p className="text-blue-300 font-mono text-center text-lg md:text-xl font-bold">
@@ -83,7 +83,7 @@ export default function GuideDividendPage() {
               <div className="bg-red-900/10 border border-red-500/20 rounded-2xl p-6">
                 <h3 className="text-xl font-bold text-red-400 mb-2">배당락일 (Ex-Dividend Date)</h3>
                 <p className="text-gray-300">
-                  배당기준일의 바로 다음 영업일로, '배당을 받을 권리가 떨어진(떨어질 락) 날'을 의미합니다. 이 날 주식을 매수해도 배당을 받을 수 없습니다. 또한 이 날은 회사의 현금이 배당으로 빠져나가는 만큼, 통상적으로 주가가 **배당금 액수만큼 하락(배당락)**하여 시작하는 경향이 있습니다.
+                  배당기준일의 바로 다음 영업일로, '배당을 받을 권리가 떨어진(떨어질 락) 날'을 의미합니다. 이 날 주식을 매수해도 배당을 받을 수 없습니다. 또한 이 날은 회사의 현금이 배당으로 빠져나가는 만큼, 통상적으로 주가가 <strong className="text-white">배당금 액수만큼 하락(배당락)</strong>하여 시작하는 경향이 있습니다.
                 </p>
               </div>
             </div>
@@ -117,18 +117,18 @@ export default function GuideDividendPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-lg">
-                    AI
+                    편집
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-bold text-base">스마트 투자 비서 퀀트 리서치팀</span>
+                      <span className="text-white font-bold text-base">윤희원 · 스마트 투자 비서 리서치 편집팀</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">감수 완료</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">글로벌 퀀트 알고리즘 및 공공 금융 데이터 분석 전문</p>
+                    <p className="text-xs text-gray-400 mt-0.5">공공 금융 데이터 검증 및 초보자 눈높이 금융 교육 편집 총괄</p>
                   </div>
                 </div>
                 <div className="text-xs text-gray-500 font-mono">
-                  최종 검증: 2026년 9월
+                  최종 검수: 2026년 11월
                 </div>
               </div>
 
@@ -144,17 +144,6 @@ export default function GuideDividendPage() {
               </div>
             </div>
           </section>
-
-
-
-          {/* 교육 목적 면책조항 */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-12 flex gap-4">
-            <Shield className="w-8 h-8 text-gray-500 shrink-0" />
-            <div className="text-sm text-gray-500 leading-relaxed">
-              <strong className="text-gray-400 block mb-1">교육 목적 및 면책 조항 (Investment Disclaimer)</strong>
-              본 문서는 주식 시장의 일반적인 경제 용어(배당, 배당락 등)를 설명하기 위해 작성된 교육용 콘텐츠입니다. 특정 고배당주나 종목을 추천하거나 배당 투자를 권유하는 유사투자자문 목적이 아닙니다. 과거의 배당 지급 이력이 미래의 배당을 보장하지 않으며 주가 변동에 따른 원금 손실 위험이 존재하므로, 최종 투자 결정은 전적으로 투자자 본인의 판단과 책임 하에 이루어져야 합니다.
-            </div>
-          </div>
 
         </div>
 

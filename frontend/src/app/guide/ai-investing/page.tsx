@@ -17,7 +17,7 @@ export default function AIInvestingGuide() {
                 <article className="prose prose-invert prose-cyan lg:prose-xl w-full max-w-none">
                     <h1>초보자를 위한 AI 주식 투자 가이드</h1>
                     <p className="lead">
-                        현대의 주식 시장은 정보의 홍수 속에서 빠르게 변화하고 있습니다. 하루에도 수만 건의 기사가 쏟아지고, 글로벌 기업들의 주가는 복잡하게 얽힌 경제 지표에 의해 쉴 새 없이 오르내립니다. 이러한 혼란 속에서 개인 투자자가 성공하기 위해서는 **감정을 배제하고 데이터를 기반으로 판단하는 인공지능(AI) 분석**이 필수적인 시대가 되었습니다.
+                        현대의 주식 시장은 정보의 홍수 속에서 빠르게 변화하고 있습니다. 하루에도 수만 건의 기사가 쏟아지고, 글로벌 기업들의 주가는 복잡하게 얽힌 경제 지표에 의해 쉴 새 없이 오르내립니다. 이러한 혼란 속에서 개인 투자자가 성공하기 위해서는 <strong className="text-white">감정을 배제하고 데이터를 기반으로 판단하는 인공지능(AI) 분석</strong>이 필수적인 시대가 되었습니다.
                     </p>
 
                     <h2>1. 왜 AI 투자인가?</h2>
@@ -39,7 +39,7 @@ export default function AIInvestingGuide() {
 
                     <h2>3. 포트폴리오 최적화 모델 (Mean-Variance Optimization)</h2>
                     <p>
-                        '계란을 한 바구니에 담지 마라'는 격언은 누구나 알고 있지만, 이를 수학적으로 완벽하게 실천하기는 어렵습니다. AI는 현대 포트폴리오 이론(MPT)에 입각하여 리스크(변동성) 대비 기대 수익률이 가장 높은 **최적의 자산 배분 비율(효율적 전선, Efficient Frontier)**을 계산해 줍니다.
+                        '계란을 한 바구니에 담지 마라'는 격언은 누구나 알고 있지만, 이를 수학적으로 완벽하게 실천하기는 어렵습니다. AI는 현대 포트폴리오 이론(MPT)에 입각하여 리스크(변동성) 대비 기대 수익률이 가장 높은 <strong className="text-white">최적의 자산 배분 비율(효율적 전선, Efficient Frontier)</strong>을 계산해 줍니다.
                     </p>
                     <p>
                         사용자가 선호하는 주식 10개를 선택하기만 하면, AI가 서로의 상관계수(Correlation)를 분석하여 주가가 같이 떨어질 위험을 최소화할 수 있는 가장 이상적인 퍼센티지(%) 비중을 제안합니다.
@@ -47,7 +47,7 @@ export default function AIInvestingGuide() {
 
                     <h2>결론: AI는 대체제가 아닌 강력한 무기</h2>
                     <p>
-                        AI 주식 투자는 인간의 직관을 100% 무시하라는 뜻이 아닙니다. 인간이 발견하지 못한 패턴을 AI가 찾아주고, 인간이 두려워할 때 AI가 객관적인 데이터를 제시해 줌으로써 투자 판단의 승률을 극대화하는 **가장 든든한 파트너**가 되는 것입니다. 지금 바로 AI의 분석 리포트를 확인하고 여러분의 투자 전략에 적용해 보세요!
+                        AI 주식 투자는 인간의 직관을 100% 무시하라는 뜻이 아닙니다. 인간이 발견하지 못한 패턴을 AI가 찾아주고, 인간이 두려워할 때 AI가 객관적인 데이터를 제시해 줌으로써 투자 판단의 승률을 극대화하는 <strong className="text-white">가장 든든한 파트너</strong>가 되는 것입니다. 지금 바로 AI의 분석 리포트를 확인하고 여러분의 투자 전략에 적용해 보세요!
                     </p>
                 
                 {/* E-E-A-T Author & Data Source Credibility Box */}
@@ -56,18 +56,18 @@ export default function AIInvestingGuide() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
                       <div className="flex items-center gap-3.5">
                         <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-lg">
-                          AI
+                          편집
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-bold text-base">스마트 투자 비서 퀀트 리서치팀</span>
+                            <span className="text-white font-bold text-base">윤희원 · 스마트 투자 비서 리서치 편집팀</span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">감수 완료</span>
                           </div>
-                          <p className="text-xs text-gray-400 mt-0.5">글로벌 퀀트 알고리즘 및 공공 금융 데이터 분석 전문</p>
+                          <p className="text-xs text-gray-400 mt-0.5">공공 금융 데이터 검증 및 초보자 눈높이 금융 교육 편집 총괄</p>
                         </div>
                       </div>
                       <div className="text-xs text-gray-500 font-mono">
-                        최종 검증: 2026년 9월
+                        최종 검수: 2026년 11월
                       </div>
                     </div>
 

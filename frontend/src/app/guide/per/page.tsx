@@ -48,7 +48,7 @@ export default function GuidePerPage() {
               PER (주가수익비율)이란 무엇인가요?
             </h2>
             <p className="text-lg mb-6">
-              **PER(Price-to-Earnings Ratio)**은 현재 기업의 1주당 주식 가격을 1주당 순이익(EPS, Earning Per Share)으로 나눈 값을 의미합니다. 쉽게 말해, "이 기업이 지금처럼 1년 동안 돈을 번다면, 내가 투자한 원금을 회수하는 데 몇 년이 걸릴까?"를 나타내는 지표라고 이해할 수 있습니다.
+              <strong className="text-white">PER(Price-to-Earnings Ratio)</strong>은 현재 기업의 1주당 주식 가격을 1주당 순이익(EPS, Earning Per Share)으로 나눈 값을 의미합니다. 쉽게 말해, "이 기업이 지금처럼 1년 동안 돈을 번다면, 내가 투자한 원금을 회수하는 데 몇 년이 걸릴까?"를 나타내는 지표라고 이해할 수 있습니다.
             </p>
             <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6 mb-6">
               <p className="text-blue-300 font-mono text-center text-xl md:text-2xl font-bold">
@@ -118,18 +118,18 @@ export default function GuidePerPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-lg">
-                    AI
+                    편집
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-bold text-base">스마트 투자 비서 퀀트 리서치팀</span>
+                      <span className="text-white font-bold text-base">윤희원 · 스마트 투자 비서 리서치 편집팀</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">감수 완료</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">글로벌 퀀트 알고리즘 및 공공 금융 데이터 분석 전문</p>
+                    <p className="text-xs text-gray-400 mt-0.5">공공 금융 데이터 검증 및 초보자 눈높이 금융 교육 편집 총괄</p>
                   </div>
                 </div>
                 <div className="text-xs text-gray-500 font-mono">
-                  최종 검증: 2026년 9월
+                  최종 검수: 2026년 11월
                 </div>
               </div>
 
@@ -145,17 +145,6 @@ export default function GuidePerPage() {
               </div>
             </div>
           </section>
-
-
-
-          {/* 교육 목적 면책조항 */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-12 flex gap-4">
-            <Shield className="w-8 h-8 text-gray-500 shrink-0" />
-            <div className="text-sm text-gray-500 leading-relaxed">
-              <strong className="text-gray-400 block mb-1">교육 목적 및 면책 조항 (Investment Disclaimer)</strong>
-              본 문서는 주식 시장의 일반적인 경제 용어 및 분석 지표를 설명하기 위해 작성된 교육용 콘텐츠입니다. 특정 기업의 주식이나 금융 상품의 매수, 매도, 유지를 권유하거나 종목을 추천하는 목적(유사투자자문 등)이 아닙니다. 소개된 지표(PER 등)는 수많은 투자 참고 자료 중 하나일 뿐이므로, 실제 투자 결정 시에는 투자자 본인의 독립적인 판단과 책임 하에 신중히 진행하시기 바랍니다.
-            </div>
-          </div>
 
         </div>
 

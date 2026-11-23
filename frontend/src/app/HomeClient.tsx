@@ -59,6 +59,12 @@ export default function HomeClient() {
               </>
             )}
             <Link
+              href="/economics"
+              className="px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold transition-all"
+            >
+              🎓 1일 1경제학
+            </Link>
+            <Link
               href="/blog"
               className="px-2 py-1 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 font-bold transition-all"
             >

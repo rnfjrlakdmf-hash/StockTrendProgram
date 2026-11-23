@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { Clock, ArrowLeft, Eye, BookOpen, ChevronLeft, ChevronRight, GraduationCap } from "lucide-react";
 import SocialShareButtons from "@/components/SocialShareButtons";
@@ -21,14 +22,13 @@ interface RelatedSummary {
 }
 
 async function getEconomicsDetail(slug: string): Promise<{
-    post: EconomicsPost;
+    post: EconomicsPost | null;
     prevPost: RelatedSummary | null;
     nextPost: RelatedSummary | null;
     relatedPosts: RelatedSummary[];
 }> {
     const decodedSlug = decodeURIComponent(slug);
-    const fallbackPost =
-        FALLBACK_ECONOMICS_POSTS.find((p) => p.slug === decodedSlug) || FALLBACK_ECONOMICS_POSTS[0];
+    const exactFallback = FALLBACK_ECONOMICS_POSTS.find((p) => p.slug === decodedSlug) || null;
 
     try {
         const controller = new AbortController();
@@ -41,7 +41,7 @@ async function getEconomicsDetail(slug: string): Promise<{
         clearTimeout(timeoutId);
 
         if (!res.ok) {
-            return { post: fallbackPost, prevPost: null, nextPost: null, relatedPosts: [] };
+            return { post: exactFallback, prevPost: null, nextPost: null, relatedPosts: [] };
         }
         const data = await res.json();
         if (data.status === "ok" && data.post) {
@@ -52,9 +52,9 @@ async function getEconomicsDetail(slug: string): Promise<{
                 relatedPosts: data.relatedPosts || [],
             };
         }
-        return { post: fallbackPost, prevPost: null, nextPost: null, relatedPosts: [] };
+        return { post: exactFallback, prevPost: null, nextPost: null, relatedPosts: [] };
     } catch {
-        return { post: fallbackPost, prevPost: null, nextPost: null, relatedPosts: [] };
+        return { post: exactFallback, prevPost: null, nextPost: null, relatedPosts: [] };
     }
 }
 
@@ -65,6 +65,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
     const resolved = await params;
     const { post } = await getEconomicsDetail(resolved.slug);
+    if (!post) {
+        return {
+            title: "경제학 강의를 찾을 수 없습니다 | 스마트 투자 비서",
+            robots: { index: false, follow: false },
+        };
+    }
     const desc =
         post.oneLineDef ||
         post.summary ||
@@ -104,6 +110,9 @@ export default async function EconomicsDetailPage({
 }) {
     const resolved = await params;
     const { post, prevPost, nextPost, relatedPosts } = await getEconomicsDetail(resolved.slug);
+    if (!post) {
+        notFound();
+    }
 
     const createdDateObj = post.createdAt ? new Date(post.createdAt) : new Date();
     const validDate = isNaN(createdDateObj.getTime()) ? new Date() : createdDateObj;

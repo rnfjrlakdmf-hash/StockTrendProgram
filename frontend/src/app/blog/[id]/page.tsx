@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Clock, ArrowLeft, UserCheck, Eye } from "lucide-react";
 import { Metadata } from "next";
 import SocialShareButtons from "@/components/SocialShareButtons";
@@ -9,78 +10,54 @@ import { API_BASE_URL } from "@/lib/config";
 
 export const revalidate = 60; // 60초마다 갱신 (ISR)
 
+const BLOG_STATIC_POOL = STATIC_POSTS.slice(0, 13);
+
 export async function generateStaticParams() {
-    return STATIC_POSTS.map(post => ({
+    return BLOG_STATIC_POOL.map(post => ({
         id: post.slug
     }));
-}
-
-const EDITORIAL_SUPPLEMENT_HTML = `
-<hr style="border-color: rgba(255,255,255,0.1); margin: 2.5rem 0;" />
-<h2>심층 리서치 부록: 기업 재무제표 및 거시경제 정량 분석 프레임워크</h2>
-<p>주식 시장에서 단기적인 뉴스나 시장 노이즈에 흔들리지 않고 장기적인 복리 수익을 달성하기 위해서는 <strong>기업의 본질적 내재가치(Intrinsic Value)</strong>와 <strong>거시경제 유동성 사이클</strong>을 정량적 지표로 교차 검증하는 과정이 필수적입니다. 스마트 투자 비서 리서치팀은 모든 시황 및 기업 분석 시 다음의 3단계 검증 기준을 적용합니다.</p>
-<h3>1. 수익성 및 밸류에이션 멀티플 검증 (PER · PBR · ROE)</h3>
-<p>기업의 주가가 현재 이익과 순자산 대비 적정한 수준에 거래되고 있는지 판단하기 위해 <strong>주가수익비율(PER)</strong>과 <strong>주가순자산비율(PBR)</strong>, 그리고 <strong>자기자본이익률(ROE)</strong>을 동종 업계(Peer Group) 평균 및 과거 5개년 히스토리컬 밴드와 비교합니다. 특히 일회성 영업외수익을 제외한 <strong>영업이익(Operating Profit)</strong>과 <strong>잉여현금흐름(FCF)</strong>이 뒷받침되는 실적 성장이 확인될 때에만 밸류에이션 리레이팅(재평가)이 지속될 수 있습니다.</p>
-<h3>2. 금융감독원 전자공시(DART) 및 수급 주체별 포지션 점검</h3>
-<p>분기별 사업보고서와 단일판매·공급계약 공시, 전환사채(CB) 및 신주인수권부사채(BW) 발행 잔액(오버행 리스크), 최대주주 지분율 변동 등 공시 원문 데이터를 반드시 확인해야 합니다. 아울러 한국거래소(KRX)의 외국인·기관(연기금·투신·사모펀드) 순매수 누적 추이를 통해 스마트 머니의 중기 수급 방향성을 함께 점검하시기 바랍니다.</p>
-`;
-
-function getFallbackStaticPost(slug: string) {
-    let hash = 0;
-    for (let i = 0; i < slug.length; i++) {
-        hash = (hash * 31 + slug.charCodeAt(i)) >>> 0;
-    }
-    const chosen = STATIC_POSTS[hash % STATIC_POSTS.length];
-    return {
-        ...chosen,
-        createdAt: chosen.createdAt ? new Date(chosen.createdAt) : new Date()
-    };
 }
 
 async function getBlogPost(slug: string) {
     try {
         const decodedSlug = decodeURIComponent(slug);
-        
-        // 1. 정적 포스트에서 먼저 검색 (0ms 즉시 반환 및 Cloudflare 403 차단 방지)
-        const staticPost = STATIC_POSTS.find(p => p.slug === decodedSlug || p.id === decodedSlug);
+
+        // 1. 블로그 전용 정적 포스트에서 먼저 검색 (/theory와 중복 방지)
+        const staticPost = BLOG_STATIC_POOL.find(p => p.slug === decodedSlug || p.id === decodedSlug);
         if (staticPost) {
             return {
                 ...staticPost,
                 createdAt: staticPost.createdAt ? new Date(staticPost.createdAt) : new Date()
             };
         }
-        
+
         // 2. 백엔드 API를 통해 동적 블로그 포스트 상세 데이터를 가져옴
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 4000);
         const baseUrl = API_BASE_URL || (typeof window === 'undefined' ? "http://127.0.0.1:8000" : "");
         const apiUrl = `${baseUrl}/api/blog/posts/${encodeURIComponent(decodedSlug)}`;
-        const res = await fetch(apiUrl, { 
+        const res = await fetch(apiUrl, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) StockTrendSSR/1.0' },
             next: { revalidate: 60 },
             signal: controller.signal
         });
         clearTimeout(timeoutId);
-        
+
         if (!res.ok) {
-            return getFallbackStaticPost(decodedSlug);
+            return null;
         }
-        
+
         const data = await res.json();
-        
+
         if (data.status === "ok" && data.post) {
             const post = data.post;
             post.createdAt = post.createdAt ? new Date(post.createdAt) : new Date();
-            if (!post.content || String(post.content).length < 1800) {
-                post.content = String(post.content || '') + EDITORIAL_SUPPLEMENT_HTML;
-            }
             return post;
         }
-        
-        return getFallbackStaticPost(decodedSlug);
 
+        return null;
     } catch {
-        return getFallbackStaticPost(slug);
+        return null;
     }
 }
 
@@ -88,6 +65,12 @@ async function getBlogPost(slug: string) {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
     const resolvedParams = await params;
     const post = await getBlogPost(resolvedParams.id);
+    if (!post) {
+        return {
+            title: '리포트를 찾을 수 없습니다 | 스마트 투자 비서',
+            robots: { index: false, follow: false },
+        };
+    }
 
     return {
         title: `${post.title} | 오늘의 마켓 리포트 - StockTrend`,
@@ -122,6 +105,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function BlogPostPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = await params;
     const post = await getBlogPost(resolvedParams.id);
+    if (!post) {
+        notFound();
+    }
 
     const displayAuthor = (!post.author || post.author === '관리자' || post.author === 'admin') 
         ? "StockTrend 수석 금융 애널리스트팀 (윤희원 대표)" 

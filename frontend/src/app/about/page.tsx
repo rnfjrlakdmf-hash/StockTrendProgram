@@ -44,16 +44,16 @@ export default function AboutPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-xl font-bold text-blue-400">S</div>
+                  <div className="w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-xl font-bold text-blue-400">윤</div>
                   <div>
-                    <div className="font-bold text-white">StockTrend 리서치팀</div>
-                    <div className="text-xs text-gray-500">서비스 운영 총괄</div>
+                    <div className="font-bold text-white">윤희원 · StockTrend 리서치 편집팀</div>
+                    <div className="text-xs text-gray-500">발행인 · 편집책임자 · 데이터 시스템 운영</div>
                   </div>
                 </div>
                 <p className="text-sm text-gray-400 leading-relaxed">
-                  국내외 금융 시장 데이터 수집·분석 시스템 개발과 운영을 담당합니다.
-                  금융감독원 DART, 한국거래소(KRX), 미국 증권거래위원회(SEC) 등 공공 데이터 API를
-                  활용하여 투자자에게 유용한 정보를 제공하는 것을 목표로 합니다.
+                  국내외 금융 시장 공공데이터 수집·분석 시스템 개발과 교육 콘텐츠 편집을 총괄합니다.
+                  금융감독원 DART, 한국거래소(KRX), 미국 증권거래위원회(SEC) 원천 데이터를
+                  4단계 팩트체크(공시 원문 확인 → 수치 교차 검증 → 초보자 눈높이 감수 → 정정 공지)를 거쳐 투명하게 제공합니다.
                 </p>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
@@ -106,7 +106,7 @@ export default function AboutPage() {
             </p>
             <ul className="list-disc list-inside space-y-3 text-gray-400">
               <li><strong className="text-gray-300">투자 종목 추천 완전 금지:</strong> 특정 주식의 매수·매도를 지시하거나 권유하는 콘텐츠를 일절 게시하지 않습니다.</li>
-              <li><strong className="text-gray-300">근거 없는 예측 배제:</strong> "오를 주식", "대박 종목" 등의 예측성 표현을 사용하지 않으며, 오직 확정된 공시 원문과 통계 데이터만을 전달합니다.</li>
+              <li><strong className="text-gray-300">근거 없는 과장 예측 배제:</strong> 확인되지 않은 수익 보장이나 자극적 추천 표현을 일절 사용하지 않으며, 오직 확정된 공시 원문과 객관적 통계 데이터만을 전달합니다.</li>
               <li><strong className="text-gray-300">순수 정보 서비스:</strong> 당사의 모든 분석은 공개된 재무제표와 공시 데이터를 기반으로 자동 요약된 것으로, 교육 및 정보 참고 목적으로만 제공됩니다.</li>
               <li><strong className="text-gray-300">맞춤형 투자 상담 거절:</strong> 개인별 투자 성향을 분석하거나 특정인을 위한 포트폴리오를 구성하는 서비스를 제공하지 않습니다.</li>
             </ul>

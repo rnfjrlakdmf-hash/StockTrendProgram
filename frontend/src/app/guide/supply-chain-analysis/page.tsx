@@ -17,15 +17,15 @@ export default function SupplyChainGuide() {
                 <article className="prose prose-invert prose-cyan lg:prose-xl w-full max-w-none">
                     <h1>글로벌 공급망 지도 분석 가이드</h1>
                     <p className="lead">
-                        현대 경제는 거미줄처럼 복잡하게 얽혀 있습니다. 미국에 위치한 애플(Apple)의 신제품 발표가 대만 TSMC의 실적을 끌어올리고, 한국 LG디스플레이의 주가를 요동치게 만듭니다. 이를 <strong>공급망 나비효과(Supply Chain Butterfly Effect)</strong>라고 부릅니다. 특정 기업의 주가를 예측하기 위해서는 그 기업만 분석하는 것이 아니라, 그들을 둘러싼 **전체 생태계(공급사, 고객사, 경쟁사)**를 한눈에 파악하는 것이 필수적입니다.
+                        현대 경제는 거미줄처럼 복잡하게 얽혀 있습니다. 미국에 위치한 애플(Apple)의 신제품 발표가 대만 TSMC의 실적을 끌어올리고, 한국 LG디스플레이의 주가를 요동치게 만듭니다. 이를 <strong>공급망 나비효과(Supply Chain Butterfly Effect)</strong>라고 부릅니다. 특정 기업의 주가를 예측하기 위해서는 그 기업만 분석하는 것이 아니라, 그들을 둘러싼 <strong className="text-white">전체 생태계(공급사, 고객사, 경쟁사)</strong>를 한눈에 파악하는 것이 필수적입니다.
                     </p>
 
                     <h2>공급망 분석이 중요한 이유</h2>
                     <p>
-                        과거에는 기업의 재무제표(매출, 영업이익)만 보고 투자하는 방식이 유행했습니다. 하지만 오늘날처럼 지정학적 리스크가 크고 공급망 교란이 자주 일어나는 시기에는, 재무제표에 숫자가 찍히기 전에 **공장 가동 중단이나 부품 수급 문제**가 먼저 발생합니다. 
+                        과거에는 기업의 재무제표(매출, 영업이익)만 보고 투자하는 방식이 유행했습니다. 하지만 오늘날처럼 지정학적 리스크가 크고 공급망 교란이 자주 일어나는 시기에는, 재무제표에 숫자가 찍히기 전에 <strong className="text-white">공장 가동 중단이나 부품 수급 문제</strong>가 먼저 발생합니다. 
                     </p>
                     <p>
-                        예를 들어, 스마트폰을 만드는 회사의 주식을 샀다고 가정해 봅시다. 만약 이 회사의 핵심 칩을 공급하는 협력사에 공장 화재가 발생했다면? 스마트폰 생산은 당연히 차질을 빚고, 매출은 폭락하게 될 것입니다. 스마트폰 회사의 뉴스만 보고 있으면 이 사실을 뒤늦게 알게 되지만, **공급망 지도를 통해 칩 공급사의 동향을 실시간으로 감시**하고 있다면 누구보다 빨리 폭락장을 피할 수 있습니다.
+                        예를 들어, 스마트폰을 만드는 회사의 주식을 샀다고 가정해 봅시다. 만약 이 회사의 핵심 칩을 공급하는 협력사에 공장 화재가 발생했다면? 스마트폰 생산은 당연히 차질을 빚고, 매출은 폭락하게 될 것입니다. 스마트폰 회사의 뉴스만 보고 있으면 이 사실을 뒤늦게 알게 되지만, <strong className="text-white">공급망 지도를 통해 칩 공급사의 동향을 실시간으로 감시</strong>하고 있다면 누구보다 빨리 폭락장을 피할 수 있습니다.
                     </p>
 
                     <h2>글로벌 가치 사슬 (Global Value Chain, GVC)의 3가지 핵심 요소</h2>
@@ -37,7 +37,7 @@ export default function SupplyChainGuide() {
 
                     <h2>AI가 찾아내는 '위기'와 '기회'</h2>
                     <p>
-                        하지만 전 세계 수만 개의 상장 기업들이 맺고 있는 공급망 관계를 사람이 일일이 조사하고 엑셀로 정리하는 것은 불가능에 가깝습니다. 바로 이 지점에서 **AI 기반의 공급망 분석기**가 강력한 힘을 발휘합니다.
+                        하지만 전 세계 수만 개의 상장 기업들이 맺고 있는 공급망 관계를 사람이 일일이 조사하고 엑셀로 정리하는 것은 불가능에 가깝습니다. 바로 이 지점에서 <strong className="text-white">AI 기반의 공급망 분석기</strong>가 강력한 힘을 발휘합니다.
                     </p>
                     <p>
                         AI는 전 세계 경제 기사, 공시 자료, 수출입 통계 데이터를 읽어들여 <strong>누가 누구에게 물건을 납품하고 있는지</strong> 자동으로 네트워크 맵을 그려냅니다. 특정 기업을 검색하면, 중앙에 타겟 기업을 배치하고 좌측에는 부품 공급사, 우측에는 고객사와 경쟁사를 거미줄처럼 펼쳐줍니다.
@@ -46,7 +46,7 @@ export default function SupplyChainGuide() {
                     <h2>실전 투자 활용법</h2>
                     <ol>
                         <li><strong>연쇄 하락 방어:</strong> 내가 보유한 주식의 주요 고객사 주가가 떨어질 때, 연쇄적인 실적 하락을 예상하고 선제적으로 비중을 축소합니다.</li>
-                        <li><strong>숨겨진 수혜주 발굴:</strong> 엔비디아(NVIDIA)가 폭등할 때 이미 가격이 비싸서 사지 못했다면? 공급망 지도를 펼쳐서 엔비디아에 HBM 메모리를 납품하거나 냉각 장치를 공급하는 **아직 오르지 않은 중소형 부품주**를 찾아내 투자합니다.</li>
+                        <li><strong>숨겨진 수혜주 발굴:</strong> 엔비디아(NVIDIA)가 폭등할 때 이미 가격이 비싸서 사지 못했다면? 공급망 지도를 펼쳐서 엔비디아에 HBM 메모리를 납품하거나 냉각 장치를 공급하는 <strong className="text-white">아직 오르지 않은 중소형 부품주</strong>를 찾아내 투자합니다.</li>
                         <li><strong>이벤트(D-Day) 추적:</strong> 주요 경쟁사의 실적 발표일이나 신제품 공개일 등 핵심 일정을 놓치지 않고 체크하여 변동성 장세에 대비합니다.</li>
                     </ol>
                     <p>
@@ -59,18 +59,18 @@ export default function SupplyChainGuide() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
                       <div className="flex items-center gap-3.5">
                         <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-lg">
-                          AI
+                          편집
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-bold text-base">스마트 투자 비서 퀀트 리서치팀</span>
+                            <span className="text-white font-bold text-base">윤희원 · 스마트 투자 비서 리서치 편집팀</span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">감수 완료</span>
                           </div>
-                          <p className="text-xs text-gray-400 mt-0.5">글로벌 퀀트 알고리즘 및 공공 금융 데이터 분석 전문</p>
+                          <p className="text-xs text-gray-400 mt-0.5">공공 금융 데이터 검증 및 초보자 눈높이 금융 교육 편집 총괄</p>
                         </div>
                       </div>
                       <div className="text-xs text-gray-500 font-mono">
-                        최종 검증: 2026년 9월
+                        최종 검수: 2026년 11월
                       </div>
                     </div>
 

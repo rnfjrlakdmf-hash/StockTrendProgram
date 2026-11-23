@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-[#09090b] text-gray-200">
       <div className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-black text-white mb-2">개인정보처리방침</h1>
-        <p className="text-gray-500 text-sm mb-2">최종 업데이트: 2026년 8월 18일</p>
+        <p className="text-gray-500 text-sm mb-2">최종 업데이트: 2026년 11월 23일</p>
         <p className="text-gray-500 text-sm mb-12">본 방침은 스마트 투자 비서(stock-trend-program.co.kr)의 개인정보 수집·이용·보호에 관한 사항을 안내합니다.</p>
 
         <div className="space-y-10 text-gray-300 leading-relaxed">

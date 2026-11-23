@@ -14,7 +14,7 @@ export default function DisclaimerPage() {
         <div className="min-h-screen bg-[#09090b] text-gray-200">
             <div className="max-w-4xl mx-auto px-6 py-16 animate-in fade-in duration-500">
                 <h1 className="text-3xl font-black text-white mb-2">면책 조항 (Legal Disclaimer)</h1>
-                <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2026년 8월 18일</p>
+                <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2026년 11월 23일</p>
 
                 <div className="space-y-10 text-gray-300 leading-relaxed">
                     

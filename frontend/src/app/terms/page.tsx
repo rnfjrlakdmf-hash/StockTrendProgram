@@ -11,28 +11,28 @@ export default function TermsPage() {
     <div className="min-h-screen bg-[#09090b] text-gray-200">
       <div className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="text-3xl font-black text-white mb-2">이용약관</h1>
-        <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2026년 8월 18일</p>
+        <p className="text-gray-500 text-sm mb-12">최종 업데이트: 2026년 11월 23일</p>
 
         <div className="space-y-10 text-gray-300 leading-relaxed">
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">제1조 (목적)</h2>
             <p>
-              본 약관은 AI 주식 분석 플랫폼(이하 &quot;서비스&quot;)이 제공하는 모든 서비스의
-              이용 조건 및 절차, 이용자와 서비스 간의 권리, 의무 및 책임 사항을 규정함을 목적으로 합니다.
+              본 약관은 스마트 투자 비서(StockTrend, 이하 &quot;서비스&quot;)가 제공하는 금융 교육 칼럼,
+              경제학 아카데미, 용어 백과사전 및 공공 금융 데이터 리서치 서비스의 이용 조건과 절차,
+              이용자와 운영자 간의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">제2조 (서비스 내용)</h2>
-            <p>본 서비스는 다음과 같은 기능을 제공합니다:</p>
+            <p>본 서비스는 독자의 금융 이해도를 높이기 위해 다음과 같은 무료 교육·리서치 콘텐츠를 제공합니다:</p>
             <ul className="list-disc ml-6 mt-3 space-y-1 text-gray-400">
-              <li>AI 기반 주식 종목 분석 및 점수화</li>
-              <li>국내외 주가 데이터 조회</li>
-              <li>재무제표 및 기업 정보 제공</li>
-              <li>관심 종목 등록 및 관리</li>
-              <li>주가 알림 서비스</li>
-              <li>커뮤니티 기반 투자 토론</li>
+              <li>매일 1일 1경제학 공부방 및 46대 필수 주식 용어 백과사전</li>
+              <li>거시경제 시황 칼럼 및 20대 핵심 산업 밸류체인 리서치</li>
+              <li>차트·보조지표 및 기업 재무제표 독해 아카데미</li>
+              <li>금융감독원 DART·KRX·SEC 공공데이터 기반 정량 요약 및 주식 계산기</li>
+              <li>관심 종목 정리 및 개인화 설정 기능</li>
             </ul>
           </section>
 

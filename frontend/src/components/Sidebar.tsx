@@ -13,47 +13,45 @@ import LoginModal from "./LoginModal";
 
 const navigationGroups = [
     {
-        groupName: "홈 & 핵심 상황판",
+        groupName: "금융 리서치 & 교육 아카데미",
         items: [
-            { name: "통합 대시보드", href: "/", icon: LayoutDashboard, desc: "오늘의 주가지수, 헤드라인 뉴스 및 전체 시장 상황을 한눈에 요약해 주는 종합 상황판입니다.", badge: "HOME" },
-            { name: "글로벌 마켓 시그널", href: "/signals", icon: Activity, desc: "달러 환율, 국제 유가, 금값 및 오늘 밤 발표될 세계 경제 지표를 보여주는 경제 기상도입니다.", badge: "LIVE" },
-            { name: "대표이사 집무실 · 임원회의", href: "/ceo-office", icon: Crown, desc: "리서치센터장·퀀트본부장·리스크관리본부장(CRO) 등 5인의 AI 임원진이 대표님께 대면 보고하고 종목별 끝장 토론 및 리포트 결재를 올리는 살아있는 증권사 시스템입니다.", badge: "대표전용", adminOnly: true },
-            { name: "AI 매매 전략 자율 연습장", href: "/ceo-office?tab=lab", icon: FlaskConical, desc: "평소 생각하신 매매 규칙을 5년 주가로 시험하고, 돈을 잃은 원인을 분석하여 스스로 규칙을 고치는 AI 매매 연습장입니다.", badge: "스스로교정", adminOnly: true },
-        ]
-    },
-    {
-        groupName: "종목 발굴 & 퀀트 분석",
-        items: [
-            { name: "장마감 수급 스캐너", href: "/signals?tab=scanner", icon: Flame, desc: "정규장 마감 수급 집중주 & 기술적 벤치마크선 도달 통계를 퀀트 알고리즘으로 추적합니다.", badge: "HOT" },
-            { name: "종목 발굴 & 수급 분석", href: "/discovery", icon: Compass, desc: "기관 및 외국인 투자자의 순매수 통계와 재무 지표를 기반으로 종목을 탐색합니다." },
-            { name: "실시간 테마 트래커", href: "/theme", icon: Sparkles, desc: "오늘 시장에서 자금이 가장 집중되며 급상승하고 있는 인기 테마 그룹과 대장 주식을 보여줍니다.", badge: "HOT" },
-            { name: "기술적 패턴 분석", href: "/pattern", icon: LineChart, desc: "골든크로스, 지지선/저항선, 캔들 차트 패턴을 정밀 분석합니다." },
-            { name: "기업 펀더멘탈 분석", href: "/analysis", icon: BarChart3, desc: "회사의 실적, 부채, 밸류에이션 등 재무 건전성을 체계적으로 검사합니다." },
-            { name: "글로벌 서플라이 체인", href: "/supply-chain", icon: Network, desc: "기업 간 부품 공급망 및 밸류체인 인맥도를 지도로 보여줍니다." },
-            { name: "국내·해외 ETF 비교", href: "/etf", icon: Activity, desc: "시장 전체나 유망 산업 분야에 분산 투자할 수 있는 ETF를 비교합니다." },
-            { name: "미국 혁신 신생기업", href: "/emerging", icon: Rocket, desc: "우주항공, 양자컴, UAM, 차세대 AI 등 초보자를 위한 미국 차세대 혁신 신생기업 큐레이션입니다." },
-        ]
-    },
-    {
-        groupName: "마켓 리서치 & 심층 리포트",
-        items: [
-            { name: "전문가 마켓 리포트", href: "/blog", icon: Newspaper, desc: "전문가가 매일 분석하는 국내/미국 증시 시황과 핵심 주도 테마 심층 리포트를 제공합니다.", badge: "매일발행" },
-            { name: "일간 퀀트 수급 리포트", href: "/premium", icon: Gem, desc: "실제 시장 데이터를 기반으로 외국인과 기관의 순매수 통계를 보여주는 데이터 리포트입니다." },
-            { name: "주간 마켓 인사이트", href: "/weekend-report", icon: Newspaper, desc: "한 주간의 증시 핵심 흐름과 다음 주 거시경제 일정을 정리한 종합 리포트입니다." },
-            { name: "주간 메이저 수급 리포트", href: "/weekend-whale", icon: Crown, desc: "외국인과 기관이 집중 매집한 주요 섹터와 종목을 분석하는 수급 리포트입니다." },
-            { name: "국내·해외 전 자산군 리서치", href: "/research", icon: Globe, desc: "국내 종목, 미국 해외주식(월가 IB 목표주가), 국내외 ETF, 나스닥·금·원유 선물까지 전 자산군 리서치 분석을 실시간 조회합니다.", badge: "LIVE" },
-        ]
-    },
-    {
-        groupName: "금융 아카데미 & 자산 관리",
-        items: [
+            { name: "통합 대시보드", href: "/", icon: LayoutDashboard, desc: "거시경제 핵심 지표, 최신 금융 칼럼 및 투자 지식 아카이브를 한눈에 확인합니다.", badge: "HOME" },
             { name: "매일 1일 1경제학 공부방", href: "/economics", icon: GraduationCap, desc: "초보자도 하루 5분, 주제가 단 하나도 겹치지 않게 매일 하나씩 일상 비유·그림·퀴즈로 배우는 180일+ 경제학 아카데미입니다.", badge: "매일1강" },
-            { name: "1타 강사 차트 스터디", href: "/theory", icon: BookOpen, desc: "차트 보는 법과 실전 주식 기초 이론, 보조지표 매매타점을 119개 강의로 체계적으로 학습합니다.", badge: "119강" },
-            { name: "주식 투자 용어 백과 (46선)", href: "/guide", icon: HelpCircle, desc: "PER·PBR·ROE 기업 가치평가부터 DART 전자공시 독해, 매크로 지표까지 총망라한 46대 필수 주식 백과사전입니다.", badge: "46선" },
-            { name: "스마트 주식 계산기", href: "/calculator", icon: Calculator, desc: "물타기 평단가 인하 탈출 시뮬레이션 및 종목별 월배당·연간 배당금 캐시플로우를 계산합니다.", badge: "인기" },
-            { name: "스마트 관심종목", href: "/watchlist", icon: Star, desc: "내가 찜한 관심 종목들의 최신 시세와 실시간 공시 일정을 한곳에서 모아봅니다." },
-            { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield, desc: "내가 보유한 종목들의 투자 비중과 섹터 편중도를 분석하여 분산 투자 상태를 진단합니다." },
-            { name: "수익률 리더보드", href: "/ranking", icon: Trophy, desc: "포트폴리오 수익률과 퀀트 점수를 기반으로 산출되는 리더보드입니다." },
+            { name: "전문가 마켓 리서치 칼럼", href: "/blog", icon: Newspaper, desc: "국내·미국 증시 거시경제 시황과 기업 재무·산업 트렌드를 깊이 있게 해설하는 데일리 리서치 칼럼입니다.", badge: "매일발행" },
+            { name: "차트·재무 스터디 아카데미", href: "/theory", icon: BookOpen, desc: "캔들 차트, 이동평균선, RSI·MACD 보조지표와 재무 분석 원리를 체계적으로 학습합니다.", badge: "119강" },
+            { name: "주식 투자 용어 백과 (46선)", href: "/guide", icon: HelpCircle, desc: "PER·PBR·ROE 기업 가치평가부터 DART 전자공시 독해, FOMC 거시지표까지 총망라한 46대 필수 백과사전입니다.", badge: "46선" },
+            { name: "산업 밸류체인 리서치", href: "/theme/semiconductor", icon: Sparkles, desc: "AI 반도체, 2차전지, 원전·SMR, 방산, 바이오 등 20대 핵심 산업의 밸류체인과 리스크를 분석합니다.", badge: "20대산업" },
+            { name: "스마트 주식 계산기", href: "/calculator", icon: Calculator, desc: "분할매수 평단가 시뮬레이션과 배당소득세(15.4%)·ISA 절세 배당금 현금흐름을 계산합니다.", badge: "무료" },
+            { name: "대표이사 집무실 · 임원회의", href: "/ceo-office", icon: Crown, desc: "5인의 AI 임원진이 대면 보고하고 종목별 끝장 토론 및 리포트 결재를 올리는 대표이사 전용 시스템입니다.", badge: "대표전용", adminOnly: true, nofollow: true },
+            { name: "AI 매매 전략 자율 연습장", href: "/ceo-office?tab=lab", icon: FlaskConical, desc: "매매 규칙을 5년 주가로 시험하고 스스로 규칙을 교정하는 AI 매매 전략 랩입니다.", badge: "스스로교정", adminOnly: true, nofollow: true },
+        ]
+    },
+    {
+        groupName: "실시간 시세 & 데이터 도구",
+        items: [
+            { name: "글로벌 마켓 시그널", href: "/signals", icon: Activity, desc: "달러 환율, 국제 유가, 금값 및 주요 글로벌 거시경제 지표 현황을 확인합니다.", badge: "LIVE", nofollow: true },
+            { name: "장마감 수급 스캐너", href: "/signals?tab=scanner", icon: Flame, desc: "정규장 마감 수급 집중주 및 기술적 지표 통계를 정량적으로 조회합니다.", nofollow: true },
+            { name: "종목 발굴 & 수급 분석", href: "/discovery", icon: Compass, desc: "기관 및 외국인 투자자의 순매수 통계와 재무 지표를 기반으로 종목을 탐색합니다.", nofollow: true },
+            { name: "실시간 테마 트래커", href: "/theme", icon: Sparkles, desc: "오늘 시장에서 거래대금이 집중되는 주요 테마 그룹 동향을 조회합니다.", nofollow: true },
+            { name: "기술적 패턴 분석", href: "/pattern", icon: LineChart, desc: "골든크로스, 지지선·저항선, 캔들 차트 패턴을 정량 분석합니다.", nofollow: true },
+            { name: "기업 펀더멘탈 분석", href: "/analysis", icon: BarChart3, desc: "회사의 실적, 부채, 밸류에이션 등 재무 건전성을 체계적으로 조회합니다.", nofollow: true },
+            { name: "글로벌 서플라이 체인", href: "/supply-chain", icon: Network, desc: "기업 간 부품 공급망 및 밸류체인 연결 구조를 한눈에 확인합니다.", nofollow: true },
+            { name: "국내·해외 ETF 비교", href: "/etf", icon: Activity, desc: "시장 지수 및 유망 산업에 분산 투자할 수 있는 국내외 ETF를 비교합니다.", nofollow: true },
+            { name: "미국 혁신 신생기업", href: "/emerging", icon: Rocket, desc: "우주항공, 양자컴, 차세대 AI 등 미국 혁신 기술 기업을 정리합니다.", nofollow: true },
+            { name: "국내·해외 전 자산군 리서치", href: "/research", icon: Globe, desc: "국내외 종목, ETF 및 글로벌 선물 리서치 데이터를 통합 조회합니다.", nofollow: true },
+            { name: "일간 퀀트 수급 리포트", href: "/premium", icon: Gem, desc: "외국인과 기관의 순매수 통계를 정리한 데이터 리포트입니다.", nofollow: true },
+            { name: "주간 마켓 인사이트", href: "/weekend-report", icon: Newspaper, desc: "한 주간의 증시 핵심 흐름과 차주 거시경제 일정을 요약합니다.", nofollow: true },
+            { name: "주간 메이저 수급 리포트", href: "/weekend-whale", icon: Crown, desc: "주간 단위 외국인·기관 순매수 상위 섹터 통계를 정리합니다.", nofollow: true },
+        ]
+    },
+    {
+        groupName: "개인화 & 서비스 안내",
+        items: [
+            { name: "스마트 관심종목", href: "/watchlist", icon: Star, desc: "관심 등록한 종목들의 최신 시세와 공시 일정을 모아봅니다.", nofollow: true },
+            { name: "포트폴리오 자산 진단", href: "/portfolio", icon: Shield, desc: "보유 종목의 비중과 섹터 편중도를 점검합니다.", nofollow: true },
+            { name: "수익률 리더보드", href: "/ranking", icon: Trophy, desc: "포트폴리오 성과 통계를 확인합니다.", nofollow: true },
+            { name: "서비스 소개 · 편집 원칙", href: "/about", icon: UserCheck, desc: "스마트 투자 비서 운영팀, 데이터 출처 및 편집 기준을 안내합니다." },
+            { name: "문의 및 정정 요청", href: "/contact", icon: MessageSquare, desc: "콘텐츠 오류 정정 요청 및 서비스 이용 문의를 접수합니다." },
         ]
     }
 ];
@@ -64,10 +62,9 @@ export default function Sidebar() {
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-        "홈 & 핵심 상황판": true,
-        "종목 발굴 & 퀀트 분석": true,
-        "마켓 리서치 & 심층 리포트": true,
-        "금융 아카데미 & 자산 관리": true
+        "금융 리서치 & 교육 아카데미": true,
+        "실시간 시세 & 데이터 도구": true,
+        "개인화 & 서비스 안내": true
     });
 
     const toggleGroup = (groupName: string) => {
@@ -559,6 +556,7 @@ export default function Sidebar() {
                                                     <Link
                                                         key={item.name}
                                                         href={item.href}
+                                                        rel={item.nofollow ? "nofollow" : undefined}
                                                         onClick={() => setIsMobileOpen(false)}
                                                         className={`flex items-center justify-between px-3.5 py-3 rounded-2xl text-[13px] transition-all font-semibold group relative ${
                                                             isActive

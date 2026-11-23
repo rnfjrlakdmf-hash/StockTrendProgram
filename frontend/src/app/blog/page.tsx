@@ -99,9 +99,15 @@ async function getBlogPosts(page: number, limitPerPage: number) {
             }
         }
 
-        // 중복 방지 병합 (동적 포스트 우선, 정적 포스트 보강)
+        // 중복 방지 병합 (동적 포스트 우선, 동일 제목 중복 제거 + 정적 포스트 보강)
         const postMap = new Map<string, BlogPost>();
-        dynamicPosts.forEach(p => postMap.set(p.slug, p));
+        const seenTitleKeys = new Set<string>();
+        dynamicPosts.forEach(p => {
+            const tk = String(p.title || "").replace(/\s+/g, "").slice(0, 22);
+            if (tk && seenTitleKeys.has(tk)) return;
+            if (tk) seenTitleKeys.add(tk);
+            postMap.set(p.slug, p);
+        });
         baseStaticPosts.forEach(p => {
             if (!postMap.has(p.slug)) {
                 postMap.set(p.slug, p);

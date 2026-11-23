@@ -48,7 +48,7 @@ export default function GuideGoldenCrossPage() {
               크로스(Cross) 현상이란 무엇인가요?
             </h2>
             <p className="text-lg mb-6">
-              주식 차트에는 주가의 흐름을 평탄화하여 보여주는 여러 개의 **이동평균선(Moving Average)**이 존재합니다. 이때, 비교적 짧은 기간의 평균을 낸 '단기 이동평균선(예: 5일선, 20일선)'과 비교적 긴 기간의 평균을 낸 '장기 이동평균선(예: 60일선, 120일선)'이 서로 교차하는 현상을 크로스라고 부릅니다.
+              주식 차트에는 주가의 흐름을 평탄화하여 보여주는 여러 개의 <strong className="text-white">이동평균선(Moving Average)</strong>이 존재합니다. 이때, 비교적 짧은 기간의 평균을 낸 '단기 이동평균선(예: 5일선, 20일선)'과 비교적 긴 기간의 평균을 낸 '장기 이동평균선(예: 60일선, 120일선)'이 서로 교차하는 현상을 크로스라고 부릅니다.
             </p>
             <p className="text-lg">
               이동평균선의 교차는 단기간의 주가 흐름이 장기간의 주가 흐름을 압도하며 새로운 방향성을 만들어낼 때 발생하므로, 많은 차트 분석가들이 이 지점을 추세의 변곡점으로 삼고 분석합니다.
@@ -67,7 +67,7 @@ export default function GuideGoldenCrossPage() {
                 </div>
                 <h3 className="text-xl font-bold text-red-400 mb-4">황금빛 교차, 골든크로스 (Golden Cross)</h3>
                 <p className="text-gray-300 mb-4">
-                  **단기 이동평균선이 장기 이동평균선을 아래에서 위로 뚫고 올라가는 현상**입니다.
+                  <strong className="text-white">단기 이동평균선이 장기 이동평균선을 아래에서 위로 뚫고 올라가는 현상</strong>입니다.
                 </p>
                 <ul className="list-disc list-inside text-gray-400 text-sm space-y-2">
                   <li>최근의 주가 상승세가 과거의 평균을 뛰어넘을 만큼 강하다는 뜻입니다.</li>
@@ -83,7 +83,7 @@ export default function GuideGoldenCrossPage() {
                 </div>
                 <h3 className="text-xl font-bold text-blue-400 mb-4">죽음의 교차, 데드크로스 (Dead Cross)</h3>
                 <p className="text-gray-300 mb-4">
-                  **단기 이동평균선이 장기 이동평균선을 위에서 아래로 뚫고 내려가는 현상**입니다.
+                  <strong className="text-white">단기 이동평균선이 장기 이동평균선을 위에서 아래로 뚫고 내려가는 현상</strong>입니다.
                 </p>
                 <ul className="list-disc list-inside text-gray-400 text-sm space-y-2">
                   <li>최근의 주가 하락세가 걷잡을 수 없이 강해지고 있다는 뜻입니다.</li>
@@ -98,7 +98,7 @@ export default function GuideGoldenCrossPage() {
           <section className="bg-white/[0.02] border border-white/10 rounded-3xl p-8 md:p-10">
             <h2 className="text-2xl font-bold text-white mb-6">가짜 시그널, 휩쏘(Whipsaw) 주의보</h2>
             <p className="text-lg leading-relaxed mb-4">
-              "골든크로스에 사고, 데드크로스에 팔아라"라는 격언이 있지만, 이를 기계적으로 적용하는 것은 매우 위험합니다. 주식 시장에는 **'휩쏘(톱니바퀴, Whipsaw)'**라고 불리는 속임수 패턴이 빈번하게 발생하기 때문입니다.
+              "골든크로스에 사고, 데드크로스에 팔아라"라는 격언이 있지만, 이를 기계적으로 적용하는 것은 매우 위험합니다. 주식 시장에는 <strong className="text-white">'휩쏘(톱니바퀴, Whipsaw)'</strong>라고 불리는 속임수 패턴이 빈번하게 발생하기 때문입니다.
             </p>
             <div className="bg-gray-800/50 p-6 rounded-2xl mb-4">
               <strong className="text-white block mb-2">횡보장에서의 무의미한 교차</strong>
@@ -134,18 +134,18 @@ export default function GuideGoldenCrossPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-lg">
-                    AI
+                    편집
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-bold text-base">스마트 투자 비서 퀀트 리서치팀</span>
+                      <span className="text-white font-bold text-base">윤희원 · 스마트 투자 비서 리서치 편집팀</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">감수 완료</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">글로벌 퀀트 알고리즘 및 공공 금융 데이터 분석 전문</p>
+                    <p className="text-xs text-gray-400 mt-0.5">공공 금융 데이터 검증 및 초보자 눈높이 금융 교육 편집 총괄</p>
                   </div>
                 </div>
                 <div className="text-xs text-gray-500 font-mono">
-                  최종 검증: 2026년 9월
+                  최종 검수: 2026년 11월
                 </div>
               </div>
 
@@ -161,17 +161,6 @@ export default function GuideGoldenCrossPage() {
               </div>
             </div>
           </section>
-
-
-
-          {/* 교육 목적 면책조항 */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-12 flex gap-4">
-            <Shield className="w-8 h-8 text-gray-500 shrink-0" />
-            <div className="text-sm text-gray-500 leading-relaxed">
-              <strong className="text-gray-400 block mb-1">교육 목적 및 면책 조항 (Investment Disclaimer)</strong>
-              본 문서는 주식 시장의 일반적인 차트 패턴(골든크로스, 데드크로스 등)을 설명하기 위해 작성된 교육용 콘텐츠입니다. 특정 시점이나 차트 형태에서 매수/매도를 지시하거나 권유하는 유사투자자문 목적이 아닙니다. 차트 신호는 과거 통계의 결과일 뿐 미래의 가격 흐름이나 수익을 절대 보장하지 않으므로, 실제 투자는 전적으로 투자자 본인의 독자적인 판단과 책임 하에 이루어져야 합니다.
-            </div>
-          </div>
 
         </div>
 

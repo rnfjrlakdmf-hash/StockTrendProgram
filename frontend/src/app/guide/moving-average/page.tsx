@@ -48,7 +48,7 @@ export default function GuideMovingAveragePage() {
               이동평균선이란 무엇인가요?
             </h2>
             <p className="text-lg mb-6">
-              주가는 매일매일 호재와 악재에 따라 오르내림을 반복합니다. 이러한 일일 변동성에 가려진 '진짜 추세(Trend)'를 보기 위해 고안된 것이 바로 **이동평균선(Moving Average)**입니다.
+              주가는 매일매일 호재와 악재에 따라 오르내림을 반복합니다. 이러한 일일 변동성에 가려진 '진짜 추세(Trend)'를 보기 위해 고안된 것이 바로 <strong className="text-white">이동평균선(Moving Average)</strong>입니다.
               특정 기간 동안의 주가(보통 종가 기준) 평균을 계산하여 선으로 연결한 것으로, 기술적 분석을 할 때 거의 모든 투자자가 참고하는 지표입니다.
             </p>
             <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6 mb-6">
@@ -75,19 +75,19 @@ export default function GuideMovingAveragePage() {
               <div className="bg-indigo-900/10 border border-indigo-500/20 rounded-2xl p-6">
                 <h3 className="text-xl font-bold text-indigo-300 mb-2">단기 이동평균선 (5일, 10일선)</h3>
                 <p className="text-gray-300">
-                  **'심리선'**이라고도 불립니다. 5일선은 1주일 동안의 거래일(주말 제외)을 의미하며, 단기적인 모멘텀과 투기적 심리를 잘 보여줍니다. 주가가 단기 급등할 때 주가는 5일선 위를 타고 올라가는 경향이 있습니다.
+                  <strong className="text-white">'심리선'</strong>이라고도 불립니다. 5일선은 1주일 동안의 거래일(주말 제외)을 의미하며, 단기적인 모멘텀과 투기적 심리를 잘 보여줍니다. 주가가 단기 급등할 때 주가는 5일선 위를 타고 올라가는 경향이 있습니다.
                 </p>
               </div>
               <div className="bg-purple-900/10 border border-purple-500/20 rounded-2xl p-6">
                 <h3 className="text-xl font-bold text-purple-300 mb-2">중기 이동평균선 (20일, 60일선)</h3>
                 <p className="text-gray-300">
-                  20일선은 약 1개월간의 거래일을 나타내어 **'생명선'**이라 불리기도 합니다. 주가의 1차적인 상승/하락 추세를 결정짓는 중요한 기준선으로 널리 활용됩니다. 60일선은 약 3개월(한 분기)의 실적 발표 주기를 담고 있어 **'수급선'**이나 **'실적선'**으로 해석되곤 합니다.
+                  20일선은 약 1개월간의 거래일을 나타내어 <strong className="text-white">'생명선'</strong>이라 불리기도 합니다. 주가의 1차적인 상승/하락 추세를 결정짓는 중요한 기준선으로 널리 활용됩니다. 60일선은 약 3개월(한 분기)의 실적 발표 주기를 담고 있어 <strong className="text-white">'수급선'</strong>이나 <strong className="text-white">'실적선'</strong>으로 해석되곤 합니다.
                 </p>
               </div>
               <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-2xl p-6">
                 <h3 className="text-xl font-bold text-emerald-300 mb-2">장기 이동평균선 (120일, 240일선)</h3>
                 <p className="text-gray-300">
-                  120일선(반년)과 240일선(1년)은 **'경기선'**으로 불립니다. 장기적인 경기 사이클과 기업의 기초 체력(펀더멘털) 변화를 반영합니다. 주가가 이 선들 위에 있다면 장기 대세 상승장, 아래에 있다면 장기 침체장으로 분류하는 투자자가 많습니다.
+                  120일선(반년)과 240일선(1년)은 <strong className="text-white">'경기선'</strong>으로 불립니다. 장기적인 경기 사이클과 기업의 기초 체력(펀더멘털) 변화를 반영합니다. 주가가 이 선들 위에 있다면 장기 대세 상승장, 아래에 있다면 장기 침체장으로 분류하는 투자자가 많습니다.
                 </p>
               </div>
             </div>
@@ -130,18 +130,18 @@ export default function GuideMovingAveragePage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-lg">
-                    AI
+                    편집
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-bold text-base">스마트 투자 비서 퀀트 리서치팀</span>
+                      <span className="text-white font-bold text-base">윤희원 · 스마트 투자 비서 리서치 편집팀</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">감수 완료</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">글로벌 퀀트 알고리즘 및 공공 금융 데이터 분석 전문</p>
+                    <p className="text-xs text-gray-400 mt-0.5">공공 금융 데이터 검증 및 초보자 눈높이 금융 교육 편집 총괄</p>
                   </div>
                 </div>
                 <div className="text-xs text-gray-500 font-mono">
-                  최종 검증: 2026년 9월
+                  최종 검수: 2026년 11월
                 </div>
               </div>
 
@@ -157,17 +157,6 @@ export default function GuideMovingAveragePage() {
               </div>
             </div>
           </section>
-
-
-
-          {/* 교육 목적 면책조항 */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-12 flex gap-4">
-            <Shield className="w-8 h-8 text-gray-500 shrink-0" />
-            <div className="text-sm text-gray-500 leading-relaxed">
-              <strong className="text-gray-400 block mb-1">교육 목적 및 면책 조항 (Investment Disclaimer)</strong>
-              본 문서는 주식 시장의 일반적인 차트 이론과 기술적 분석 지표를 설명하기 위해 작성된 교육용 콘텐츠입니다. 특정 종목에 대한 매수 또는 매도 타이밍을 지시하거나 유도하는 유사투자자문 행위와는 무관합니다. 이동평균선을 포함한 모든 차트 지표는 시장 심리와 과거 데이터의 통계일 뿐 미래 수익을 보장하지 않으므로, 투자 판단은 전적으로 투자자 본인의 책임 하에 이루어져야 합니다.
-            </div>
-          </div>
 
         </div>
 

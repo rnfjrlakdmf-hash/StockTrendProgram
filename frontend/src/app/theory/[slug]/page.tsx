@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Clock, ArrowLeft, UserCheck, Eye, BookOpen } from "lucide-react";
 import { Metadata } from "next";
 import SocialShareButtons from "@/components/SocialShareButtons";
@@ -8,79 +9,59 @@ import { API_BASE_URL } from "@/lib/config";
 
 export const revalidate = 60; // ISR 60초
 
-const THEORY_SUPPLEMENT_HTML = `
-<hr style="border-color: rgba(255,255,255,0.1); margin: 2.5rem 0;" />
-<h2>실전 차트 아카데미 부록: 기술적 지표와 펀더멘털의 교차 검증</h2>
-<p>캔들 차트 패턴과 기술적 보조지표(이동평균선, RSI, MACD, 볼린저밴드)는 시장 참여자들의 매수·매도 심리와 수급 응집도를 시각적으로 보여주는 훌륭한 도구입니다. 그러나 기술적 분석의 승률을 극대화하기 위해서는 반드시 <strong>거래량(Volume) 수반 여부</strong>와 <strong>기업의 기초 체력(재무제표 및 공시)</strong>을 함께 확인해야 합니다.</p>
-<h3>1. 거래량과 기관·외국인 수급의 동행 확인</h3>
-<p>주요 저항선을 돌파하거나 이동평균선 골든크로스가 발생할 때 평소 대비 200% 이상의 유의미한 거래대금 증가와 기관·외국인의 연속 순매수가 동반되는지 확인하십시오. 거래량이 수반되지 않은 단순 기술적 반등은 속임수(Whip-saw) 패턴으로 이어질 가능성이 높습니다.</p>
-<h3>2. 손절선(Stop-loss) 설정과 분할 매수 원칙</h3>
-<p>모든 기술적 타점 진입 전에는 직전 지지선 또는 20일 이동평균선 이탈 시의 명확한 리스크 관리 기준을 사전에 설정하고, 한 번에 전액 진입하기보다 2~3회에 걸친 분할 접근을 통해 평균 매수 단가의 안전마진을 확보하는 것이 바람직합니다.</p>
-`;
-
-function getFallbackTheoryPost(slug: string) {
-    const theoryPool = STATIC_POSTS.slice(13);
-    const pool = theoryPool.length > 0 ? theoryPool : STATIC_POSTS;
-    let hash = 0;
-    for (let i = 0; i < slug.length; i++) {
-        hash = (hash * 31 + slug.charCodeAt(i)) >>> 0;
-    }
-    const chosen = pool[hash % pool.length];
-    return {
-        ...chosen,
-        createdAt: chosen.createdAt ? new Date(chosen.createdAt) : new Date(),
-    };
-}
+const THEORY_STATIC_POOL = STATIC_POSTS.slice(13);
 
 async function getRelatedPosts() {
-    return STATIC_POSTS.slice(13, 19);
+    return THEORY_STATIC_POOL.slice(0, 6);
 }
 
 async function getTheoryPost(slug: string) {
     try {
         const decodedSlug = decodeURIComponent(slug);
 
-        // 1. STATIC_POSTS에서 먼저 검색 (0ms 즉시 반환 및 API 실패 방어)
-        const staticP = STATIC_POSTS.find(p => p.slug === decodedSlug || p.id === decodedSlug);
+        // 1. 이론 전용 정적 포스트에서 먼저 검색 (/blog와 중복 방지)
+        const staticP = THEORY_STATIC_POOL.find(p => p.slug === decodedSlug || p.id === decodedSlug);
         if (staticP) {
             return {
                 ...staticP,
                 createdAt: staticP.createdAt ? new Date(staticP.createdAt) : new Date(),
             };
         }
-        
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 4000);
         const baseUrl = API_BASE_URL || (typeof window === 'undefined' ? "http://127.0.0.1:8000" : "");
         const apiUrl = `${baseUrl}/api/theory/posts/${encodeURIComponent(decodedSlug)}`;
         const res = await fetch(apiUrl, { next: { revalidate: 60 }, signal: controller.signal });
         clearTimeout(timeoutId);
-        
+
         if (!res.ok) {
-            return getFallbackTheoryPost(decodedSlug);
+            return null;
         }
-        
+
         const data = await res.json();
-        
+
         if (data.status === "ok" && data.post) {
             const post = data.post;
             post.createdAt = post.createdAt ? new Date(post.createdAt) : new Date();
-            if (!post.content || String(post.content).length < 1800) {
-                post.content = String(post.content || '') + THEORY_SUPPLEMENT_HTML;
-            }
             return post;
         }
-        
-        return getFallbackTheoryPost(decodedSlug);
 
+        return null;
     } catch {
-        return getFallbackTheoryPost(slug);
+        return null;
     }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const resolvedParams = await params;
     const post = await getTheoryPost(resolvedParams.slug);
+    if (!post) {
+        return {
+            title: '강의를 찾을 수 없습니다 | 스마트 투자 비서',
+            robots: { index: false, follow: false },
+        };
+    }
     const desc = (post?.content || '').replace(/<[^>]*>?/gm, '').substring(0, 150) + "...";
 
     return {
@@ -116,6 +97,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function TheoryPostPage({ params }: { params: Promise<{ slug: string }> }) {
     const resolvedParams = await params;
     const post = await getTheoryPost(resolvedParams.slug);
+    if (!post) {
+        notFound();
+    }
     const relatedPosts = await getRelatedPosts();
 
     const displayAuthor = (!post.author || post.author === '관리자' || post.author === 'admin')

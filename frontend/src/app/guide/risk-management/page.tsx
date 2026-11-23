@@ -17,7 +17,7 @@ export default function RiskManagementGuide() {
                 <article className="prose prose-invert prose-cyan lg:prose-xl w-full max-w-none">
                     <h1>포트폴리오 변동성 관리와 헷징 전략</h1>
                     <p className="lead">
-                        워렌 버핏의 투자의 제1원칙은 "돈을 잃지 마라"입니다. 제2원칙은 "제1원칙을 절대 잊지 마라"입니다. 많은 초보 투자자들이 단기간에 높은 수익을 내는 것에만 집중한 나머지, 하락장에서 모든 자산을 잃고 시장을 떠나곤 합니다. 장기적으로 성공하기 위해서는 수익률보다 **'리스크(위험) 관리'**에 모든 신경을 곤두세워야 합니다.
+                        워렌 버핏의 투자의 제1원칙은 "돈을 잃지 마라"입니다. 제2원칙은 "제1원칙을 절대 잊지 마라"입니다. 많은 초보 투자자들이 단기간에 높은 수익을 내는 것에만 집중한 나머지, 하락장에서 모든 자산을 잃고 시장을 떠나곤 합니다. 장기적으로 성공하기 위해서는 수익률보다 <strong className="text-white">'리스크(위험) 관리'</strong>에 모든 신경을 곤두세워야 합니다.
                     </p>
 
                     <h2>1. 변동성 (Volatility)이란 무엇인가?</h2>
@@ -43,17 +43,17 @@ export default function RiskManagementGuide() {
 
                     <h2>3. 마코위츠의 현대 포트폴리오 이론 (MPT)</h2>
                     <p>
-                        노벨 경제학상을 수상한 해리 마코위츠(Harry Markowitz)는, 여러 자산을 특정 비율로 섞었을 때 **주어진 리스크 수준에서 얻을 수 있는 가장 높은 수익률의 조합(효율적 전선, Efficient Frontier)**이 존재함을 수학적으로 증명했습니다.
+                        노벨 경제학상을 수상한 해리 마코위츠(Harry Markowitz)는, 여러 자산을 특정 비율로 섞었을 때 <strong className="text-white">주어진 리스크 수준에서 얻을 수 있는 가장 높은 수익률의 조합(효율적 전선, Efficient Frontier)</strong>이 존재함을 수학적으로 증명했습니다.
                     </p>
                     <p>
-                        과거에는 개인이 10개가 넘는 종목들의 공분산 행렬을 계산하여 이 '마법의 비율'을 찾아내는 것이 불가능했습니다. 하지만 지금은 아닙니다. **AI 포트폴리오 최적화기**를 사용하면 클릭 한 번에 해결됩니다.
+                        과거에는 개인이 10개가 넘는 종목들의 공분산 행렬을 계산하여 이 '마법의 비율'을 찾아내는 것이 불가능했습니다. 하지만 지금은 아닙니다. <strong className="text-white">AI 포트폴리오 최적화기</strong>를 사용하면 클릭 한 번에 해결됩니다.
                     </p>
 
                     <h2>AI를 활용한 실전 리스크 관리 방법</h2>
                     <ol>
                         <li>투자하고 싶은 유망한 주식 종목들을 5개 이상 장바구니에 담습니다.</li>
                         <li>AI 최적화 버튼을 누릅니다.</li>
-                        <li>AI가 과거 수년간의 가격 데이터를 기반으로 수만 번의 시뮬레이션(몬테카를로 기법 등)을 돌려, **"테슬라 15%, 애플 40%, 코카콜라 30%, 금 15%"**와 같이 리스크 대비 수익률(샤프 지수)이 가장 극대화되는 황금 비율을 찾아냅니다.</li>
+                        <li>AI가 과거 수년간의 가격 데이터를 기반으로 수만 번의 시뮬레이션(몬테카를로 기법 등)을 돌려, <strong className="text-white">"테슬라 15%, 애플 40%, 코카콜라 30%, 금 15%"</strong>와 같이 리스크 대비 수익률(샤프 지수)이 가장 극대화되는 황금 비율을 찾아냅니다.</li>
                         <li>AI의 분석 코멘트를 읽고, 내 포트폴리오가 너무 특정 섹터(예: IT)에 쏠려 있지 않은지 점검합니다.</li>
                     </ol>
                     <p>
@@ -66,18 +66,18 @@ export default function RiskManagementGuide() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
                       <div className="flex items-center gap-3.5">
                         <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-lg">
-                          AI
+                          편집
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-bold text-base">스마트 투자 비서 퀀트 리서치팀</span>
+                            <span className="text-white font-bold text-base">윤희원 · 스마트 투자 비서 리서치 편집팀</span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">감수 완료</span>
                           </div>
-                          <p className="text-xs text-gray-400 mt-0.5">글로벌 퀀트 알고리즘 및 공공 금융 데이터 분석 전문</p>
+                          <p className="text-xs text-gray-400 mt-0.5">공공 금융 데이터 검증 및 초보자 눈높이 금융 교육 편집 총괄</p>
                         </div>
                       </div>
                       <div className="text-xs text-gray-500 font-mono">
-                        최종 검증: 2026년 9월
+                        최종 검수: 2026년 11월
                       </div>
                     </div>
 

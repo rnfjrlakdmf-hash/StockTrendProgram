@@ -10,7 +10,6 @@ import AnalyticsTracker from "@/components/AnalyticsTracker";
 import KakaoScript from "@/components/KakaoScript";
 import CookieConsent from "@/components/CookieConsent";
 import BottomTabBar from "@/components/BottomTabBar";
-import FloatingAuthBanner from "@/components/FloatingAuthBanner";
 import FloatingQuickMenu from "@/components/FloatingQuickMenu";
 import { Toaster } from "sonner";
 import type { Viewport } from 'next';
@@ -73,15 +72,12 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        {/* 비에디토리얼(관리자 집무실·개인 도구) 경로에서는 애드센스 비콘 호출을 원천 차단하여 Mediapartners-Google의 비공개/도구 페이지 크롤링 유발 방지 */}
+        {/* Google AdSense 공식 표준 스크립트 (변조·래핑 없이 순정 설치) */}
         <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var p=window.location.pathname||'/';var ok=(p==='/'||p==='/guide'||p.indexOf('/guide/')===0||p==='/blog'||p.indexOf('/blog/')===0||p==='/theory'||p.indexOf('/theory/')===0||p.indexOf('/theme/')===0||p==='/calculator'||p==='/about'||p==='/contact'||p==='/privacy-policy'||p==='/terms'||p==='/disclaimer');if(!ok){window.adsbygoogle={loaded:true,push:function(){}};}}catch(e){}})();`
-          }}
-        />
-        {/* Google AdSense 공식 스크립트 */}
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833" crossOrigin="anonymous"></script>
-        <meta name="google-adsense-account" content="ca-pub-9471404163603833" />
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9471404163603833"
+          crossOrigin="anonymous"
+        ></script>
         {/* iOS PWA 필수 메타태그 */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -173,6 +169,8 @@ export default function RootLayout({
                   <div className="flex justify-center gap-4 text-xs md:text-sm text-gray-400 flex-wrap mb-4 font-medium">
                     <a href="/about" className="hover:text-white transition-colors">서비스 소개</a>
                     <span className="text-gray-700">|</span>
+                    <a href="/economics" className="hover:text-white transition-colors font-bold text-amber-400">1일 1경제학</a>
+                    <span className="text-gray-700">|</span>
                     <a href="/guide" className="hover:text-white transition-colors font-bold text-blue-400">주식 투자 백과사전</a>
                     <span className="text-gray-700">|</span>
                     <a href="/blog" className="hover:text-white transition-colors">마켓 리서치 칼럼</a>
@@ -201,7 +199,6 @@ export default function RootLayout({
 
             <FCMWrapper />
             <BottomTabBar />
-            <FloatingAuthBanner />
             <FloatingQuickMenu />
             <CookieConsent />
           </div>

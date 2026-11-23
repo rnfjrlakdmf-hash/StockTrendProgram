@@ -48,7 +48,7 @@ export default function GuideRsiPage() {
               RSI (상대강도지수)란 무엇인가요?
             </h2>
             <p className="text-lg mb-6">
-              **RSI(Relative Strength Index)**는 1978년 웰스 와일더(J. Welles Wilder)가 개발한 기술적 분석 지표입니다. 특정 기간 동안 주가가 전일 대비 상승한 폭과 하락한 폭의 평균을 계산하여, 현재의 상승 압력과 하락 압력 간의 '상대적인 강도'를 수치화합니다.
+              <strong className="text-white">RSI(Relative Strength Index)</strong>는 1978년 웰스 와일더(J. Welles Wilder)가 개발한 기술적 분석 지표입니다. 특정 기간 동안 주가가 전일 대비 상승한 폭과 하락한 폭의 평균을 계산하여, 현재의 상승 압력과 하락 압력 간의 '상대적인 강도'를 수치화합니다.
             </p>
             <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6 mb-6">
               <p className="text-blue-300 font-mono text-center text-lg md:text-xl font-bold leading-relaxed">
@@ -140,18 +140,18 @@ export default function GuideRsiPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-lg">
-                    AI
+                    편집
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-bold text-base">스마트 투자 비서 퀀트 리서치팀</span>
+                      <span className="text-white font-bold text-base">윤희원 · 스마트 투자 비서 리서치 편집팀</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">감수 완료</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">글로벌 퀀트 알고리즘 및 공공 금융 데이터 분석 전문</p>
+                    <p className="text-xs text-gray-400 mt-0.5">공공 금융 데이터 검증 및 초보자 눈높이 금융 교육 편집 총괄</p>
                   </div>
                 </div>
                 <div className="text-xs text-gray-500 font-mono">
-                  최종 검증: 2026년 9월
+                  최종 검수: 2026년 11월
                 </div>
               </div>
 
@@ -167,17 +167,6 @@ export default function GuideRsiPage() {
               </div>
             </div>
           </section>
-
-
-
-          {/* 교육 목적 면책조항 */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-12 flex gap-4">
-            <Shield className="w-8 h-8 text-gray-500 shrink-0" />
-            <div className="text-sm text-gray-500 leading-relaxed">
-              <strong className="text-gray-400 block mb-1">교육 목적 및 면책 조항 (Investment Disclaimer)</strong>
-              본 문서는 주식 시장의 일반적인 경제 용어 및 보조 지표를 설명하기 위해 작성된 교육용 콘텐츠입니다. 특정 주식에 대한 과매수/과매도 여부를 단정 짓거나 매매 시점을 추천하기 위한 유사투자자문 목적이 아닙니다. 소개된 지표는 과거 데이터를 기초로 한 수학적 계산값일 뿐 향후 주가 방향을 보장하지 않으므로, 투자 판단과 책임은 투자자 본인에게 있습니다.
-            </div>
-          </div>
 
         </div>
 

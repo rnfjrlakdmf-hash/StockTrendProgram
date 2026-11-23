@@ -163,7 +163,7 @@ export default function FearGreedSpeedometer() {
         badge: "🔥 극단적 탐욕 (과열 주의)",
         badgeBg: "bg-rose-500/15 text-rose-300 border-rose-500/30",
         gaugeColor: "#ef4444",
-        advice: "시장 열기가 매우 뜨겁습니다. 단기 급등주 추격 매수는 자제하고, 분할 수익 실현과 현금 비중 확대를 권장합니다.",
+        advice: "시장 열기가 매우 뜨겁습니다. 단기 과열 종목 추격 매수는 자제하고, 분할 수익 실현과 현금 비중 확대를 권장합니다.",
       };
     }
     if (score >= 55) {

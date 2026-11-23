@@ -48,7 +48,7 @@ export default function GuideMacdPage() {
               MACD란 무엇인가요?
             </h2>
             <p className="text-lg mb-6">
-              **MACD(Moving Average Convergence Divergence)**는 1979년 제럴드 아펠(Gerald Appel)이 개발한 추세 지표입니다. 이름 그대로 '이동평균선(Moving Average)'이 서로 모였다가(Convergence) 멀어지는(Divergence) 현상을 분석하여 주가의 흐름을 예측합니다.
+              <strong className="text-white">MACD(Moving Average Convergence Divergence)</strong>는 1979년 제럴드 아펠(Gerald Appel)이 개발한 추세 지표입니다. 이름 그대로 '이동평균선(Moving Average)'이 서로 모였다가(Convergence) 멀어지는(Divergence) 현상을 분석하여 주가의 흐름을 예측합니다.
             </p>
             <p className="text-lg mb-6">
               MACD는 주가 차트 자체의 복잡한 움직임을 걷어내고, 두 개의 이동평균선(주로 12일선과 26일선) 사이의 '거리(차이)'만을 계산하여 보여주기 때문에 현재 시장의 상승/하락 에너지가 얼마나 강한지 직관적으로 파악할 수 있게 해줍니다.
@@ -120,18 +120,18 @@ export default function GuideMacdPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-lg">
-                    AI
+                    편집
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-bold text-base">스마트 투자 비서 퀀트 리서치팀</span>
+                      <span className="text-white font-bold text-base">윤희원 · 스마트 투자 비서 리서치 편집팀</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">감수 완료</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">글로벌 퀀트 알고리즘 및 공공 금융 데이터 분석 전문</p>
+                    <p className="text-xs text-gray-400 mt-0.5">공공 금융 데이터 검증 및 초보자 눈높이 금융 교육 편집 총괄</p>
                   </div>
                 </div>
                 <div className="text-xs text-gray-500 font-mono">
-                  최종 검증: 2026년 9월
+                  최종 검수: 2026년 11월
                 </div>
               </div>
 
@@ -147,17 +147,6 @@ export default function GuideMacdPage() {
               </div>
             </div>
           </section>
-
-
-
-          {/* 교육 목적 면책조항 */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-12 flex gap-4">
-            <Shield className="w-8 h-8 text-gray-500 shrink-0" />
-            <div className="text-sm text-gray-500 leading-relaxed">
-              <strong className="text-gray-400 block mb-1">교육 목적 및 면책 조항 (Investment Disclaimer)</strong>
-              본 문서는 주식 시장의 일반적인 차트 지표(MACD)를 설명하기 위해 작성된 교육용 콘텐츠입니다. 특정 시점이나 종목에 대해 매수 또는 매도를 지시하는 유사투자자문 목적이 아닙니다. 소개된 모든 기술적 분석 방법은 과거 데이터의 통계일 뿐 미래의 시장 상황이나 수익을 결코 보장하지 않으므로, 투자에 대한 모든 판단과 책임은 투자자 본인에게 있습니다.
-            </div>
-          </div>
 
         </div>
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// 영구 리다이렉트(301) 대상 레거시·단문·프로그램형 경로 -> 100% SSR 장문 에디토리얼 페이지로 통합
+// 영구 리다이렉트(301) 대상 레거시·중복 경로 -> 정규 에디토리얼 경로로 일관 통합 (모든 방문자·크롤러 동일 처리, 클로킹 없음)
 const PERMANENT_REDIRECT_MAP: Record<string, string> = {
     '/post': '/blog',
     '/directory': '/guide',
@@ -24,57 +24,47 @@ const PERMANENT_REDIRECT_MAP: Record<string, string> = {
     '/news-redirect': '/blog',
 };
 
-// 검색엔진 및 애드센스 심사 봇 User-Agent 패턴
-const BOT_UA_REGEX = /Mediapartners-Google|AdsBot-Google|Googlebot|Google-InspectionTool|Storebot-Google|Bingbot|Yeti|Daumoa|Slurp|DuckDuckBot|Baiduspider|YandexBot|facebookexternalhit|Twitterbot|Applebot|PetalBot|HeadlessChrome|Lighthouse|PageSpeed/i;
+// 검색엔진 색인 제외(noindex) 대상: 실시간 인터랙티브 도구 · 개인화 대시보드 · 관리자 전용 페이지
+// 모든 사용자와 검색 봇에게 동일한 콘텐츠를 제공하되, X-Robots-Tag 헤더로 색인 대상만 정석 분리합니다.
+const NOINDEX_PREFIXES = [
+    '/admin',
+    '/ceo-office',
+    '/login',
+    '/auth',
+    '/watchlist',
+    '/portfolio',
+    '/alerts',
+    '/settings',
+    '/signals',
+    '/discovery',
+    '/pattern',
+    '/analysis',
+    '/supply-chain',
+    '/etf',
+    '/emerging',
+    '/premium',
+    '/weekend-report',
+    '/weekend-whale',
+    '/research',
+    '/ranking',
+];
 
-// 100% SSR 고품질 장문 에디토리얼 및 필수 정적 경로
-function isApprovedEditorialPath(pathname: string): boolean {
-    if (
-        pathname === '/' ||
-        pathname === '/guide' ||
-        pathname.startsWith('/guide/') ||
-        pathname === '/blog' ||
-        pathname.startsWith('/blog/') ||
-        pathname === '/theory' ||
-        pathname.startsWith('/theory/') ||
-        pathname.startsWith('/theme/') ||
-        pathname === '/calculator' ||
-        pathname === '/about' ||
-        pathname === '/contact' ||
-        pathname === '/privacy-policy' ||
-        pathname === '/terms' ||
-        pathname === '/disclaimer' ||
-        pathname === '/sitemap.xml' ||
-        pathname === '/robots.txt' ||
-        pathname === '/rss.xml' ||
-        pathname === '/ads.txt' ||
-        pathname === '/manifest.json' ||
-        pathname === '/icon.png' ||
-        pathname === '/favicon.ico' ||
-        pathname === '/og-image.png' ||
-        pathname === '/api/og' ||
-        pathname.endsWith('.txt') ||
-        pathname.endsWith('.xml') ||
-        pathname.endsWith('.png') ||
-        pathname.endsWith('.ico')
-    ) {
-        return true;
-    }
-    return false;
+function shouldNoIndex(pathname: string): boolean {
+    if (pathname === '/theme') return true;
+    return NOINDEX_PREFIXES.some(
+        (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    );
 }
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // 1. 정적 에셋 및 일반 백엔드 API 요청은 즉시 통과
-    if (
-        pathname.startsWith('/_next') ||
-        pathname.startsWith('/api/')
-    ) {
+    // 1. 정적 에셋 및 API 요청은 즉시 통과
+    if (pathname.startsWith('/_next') || pathname.startsWith('/api/')) {
         return NextResponse.next();
     }
 
-    // 2. 레거시 프로그램형 대량 생성 경로(/post/*, /stock/*, /widget/*, /_community/*)는 모든 방문자·봇에게 301 영구 리다이렉트
+    // 2. 레거시·중복 경로는 모든 방문자 및 검색엔진에 동일하게 301 영구 리다이렉트
     if (pathname === '/post' || pathname.startsWith('/post/')) {
         return NextResponse.redirect(new URL('/blog', request.url), 301);
     }
@@ -88,19 +78,13 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL(PERMANENT_REDIRECT_MAP[pathname], request.url), 301);
     }
 
-    // 3. 검색엔진 크롤러 및 구글 애드센스 심사 봇(Mediapartners-Google)이 관리자 전용/도구 페이지에 접근할 경우
-    //    빈 로딩 화면이나 로그인 창 대신 100% SSR 장문 금융 백과사전 페이지로 안전하게 안내 (대표님 일반 브라우저는 100% 정상 접속)
-    const userAgent = request.headers.get('user-agent') || '';
-    if (BOT_UA_REGEX.test(userAgent)) {
-        if (pathname === '/theme') {
-            return NextResponse.redirect(new URL('/theme/semiconductor', request.url), 302);
-        }
-        if (!isApprovedEditorialPath(pathname)) {
-            return NextResponse.redirect(new URL('/guide', request.url), 302);
-        }
+    // 3. 인터랙티브 데이터 도구·개인화·관리자 경로에는 표준 X-Robots-Tag: noindex, nofollow 헤더만 부여
+    //    (User-Agent별 리다이렉트/클로킹 완전 제거 — 모든 에디토리얼 경로 /economics, /blog, /theory, /guide, /theme/* 는 정상 200 응답)
+    const response = NextResponse.next();
+    if (shouldNoIndex(pathname)) {
+        response.headers.set('X-Robots-Tag', 'noindex, nofollow');
     }
-
-    return NextResponse.next();
+    return response;
 }
 
 export const config = {
