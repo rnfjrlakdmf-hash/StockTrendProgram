@@ -339,11 +339,12 @@ export default function LiveMarketHub() {
                   ? "bg-sky-500/10 border-sky-500/20 text-sky-300" 
                   : "bg-white/5 border-white/10 text-gray-400";
 
-                const cleanSymbol = item.symbol ? (item.symbol.includes('.') ? item.symbol.split('.')[0] : item.symbol) : item.symbol;
+                const cleanSymbol = item.symbol ? String(item.symbol).replace(/\.(KS|KQ|O|N|A)$/i, '').trim() : '';
 
                 return (
                   <Link 
-                    href="/guide/fundamental-analysis" 
+                    href={cleanSymbol ? `/stock/${encodeURIComponent(cleanSymbol)}` : '/discovery'}
+                    rel="nofollow"
                     key={item.symbol || idx}
                     className="flex items-center justify-between p-2.5 sm:p-3 rounded-2xl bg-zinc-950/60 hover:bg-zinc-800/80 border border-white/5 hover:border-indigo-500/30 transition-all group cursor-pointer"
                   >
@@ -410,11 +411,12 @@ export default function LiveMarketHub() {
                   ? "bg-sky-500/10 border-sky-500/20 text-sky-300" 
                   : "bg-white/5 border-white/10 text-gray-400";
 
-                const cleanSearchSymbol = item.symbol ? (item.symbol.includes('.') ? item.symbol.split('.')[0] : item.symbol) : '';
+                const cleanSearchSymbol = item.symbol ? String(item.symbol).replace(/\.(KS|KQ|O|N|A)$/i, '').trim() : '';
 
                 return (
                   <Link 
-                    href="/guide/fundamental-analysis"
+                    href={cleanSearchSymbol ? `/stock/${encodeURIComponent(cleanSearchSymbol)}` : `/discovery?q=${encodeURIComponent(item.name)}`}
+                    rel="nofollow"
                     key={idx}
                     className="flex items-center justify-between p-2.5 sm:p-3 rounded-2xl bg-zinc-950/60 hover:bg-zinc-800/80 border border-white/5 hover:border-rose-500/30 transition-all group cursor-pointer"
                   >

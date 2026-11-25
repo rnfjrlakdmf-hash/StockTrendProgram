@@ -47,6 +47,7 @@ const NOINDEX_PREFIXES = [
     '/weekend-whale',
     '/research',
     '/ranking',
+    '/stock',
 ];
 
 function shouldNoIndex(pathname: string): boolean {
@@ -67,9 +68,6 @@ export function middleware(request: NextRequest) {
     // 2. 레거시·중복 경로는 모든 방문자 및 검색엔진에 동일하게 301 영구 리다이렉트
     if (pathname === '/post' || pathname.startsWith('/post/')) {
         return NextResponse.redirect(new URL('/blog', request.url), 301);
-    }
-    if (pathname === '/stock' || pathname.startsWith('/stock/')) {
-        return NextResponse.redirect(new URL('/guide/fundamental-analysis', request.url), 301);
     }
     if (pathname.startsWith('/widget/') || pathname.startsWith('/_community/')) {
         return NextResponse.redirect(new URL('/guide', request.url), 301);

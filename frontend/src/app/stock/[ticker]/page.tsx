@@ -14,10 +14,11 @@ import MtsOrderButton from "@/components/MtsOrderButton";
 import EasyFinancialReader from "@/components/EasyFinancialReader";
 import FiveStepStockReport from "@/components/FiveStepStockReport";
 import ViralCopyButton from "@/components/ViralCopyButton";
+import { API_BASE_URL } from "@/lib/config";
 
 
 const getApiBaseUrl = () => {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://13.209.99.170:8000';
+    return API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 };
 
 export const dynamic = 'force-dynamic';
@@ -75,7 +76,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const description = `최신 ${name} 주가, 배당금 정보부터 외국인/기관 수급 분석까지. AI가 제공하는 객관적인 재무 지표와 수급 분석 통계를 무료로 확인하세요.`;
     
     // OG Image URL 생성
-    const ogUrl = new URL(`${getApiBaseUrl() === 'http://13.209.99.170:8000' ? 'https://stock-trend-program.co.kr' : 'http://localhost:3000'}/api/og`);
+    const ogUrl = new URL('https://stock-trend-program.co.kr/api/og');
     ogUrl.searchParams.set('title', name);
     ogUrl.searchParams.set('subtitle', '공시·재무 지표 및 외인·기관 수급 통계 리포트');
     ogUrl.searchParams.set('theme', '오늘의 특징주');
