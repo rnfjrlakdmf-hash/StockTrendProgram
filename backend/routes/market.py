@@ -1432,7 +1432,8 @@ _KR_THEME_RULES = [
     (["신약", "바이오", "임상", "항체", "ADC", "비만치료제", "CDMO", "바이오시밀러", "제약"], "#바이오·신약개발", "글로벌 기술수출(L/O), FDA 승인 및 바이오 위탁생산(CDMO) 확대가 성장을 이끄는 제약·바이오 테마입니다."),
     (["의료기기", "미용기기", "임플란트", "진단기기", "헬스케어", "초음파"], "#의료기기·헬스케어", "고령화와 글로벌 미용·정밀진단 수요 증가로 고마진 해외 수출이 성장하는 헬스케어 테마입니다."),
     (["로봇", "협동로봇", "휴머노이드", "액추에이터", "감속기", "스마트팩토리", "자동화"], "#로봇·자동화", "인구 고령화와 AI 피지컬 로봇 상용화에 따라 제조·물류 자동화 수요가 확대되는 로봇 테마입니다."),
-    (["화장품", "뷰티", "ODM", "스킨케어", "K-뷰티", "생활건강"], "#K-뷰티·화장품", "미국·일본·유럽 등 글로벌 인디브랜드 흥행과 수출 다변화가 실적을 이끄는 K-뷰티 테마입니다."),
+    (["화장품", "뷰티", "화장품 ODM", "화장품 OEM", "스킨케어", "K-뷰티", "생활건강"], "#K-뷰티·화장품", "미국·일본·유럽 등 글로벌 인디브랜드 흥행과 수출 다변화가 실적을 이끄는 K-뷰티 테마입니다."),
+    (["의류", "패션", "니트", "어패럴", "액티브웨어", "섬유", "의류 OEM", "스포츠웨어"], "#패션·글로벌의류", "글로벌 유명 의류 바이어 대상 OEM/ODM 수출과 해외 현지 생산 경쟁력을 갖춘 K-패션·의류 테마입니다."),
     (["엔터", "음반", "아티스트", "콘텐츠", "드라마", "웹툰", "K-POP", "미디어"], "#엔터·K-콘텐츠", "글로벌 팬덤 확장과 월드투어·OTT 수출로 IP 수익성을 극대화하는 K-컬처 테마입니다."),
     (["은행", "금융지주", "생명보험", "손해보험", "화재보험", "투자증권", "증권사", "밸류업", "고배당", "자사주 소각"], "#금융·밸류업고배당", "기업 밸류업 프로그램과 자사주 소각·배당 확대 등 주주환원 매력이 부각되는 금융 가치주 테마입니다."),
     (["항공", "항공사", "여행", "카지노", "면세", "호텔", "레저"], "#항공·여행레저", "국제선 여객 수요 호조와 유가·환율 안정 시 이익 레버리지가 돋보이는 여행·운송 테마입니다."),
@@ -1579,15 +1580,21 @@ def _get_kr_company_profile_and_themes(code: str, stock_name: str = "", report_t
     search_upper = search_blob.upper()
     title_upper = f"{stock_name} {report_title}".upper()
     lead_upper = raw_overview[:130].upper()
+    def _kw_hit(kw_u: str, hay: str) -> bool:
+        # 짧은 영문 약어(EV, AI, LNG, LED 등)는 Review 속 EV 같은 오매칭 방지를 위해 단어 경계 검사
+        if kw_u.isascii() and len(kw_u) <= 4 and kw_u.isalnum():
+            return bool(re.search(rf"(?<![A-Z0-9]){re.escape(kw_u)}(?![A-Z0-9])", hay))
+        return kw_u in hay
+
     matched_themes = []
     for keywords, tag_label, desc in _KR_THEME_RULES:
         score = 0
         for kw in keywords:
             ku = kw.upper()
-            if ku in search_upper:
-                if ku in title_upper:
+            if _kw_hit(ku, search_upper):
+                if _kw_hit(ku, title_upper):
                     score += 3
-                elif ku in lead_upper:
+                elif _kw_hit(ku, lead_upper):
                     score += 2
                 else:
                     score += 1

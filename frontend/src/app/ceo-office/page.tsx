@@ -11572,21 +11572,100 @@ export default function CeoOfficePage() {
                                         </div>
 
                                         <div className="rounded-2xl bg-amber-950/20 border border-amber-500/30 p-3.5 space-y-2">
-                                            <div className="font-black text-amber-300">⚠️ 조심할 점 (꼭 챙길 리스크)</div>
-                                            {(cautionChecks.length > 0 || extraCautions.length > 0) ? (
-                                                <ul className="space-y-1.5">
-                                                    {cautionChecks.map((chk: any, idx: number) => (
-                                                        <li key={`c-${idx}`} className="text-[11px] text-zinc-200 leading-snug">
-                                                            • <strong className="text-amber-200">{chk.label}</strong> ({chk.value}) — {chk.detail}
-                                                        </li>
-                                                    ))}
-                                                    {extraCautions.map((ex, idx) => (
-                                                        <li key={`e-${idx}`} className="text-[11px] text-zinc-200 leading-snug">
-                                                            • <strong className="text-amber-200">{ex.label}</strong> ({ex.value}) — {ex.note}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            ) : (
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-black text-amber-300">⚠️ 조심할 점 (핵심 1줄 요약)</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCouncilViewMode('detail')}
+                                                    className="text-[10px] font-bold text-amber-200/80 hover:text-amber-200 underline underline-offset-2 cursor-pointer shrink-0"
+                                                >
+                                                    상세 원문 →
+                                                </button>
+                                            </div>
+                                            {(cautionChecks.length > 0 || extraCautions.length > 0) ? (() => {
+                                                const toEasyCaution = (labelRaw: string, valueRaw: string, detailRaw: string) => {
+                                                    const lb = String(labelRaw || '').replace(/^[①②③④⑤]\s*/, '').trim();
+                                                    const dt = String(detailRaw || '');
+                                                    const all = `${lb} ${dt}`;
+                                                    let shortTitle = lb.replace(/\([^)]*\)/g, '').trim();
+                                                    if (shortTitle.length > 14) shortTitle = shortTitle.slice(0, 14);
+                                                    let easy = '';
+                                                    if (/목표주가.*하향|실적\s*추정치\s*하향|훼손\s*신호/.test(all)) {
+                                                        shortTitle = '실적·목표가 경계';
+                                                        easy = '증권사 실적 눈높이가 낮아져 회복 확인이 먼저입니다.';
+                                                    } else if (/매출.*영업이익률|영업이익률|마진/.test(all)) {
+                                                        shortTitle = '마진·수익성 둔화';
+                                                        easy = '남는 이익률(마진)이 얇아 실적 반등을 지켜봐야 합니다.';
+                                                    } else if (/자기자본이익률|ROE|부채/.test(all)) {
+                                                        shortTitle = 'ROE·부채 체력';
+                                                        easy = '돈 굴리는 효율(ROE)이 우량 기준(15%)보다 낮아 체력 점검이 필요합니다.';
+                                                    } else if (/밸류\s*트랩|밸류에이션|PER/.test(all)) {
+                                                        shortTitle = '저평가 함정 주의';
+                                                        easy = '이익이 더 줄면 싸 보이던 주가도 비싸질 수 있어 주의하세요.';
+                                                    } else if (/그레이엄|안전마진|안전\s*에어백/.test(all)) {
+                                                        shortTitle = '안전마진 점검';
+                                                        easy = '전통 저평가 기준보다 높아 추격 매수보다 분할 접근이 안전합니다.';
+                                                    } else if (/성장|PEG/.test(all)) {
+                                                        shortTitle = '성장 둔화 경계';
+                                                        easy = '단기 성장 속도가 주춤해 성급한 물타기는 피하세요.';
+                                                    } else if (/외국인|기관|수급/.test(all)) {
+                                                        shortTitle = '큰손 수급 이탈';
+                                                        easy = '외국인 매도가 이어져 단기 출렁임에 대비해 나눠 사세요.';
+                                                    } else if (/52주|추세|모멘텀/.test(all)) {
+                                                        shortTitle = '하락 추세 주의';
+                                                        easy = '고점 대비 하락 흐름이 길어 바닥 확인 후 진입하세요.';
+                                                    } else {
+                                                        const stripped = dt.replace(/본업\s*구조:[\s\S]*/g, '').replace(/\s+/g, ' ').trim();
+                                                        easy = stripped.length > 44 ? `${stripped.slice(0, 43)}…` : stripped;
+                                                    }
+                                                    return { shortTitle, value: String(valueRaw || ''), easy };
+                                                };
+
+                                                const compactItems = [
+                                                    ...cautionChecks.map((chk: any) => toEasyCaution(chk.label, chk.value, chk.detail)),
+                                                    ...extraCautions.map((ex) => toEasyCaution(ex.label, ex.value, ex.note)),
+                                                ];
+                                                // 중복 제목 제거 후 핵심 최대 3개만 깔끔하게 표시
+                                                const deduped: { shortTitle: string; value: string; easy: string }[] = [];
+                                                const seenT = new Set<string>();
+                                                for (const it of compactItems) {
+                                                    if (!seenT.has(it.shortTitle)) {
+                                                        seenT.add(it.shortTitle);
+                                                        deduped.push(it);
+                                                    }
+                                                }
+                                                const visibleItems = deduped.slice(0, 3);
+                                                const hiddenCount = Math.max(0, deduped.length - visibleItems.length);
+
+                                                return (
+                                                    <ul className="space-y-2">
+                                                        {visibleItems.map((it, idx) => (
+                                                            <li key={idx} className="text-[11px] leading-snug space-y-0.5">
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <span className="font-black text-amber-200">• {it.shortTitle}</span>
+                                                                    {it.value && (
+                                                                        <span className="font-mono text-[10px] font-bold text-amber-300/90 bg-black/40 px-1.5 py-0.5 rounded shrink-0">
+                                                                            {it.value}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-zinc-300 pl-2.5 break-keep">{it.easy}</p>
+                                                            </li>
+                                                        ))}
+                                                        {hiddenCount > 0 && (
+                                                            <li className="pt-0.5 pl-2.5">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setCouncilViewMode('detail')}
+                                                                    className="text-[10.5px] font-bold text-amber-300/90 hover:text-amber-200 cursor-pointer"
+                                                                >
+                                                                    + 외 {hiddenCount}건 세부 분석은 [상세 근거·재무표]에서 확인 →
+                                                                </button>
+                                                            </li>
+                                                        )}
+                                                    </ul>
+                                                );
+                                            })() : (
                                                 <p className="text-[11px] text-emerald-200/90">• 주요 재무·수급 경계 항목 없이 전반적으로 양호합니다. 단, 손절 방어선 준수는 필수입니다.</p>
                                             )}
                                         </div>
