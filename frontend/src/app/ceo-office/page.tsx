@@ -4382,10 +4382,12 @@ export default function CeoOfficePage() {
         activeAnalystId: string;
     } | null>(null);
     const [councilDeepLoading, setCouncilDeepLoading] = useState<boolean>(false);
+    const [councilViewMode, setCouncilViewMode] = useState<'summary' | 'detail'>('summary');
 
     // 월가 5대 거장 심층 근거 모달 오픈 시 4개년 재무·5일 수급·기업 개요 실시간 로드
     useEffect(() => {
         if (!selectedCouncilDetail) return;
+        setCouncilViewMode('summary');
         const curCouncil = selectedCouncilDetail.council;
         // 이미 4개년 재무 또는 심층 스냅샷을 불러온 경우 중복 호출 생략
         if (curCouncil?._deepLoaded) return;
@@ -11247,6 +11249,86 @@ export default function CeoOfficePage() {
                 const f5 = snap.foreign_5d_net;
                 const o5 = snap.organ_5d_net;
 
+                // ⚡ 3초 한눈에 핵심 요약 자동 계산 헬퍼
+                const parseNum = (v: any): number | null => {
+                    if (v === null || v === undefined) return null;
+                    const m = String(v).replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+                    return m ? parseFloat(m[0]) : null;
+                };
+                const buyVotes = analystsList.filter((x: any) => x.vote === 'BUY').length;
+                const sellVotes = analystsList.filter((x: any) => x.vote === 'SELL').length;
+                const holdVotes = analystsList.length - buyVotes - sellVotes;
+                const consensusSummaryLabel =
+                    analystsList.length > 0 && buyVotes === analystsList.length
+                        ? `5명 전원 만장일치 매수 (${buyVotes}/${analystsList.length})`
+                        : analystsList.length > 0 && sellVotes === analystsList.length
+                        ? `5명 전원 관망·축소 경계 (${sellVotes}/${analystsList.length})`
+                        : `찬성 ${buyVotes} · 중립 ${holdVotes} · 경계 ${sellVotes}`;
+
+                // 회사 소개 중 '무슨 서비스/사업을 하는지' 핵심 문장 1줄 추출
+                const rawCompSummary = String(compProf?.company_summary || '').trim();
+                const compSentences = rawCompSummary
+                    .split(/(?<=[.!?])\s+|\.\s+/)
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                const bizSentence =
+                    compSentences.find((s) => /운영|제공|개발|생산|제조|판매|출시|플랫폼|서비스|주력|사업/.test(s) && !/설립/.test(s)) ||
+                    compSentences[compSentences.length - 1] ||
+                    rawCompSummary;
+
+                const opmNum = parseNum(snap.opm);
+                const debtNum = parseNum(snap.debt_ratio);
+                const roeNum = parseNum(snap.roe);
+                const dd52Num = typeof snap.drawdown_52w_pct === 'number' ? snap.drawdown_52w_pct : parseNum(snap.drawdown_52w_pct);
+
+                const healthTags: string[] = [];
+                if (opmNum !== null) {
+                    if (opmNum >= 25) healthTags.push(`영업이익률 ${snap.opm} (초고마진 알짜)`);
+                    else if (opmNum >= 10) healthTags.push(`영업이익률 ${snap.opm} (수익성 우수)`);
+                    else if (opmNum > 0) healthTags.push(`영업이익률 ${snap.opm} (흑자 유지)`);
+                    else healthTags.push(`영업이익률 ${snap.opm} (적자 주의)`);
+                }
+                if (debtNum !== null) {
+                    if (debtNum <= 50) healthTags.push(`부채 ${snap.debt_ratio} (빚 거의 없음)`);
+                    else if (debtNum <= 120) healthTags.push(`부채 ${snap.debt_ratio} (재무 안정)`);
+                    else healthTags.push(`부채 ${snap.debt_ratio} (부채 관리 필요)`);
+                }
+                if (roeNum !== null) {
+                    if (roeNum >= 15) healthTags.push(`ROE ${snap.roe} (자본효율 최상)`);
+                    else if (roeNum >= 10) healthTags.push(`ROE ${snap.roe} (돈 잘 굴림)`);
+                    else healthTags.push(`ROE ${snap.roe}`);
+                }
+
+                const flowSummary =
+                    typeof f5 === 'number' && typeof o5 === 'number'
+                        ? f5 > 0 && o5 > 0
+                            ? { tone: 'good', label: '🟢 외인·기관 쌍끌이 매수', detail: `외국인 +${f5.toLocaleString()}주 · 기관 +${o5.toLocaleString()}주 동반 유입` }
+                            : f5 < 0 && o5 > 0
+                            ? { tone: 'warn', label: '⚖️ 기관 매수 vs 외인 매도', detail: `기관 +${o5.toLocaleString()}주 매집 중, 외국인 ${f5.toLocaleString()}주 차익실현` }
+                            : f5 > 0 && o5 < 0
+                            ? { tone: 'warn', label: '⚖️ 외인 매수 vs 기관 매도', detail: `외국인 +${f5.toLocaleString()}주 매집 중, 기관 ${o5.toLocaleString()}주 매도` }
+                            : { tone: 'danger', label: '🔴 외인·기관 동반 이탈', detail: `외국인 ${f5.toLocaleString()}주 · 기관 ${o5.toLocaleString()}주 동시 매도` }
+                        : { tone: 'warn', label: '⏳ 최근 5일 수급 집계 중', detail: '거래소 최신 5일 수급 데이터를 동기화 중입니다.' };
+
+                const allChecks = Array.isArray(det.checks) ? det.checks : [];
+                const goodChecks = allChecks.filter((c: any) => c.status === 'good');
+                const cautionChecks = allChecks.filter((c: any) => c.status !== 'good');
+                const extraCautions: { label: string; value: string; note: string }[] = [];
+                if (snap.graham_number != null && snap.graham_number > 22.5) {
+                    extraCautions.push({
+                        label: '밸류에이션(가격 부담)',
+                        value: `그레이엄지수 ${snap.graham_number}`,
+                        note: '전통 저평가 기준(22.5)보다 높으므로 추격 매수보다 눌림목 분할 매수가 안전합니다.',
+                    });
+                }
+                if (typeof f5 === 'number' && f5 < 0) {
+                    extraCautions.push({
+                        label: '최근 5일 외국인 매도',
+                        value: `${f5.toLocaleString()}주`,
+                        note: '외국인 수급이 아직 순매도 구간이므로 단기 출렁임에 대비해 나눠 사세요.',
+                    });
+                }
+
                 return (
                     <div
                         className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
@@ -11300,30 +11382,226 @@ export default function CeoOfficePage() {
                                 </button>
                             </div>
 
-                            {/* 2. 5대 거장 빠른 전환 탭 */}
-                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                                {analystsList.map((tabA: any) => {
-                                    const active = tabA.id === activeA.id;
-                                    const dot = tabA.vote === 'BUY' ? '🟢' : tabA.vote === 'SELL' ? '🔴' : '🟡';
-                                    return (
-                                        <button
-                                            key={tabA.id}
-                                            type="button"
-                                            onClick={() => setSelectedCouncilDetail({ ...selectedCouncilDetail, activeAnalystId: tabA.id })}
-                                            className={`shrink-0 px-3 py-2 rounded-xl text-xs font-black border transition-all flex items-center gap-1.5 cursor-pointer ${
-                                                active
-                                                    ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md'
-                                                    : 'bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10'
-                                            }`}
-                                        >
-                                            <span>{tabA.avatar}</span>
-                                            <span>{tabA.name}</span>
-                                            <span className="text-[10px] opacity-85">{dot}</span>
-                                        </button>
-                                    );
-                                })}
+                            {/* 2. 5대 거장 빠른 전환 탭 + ⚡ 3초 핵심 요약 / 📑 상세 전체 보기 스위치 */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                                    {analystsList.map((tabA: any) => {
+                                        const active = tabA.id === activeA.id;
+                                        const dot = tabA.vote === 'BUY' ? '🟢' : tabA.vote === 'SELL' ? '🔴' : '🟡';
+                                        return (
+                                            <button
+                                                key={tabA.id}
+                                                type="button"
+                                                onClick={() => setSelectedCouncilDetail({ ...selectedCouncilDetail, activeAnalystId: tabA.id })}
+                                                className={`shrink-0 px-3 py-2 rounded-xl text-xs font-black border transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                    active
+                                                        ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md'
+                                                        : 'bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10'
+                                                }`}
+                                            >
+                                                <span>{tabA.avatar}</span>
+                                                <span>{tabA.name}</span>
+                                                <span className="text-[10px] opacity-85">{dot}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="inline-flex items-center p-1 rounded-xl bg-black/60 border border-white/10 shrink-0 self-start sm:self-auto">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCouncilViewMode('summary')}
+                                        className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+                                            councilViewMode === 'summary'
+                                                ? 'bg-emerald-400 text-slate-950 shadow-sm'
+                                                : 'text-zinc-300 hover:text-white'
+                                        }`}
+                                    >
+                                        ⚡ 3초 한눈에 요약
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCouncilViewMode('detail')}
+                                        className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+                                            councilViewMode === 'detail'
+                                                ? 'bg-indigo-400 text-slate-950 shadow-sm'
+                                                : 'text-zinc-300 hover:text-white'
+                                        }`}
+                                    >
+                                        📑 상세 근거·재무표
+                                    </button>
+                                </div>
                             </div>
 
+                            {councilViewMode === 'summary' ? (
+                                /* ⚡ [3초 한눈에 핵심 요약 뷰] 스크롤 없이 핵심만 즉시 이해 */
+                                <div className="space-y-3.5">
+                                    {/* ① 한 줄 결론 카드 */}
+                                    <div className={`p-4 rounded-2xl border space-y-2 ${
+                                        isSell
+                                            ? 'bg-rose-950/40 border-rose-500/45'
+                                            : isBuy
+                                            ? 'bg-emerald-950/35 border-emerald-500/45'
+                                            : 'bg-amber-950/35 border-amber-500/45'
+                                    }`}>
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <span className="text-xs font-black text-amber-300">
+                                                ⚡ {activeA.name}의 3초 핵심 결론
+                                            </span>
+                                            <span className="px-2.5 py-0.5 rounded-full bg-black/45 border border-white/15 text-[11px] font-black text-white">
+                                                🏛️ 거장 5인 집계: {consensusSummaryLabel}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm sm:text-base font-black text-white leading-relaxed break-keep">
+                                            💡 {det.headline}
+                                        </p>
+                                    </div>
+
+                                    {/* ② 핵심 4칸 쉬운 번역 요약 보드 */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                                        {/* 1) 무슨 회사? */}
+                                        <div className="rounded-2xl bg-indigo-950/30 border border-indigo-400/25 p-3.5 space-y-1.5">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-black text-indigo-300">🏢 1. 무슨 회사인가요?</span>
+                                                <div className="flex items-center gap-1 flex-wrap justify-end">
+                                                    {(compProf?.theme_tags || []).slice(0, 2).map((tg: string, idx: number) => (
+                                                        <span key={idx} className="px-1.5 py-0.5 rounded-md bg-violet-500/20 text-violet-200 border border-violet-400/30 text-[10px] font-black">
+                                                            {tg}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <p className="text-zinc-200 leading-relaxed break-keep">
+                                                {bizSentence || compProf?.theme_summary || `${modalDoc?.stock_name || snap.stock_name} 핵심 사업 분석 데이터 집계 중`}
+                                            </p>
+                                        </div>
+
+                                        {/* 2) 싸게 살 수 있나? (가격·목표가) */}
+                                        <div className="rounded-2xl bg-black/45 border border-white/10 p-3.5 space-y-1.5">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-black text-amber-300">💰 2. 주가 위치 · 상승 여력</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 font-black font-mono text-[11px]">
+                                                    괴리율 {snap.upside_pct || modalDoc?.upside_pct || '-'}
+                                                </span>
+                                            </div>
+                                            <div className="text-sm font-black text-white font-mono">
+                                                {(snap.current_price || modalDoc?.current_price || '-').split(' ')[0]} ➔ 목표{' '}
+                                                <span className="text-amber-300">{snap.target_price || modalDoc?.target_price || '-'}</span>
+                                            </div>
+                                            <p className="text-[11px] text-zinc-300 leading-snug break-keep">
+                                                {dd52Num !== null ? `52주 고점 대비 ${dd52Num > 0 ? '+' : ''}${dd52Num}% 위치` : '52주 가격대 추적 중'}
+                                                {snap.peg != null ? ` · PEG ${snap.peg} (${snap.peg <= 1.2 ? '성장성 대비 합리적 가격' : '다소 프리미엄'})` : ''}
+                                            </p>
+                                        </div>
+
+                                        {/* 3) 회사 체력 (수익성·재무 안전성) */}
+                                        <div className="rounded-2xl bg-black/45 border border-white/10 p-3.5 space-y-1.5">
+                                            <div className="font-black text-sky-300">💪 3. 회사 돈 버는 힘 · 재무 체력</div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {healthTags.length > 0 ? (
+                                                    healthTags.map((ht, i) => (
+                                                        <span key={i} className="px-2 py-0.5 rounded-lg bg-sky-500/15 border border-sky-400/30 text-sky-200 text-[11px] font-bold">
+                                                            {ht}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-zinc-400 text-[11px]">재무 지표 집계 중 · PER {snap.per || 'N/A'} / PBR {snap.pbr || 'N/A'}</span>
+                                                )}
+                                            </div>
+                                            {snap.eps && snap.eps !== 'N/A' && (
+                                                <p className="text-[11px] text-zinc-400 font-mono">
+                                                    주당순이익(EPS): {snap.eps}{snap.cns_eps && snap.cns_eps !== 'N/A' ? ` ➔ 예상 ${snap.cns_eps} (이익 성장)` : ''}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* 4) 큰손 수급 */}
+                                        <div className="rounded-2xl bg-black/45 border border-white/10 p-3.5 space-y-1.5">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-black text-emerald-300">👀 4. 최근 {snap.flow_days || 5}일 큰손(외인·기관) 수급</span>
+                                            </div>
+                                            <div className={`text-xs font-black ${
+                                                flowSummary.tone === 'good' ? 'text-emerald-300' : flowSummary.tone === 'danger' ? 'text-rose-300' : 'text-amber-300'
+                                            }`}>
+                                                {flowSummary.label}
+                                            </div>
+                                            <p className="text-[11px] text-zinc-300 leading-snug">{flowSummary.detail}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* ③ 좋은 점 vs 조심할 점 2단 핵심 비교 */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
+                                        <div className="rounded-2xl bg-emerald-950/20 border border-emerald-500/30 p-3.5 space-y-2">
+                                            <div className="font-black text-emerald-300">👍 좋은 점 (매수 매력 포인트)</div>
+                                            {goodChecks.length > 0 ? (
+                                                <ul className="space-y-1.5">
+                                                    {goodChecks.map((chk: any, idx: number) => (
+                                                        <li key={idx} className="flex items-start justify-between gap-2 text-[11px] text-zinc-200 leading-snug">
+                                                            <span>• <strong className="text-white">{chk.label}</strong></span>
+                                                            <span className="font-mono text-emerald-300 font-black shrink-0">{chk.value}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-[11px] text-zinc-400">현재 뚜렷한 긍정 통과 항목이 적어 보수적 접근이 필요합니다.</p>
+                                            )}
+                                        </div>
+
+                                        <div className="rounded-2xl bg-amber-950/20 border border-amber-500/30 p-3.5 space-y-2">
+                                            <div className="font-black text-amber-300">⚠️ 조심할 점 (꼭 챙길 리스크)</div>
+                                            {(cautionChecks.length > 0 || extraCautions.length > 0) ? (
+                                                <ul className="space-y-1.5">
+                                                    {cautionChecks.map((chk: any, idx: number) => (
+                                                        <li key={`c-${idx}`} className="text-[11px] text-zinc-200 leading-snug">
+                                                            • <strong className="text-amber-200">{chk.label}</strong> ({chk.value}) — {chk.detail}
+                                                        </li>
+                                                    ))}
+                                                    {extraCautions.map((ex, idx) => (
+                                                        <li key={`e-${idx}`} className="text-[11px] text-zinc-200 leading-snug">
+                                                            • <strong className="text-amber-200">{ex.label}</strong> ({ex.value}) — {ex.note}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-[11px] text-emerald-200/90">• 주요 재무·수급 경계 항목 없이 전반적으로 양호합니다. 단, 손절 방어선 준수는 필수입니다.</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* ④ 실전 대응 3줄 카드 (어떻게 사고 · 언제 익절 · 어디서 손절) */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                                        <div className="rounded-2xl bg-slate-900/90 border border-white/10 p-3 space-y-1">
+                                            <div className="text-[11px] font-black text-amber-300">🛒 어떻게 살까? (미보유 시)</div>
+                                            <p className="text-[11px] text-zinc-200 leading-relaxed break-keep">{det.action_for_non_holder}</p>
+                                        </div>
+                                        <div className="rounded-2xl bg-emerald-950/30 border border-emerald-500/35 p-3 space-y-1">
+                                            <div className="text-[11px] font-black text-emerald-300">🎯 언제 수익 챙길까? (익절선)</div>
+                                            <div className="text-xs font-black font-mono text-white">
+                                                1차 {snap.tp1_price || '-'} <span className="text-zinc-400 font-normal">→ 최종</span>{' '}
+                                                <span className="text-amber-300">{snap.target_price || modalDoc?.target_price || '-'}</span>
+                                            </div>
+                                            <p className="text-[11px] text-zinc-300 leading-snug break-keep">{det.action_for_holder}</p>
+                                        </div>
+                                        <div className="rounded-2xl bg-rose-950/30 border border-rose-500/35 p-3 space-y-1">
+                                            <div className="text-[11px] font-black text-rose-300">🛡️ 어디서 멈출까? (손절 방어선)</div>
+                                            <div className="text-xs font-black font-mono text-rose-200">
+                                                {snap.stop_price ? `${snap.stop_price} (-3.5% 방어)` : '진입가 대비 -3.5% 기계적 방어'}
+                                            </div>
+                                            <p className="text-[11px] text-zinc-300 leading-snug break-keep line-clamp-2">{det.reversal_condition}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* 상세 보기 전환 버튼 */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setCouncilViewMode('detail')}
+                                        className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-indigo-500/20 border border-white/10 hover:border-indigo-400/40 text-xs font-black text-indigo-200 transition-all cursor-pointer"
+                                    >
+                                        📑 4개년 연간 재무표 · 5일 수급표 · {activeA.name} 세부 근거 {(det.checks || []).length}개 전체 펼쳐보기 →
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
                             {/* 2.5 기업 사업 소개 & 핵심 테마 (실시간 WiseReport + 테마 매칭) */}
                             {(compProf?.company_summary || (Array.isArray(compProf?.theme_tags) && compProf.theme_tags.length > 0)) && (
                                 <div className="p-3.5 rounded-2xl bg-indigo-950/25 border border-indigo-400/25 space-y-2 text-xs">
@@ -11650,6 +11928,8 @@ export default function CeoOfficePage() {
                                     </div>
                                 </div>
                             </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 );
