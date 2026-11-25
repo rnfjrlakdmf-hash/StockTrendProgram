@@ -597,15 +597,23 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
 
         f_p = safe_f(price)
         f_cr = safe_f(change_rate)
-        
+        f_cv = safe_f(change_val)
+        # 하락(risefall 4/5 또는 등락률 음수) 시 change_val·f_cr 부호 일관화 (양수 절댓값 오표시 방지)
+        if risefall in (4, 5) or f_cr < 0 or str(change_rate or "").strip().startswith("-"):
+            f_cr = -abs(f_cr)
+            f_cv = -abs(f_cv)
+        elif risefall in (1, 2) or f_cr > 0:
+            f_cr = abs(f_cr)
+            f_cv = abs(f_cv)
+
         p_krw = "0"
         if nation != "KOR" and f_p > 0:
             p_krw = f"{f_p * rate:,.0f}"
 
         processed.append({
             "rank": i + 1, "symbol": symbol, "name": name,
-            "price": str(f_p) if f_p > 0 else "0", 
-            "price_krw": p_krw, "change_val": change_val or 0,
+            "price": str(f_p) if f_p > 0 else "0",
+            "price_krw": p_krw, "change_val": f_cv,
             "change_percent": f"{f_cr:+.2f}%", "risefall": risefall,
             "volume": volume, "amount": amount, "market": market
         })
@@ -676,16 +684,34 @@ def get_global_ranking(market="KOSPI", category="trading_volume"):
                     if not p_item.get("change_percent") or is_zero_change(p_item["change_percent"]):
                         p_item["change_percent"] = qp_pct
 
-                # Enrich absolute change value
+                # Enrich signed change value & synchronize with risefall / change_percent sign
+                rf = q.get("risefall_name")
+                if rf: p_item["risefall"] = 2 if rf == 'RISING' else (5 if rf == 'FALLING' else 3)
+
+                pct_str_now = str(p_item.get("change_percent") or "").strip()
+                is_falling_item = p_item.get("risefall") in (4, 5) or pct_str_now.startswith("-")
+                is_rising_item = p_item.get("risefall") in (1, 2) or (not is_falling_item and pct_str_now.startswith("+"))
+
                 qv = q.get("change_val")
                 if qv is not None:
                     try:
-                        p_item["change_val"] = float(str(qv).replace(",", ""))
+                        qv_num = float(str(qv).replace(",", "").strip())
+                        if is_falling_item:
+                            qv_num = -abs(qv_num)
+                        elif is_rising_item:
+                            qv_num = abs(qv_num)
+                        p_item["change_val"] = qv_num
                     except:
                         p_item["change_val"] = qv
-
-                rf = q.get("risefall_name")
-                if rf: p_item["risefall"] = 2 if rf == 'RISING' else (5 if rf == 'FALLING' else 3)
+                else:
+                    try:
+                        cur_cv = float(str(p_item.get("change_val") or 0).replace(",", "").strip())
+                        if is_falling_item:
+                            p_item["change_val"] = -abs(cur_cv)
+                        elif is_rising_item:
+                            p_item["change_val"] = abs(cur_cv)
+                    except:
+                        pass
             return p_item
 
         with ThreadPoolExecutor(max_workers=3) as ex:

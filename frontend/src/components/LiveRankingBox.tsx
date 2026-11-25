@@ -114,8 +114,21 @@ export default function LiveRankingBox() {
             {/* List (2-column balanced grid) */}
             <div className="p-3 md:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
                 {rankings.slice(0, 10).map((item, idx) => {
-                    const isUp = item.change_val > 0 || String(item.change_percent).includes('+');
-                    const isDown = item.change_val < 0 || String(item.change_percent).includes('-');
+                    const pctStr = String(item.change_percent ?? '').trim();
+                    const pctNum = parseFloat(pctStr.replace(/[^0-9.\-]/g, ''));
+                    const isDown =
+                        pctStr.includes('-') ||
+                        (!isNaN(pctNum) && pctNum < 0) ||
+                        item.risefall === 4 ||
+                        item.risefall === 5 ||
+                        (isNaN(pctNum) && Number(item.change_val) < 0);
+                    const isUp =
+                        !isDown &&
+                        (pctStr.includes('+') ||
+                            (!isNaN(pctNum) && pctNum > 0) ||
+                            item.risefall === 1 ||
+                            item.risefall === 2 ||
+                            (isNaN(pctNum) && Number(item.change_val) > 0));
                     const bgClass = isUp ? "bg-rose-500/10 border-rose-500/20 text-rose-300" : isDown ? "bg-sky-500/10 border-sky-500/20 text-sky-300" : "bg-white/5 border-white/10 text-gray-400";
                     
                     return (

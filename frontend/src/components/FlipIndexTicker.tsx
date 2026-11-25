@@ -118,7 +118,7 @@ export default function FlipIndexTicker() {
                             badge,
                             value: rawValue,
                             change: rawChange,
-                            up: item.change_val !== undefined ? item.change_val >= 0 : !rawChange.startsWith("-"),
+                            up: rawChange.startsWith("-") ? false : rawChange.startsWith("+") ? true : (item.change_val !== undefined ? item.change_val >= 0 : true),
                             sparkline: item.sparkline
                         });
                     }

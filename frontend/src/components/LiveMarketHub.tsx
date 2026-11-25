@@ -318,8 +318,21 @@ export default function LiveMarketHub() {
             ) : (
               currentRankings.map((item, idx) => {
                 const actualRank = (page - 1) * 5 + idx + 1;
-                const isUp = item.change_val > 0 || String(item.change_percent).includes('+');
-                const isDown = item.change_val < 0 || String(item.change_percent).includes('-');
+                const pctStr = String(item.change_percent ?? '').trim();
+                const pctNum = parseFloat(pctStr.replace(/[^0-9.\-]/g, ''));
+                const isDown =
+                  pctStr.includes('-') ||
+                  (!isNaN(pctNum) && pctNum < 0) ||
+                  item.risefall === 4 ||
+                  item.risefall === 5 ||
+                  (isNaN(pctNum) && Number(item.change_val) < 0);
+                const isUp =
+                  !isDown &&
+                  (pctStr.includes('+') ||
+                    (!isNaN(pctNum) && pctNum > 0) ||
+                    item.risefall === 1 ||
+                    item.risefall === 2 ||
+                    (isNaN(pctNum) && Number(item.change_val) > 0));
                 const bgClass = isUp 
                   ? "bg-rose-500/10 border-rose-500/20 text-rose-300" 
                   : isDown 
