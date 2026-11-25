@@ -7271,45 +7271,62 @@ export default function CeoOfficePage() {
                                                                                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                                                                                     <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300">
                                                                                         <span className="text-amber-400">👥</span>
-                                                                                        <span>거장 5인 개별 분석 상세 근거</span>
-                                                                                        <span className="text-[10px] text-zinc-500 font-normal">(각 대가별 철학 기반 세부 평가)</span>
+                                                                                        <span>거장 5인 핵심 판정 요약</span>
                                                                                     </div>
-                                                                                    <span className="text-[10.5px] text-amber-300 font-bold bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                                                                                        👆 카드를 클릭하면 실제 재무·수급·리포트 세부 근거 확인
-                                                                                    </span>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => setSelectedCouncilDetail({ doc: activeDoc, council, activeAnalystId: council.analysts?.[0]?.id || 'buffett' })}
+                                                                                        className="text-[10.5px] text-amber-300 hover:text-amber-200 font-black bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2.5 py-0.5 rounded-full cursor-pointer transition-colors"
+                                                                                    >
+                                                                                        👆 카드 클릭 ➔ 3초 요약 · 상세 재무표 보기
+                                                                                    </button>
                                                                                 </div>
 
-                                                                                {/* 관망/축소·경계 판정 시 핵심 발동 사유 요약 바 */}
-                                                                                {Array.isArray(council.bearish_triggers) && council.bearish_triggers.length > 0 && council.target_allocation_pct === 0 && (
-                                                                                    <div className="bg-rose-950/35 border border-rose-500/35 rounded-xl p-3 space-y-1.5">
-                                                                                        <div className="flex flex-wrap items-center justify-between gap-2">
-                                                                                            <span className="text-[11px] font-black text-rose-300 flex items-center gap-1.5">
-                                                                                                <span>🚨</span>
-                                                                                                <span>왜 &apos;관망/축소&apos; 판정이 내려졌나요? (감지된 핵심 사유 {council.bearish_triggers.length}건)</span>
-                                                                                            </span>
+                                                                                {/* 관망/축소·경계 판정 시 초압축 1줄 핵심 사유 칩 바 */}
+                                                                                {Array.isArray(council.bearish_triggers) && council.bearish_triggers.length > 0 && council.target_allocation_pct === 0 && (() => {
+                                                                                    const shortTrigger = (raw: string) => {
+                                                                                        const s = String(raw || '').trim();
+                                                                                        if (/목표주가.*하향|실적\s*추정치\s*하향/.test(s)) return '📉 목표가·실적 하향';
+                                                                                        if (/어닝\s*쇼크|실적\s*급감|실적\s*둔화/.test(s)) return '⚠️ 단기 실적 급감';
+                                                                                        const fMatch = s.match(/외국인[^+\-0-9]*([+\-][\d,]+주)/);
+                                                                                        if (fMatch) return `외인 ${fMatch[1]}`;
+                                                                                        const oMatch = s.match(/기관[^+\-0-9]*([+\-][\d,]+주)/);
+                                                                                        if (oMatch) return `기관 ${oMatch[1]}`;
+                                                                                        const ddMatch = s.match(/52주[^-0-9]*(-[\d.]+%)/);
+                                                                                        if (ddMatch) return `고점대비 ${ddMatch[1]}`;
+                                                                                        if (/적자/.test(s)) return '⚠️ 적자 리스크';
+                                                                                        if (/고평가|과열/.test(s)) return '⚠️ 단기 고평가';
+                                                                                        return s.length > 20 ? `${s.slice(0, 19)}…` : s;
+                                                                                    };
+                                                                                    return (
+                                                                                        <div className="bg-rose-950/35 border border-rose-500/35 rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+                                                                                            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                                                                                                <span className="text-[11px] font-black text-rose-300 shrink-0">
+                                                                                                    🚨 핵심 사유 ({council.bearish_triggers.length}건):
+                                                                                                </span>
+                                                                                                {council.bearish_triggers.slice(0, 4).map((tr: string, tIdx: number) => (
+                                                                                                    <span
+                                                                                                        key={tIdx}
+                                                                                                        title={tr}
+                                                                                                        className="text-[10.5px] font-bold text-rose-100 bg-rose-500/20 border border-rose-400/30 px-2 py-0.5 rounded-md whitespace-nowrap"
+                                                                                                    >
+                                                                                                        {shortTrigger(tr)}
+                                                                                                    </span>
+                                                                                                ))}
+                                                                                            </div>
                                                                                             <button
                                                                                                 type="button"
                                                                                                 onClick={() => setSelectedCouncilDetail({ doc: activeDoc, council, activeAnalystId: council.analysts?.[0]?.id || 'buffett' })}
-                                                                                                className="text-[11px] font-black text-amber-300 hover:text-amber-200 underline underline-offset-2 cursor-pointer"
+                                                                                                className="text-[10.5px] font-black text-amber-300 hover:text-amber-200 underline underline-offset-2 cursor-pointer shrink-0"
                                                                                             >
-                                                                                                5인 세부 근거 전체 펼치기 →
+                                                                                                전체 보기 →
                                                                                             </button>
                                                                                         </div>
-                                                                                        <div className="flex flex-wrap gap-1.5">
-                                                                                            {council.bearish_triggers.slice(0, 4).map((tr: string, tIdx: number) => (
-                                                                                                <span
-                                                                                                    key={tIdx}
-                                                                                                    className="text-[10.5px] font-bold text-rose-100 bg-rose-500/20 border border-rose-400/30 px-2.5 py-1 rounded-lg break-keep"
-                                                                                                >
-                                                                                                    • {tr}
-                                                                                                </span>
-                                                                                            ))}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
+                                                                                    );
+                                                                                })()}
 
-                                                                                {/* 5대 거장 카드 그리드 (버핏 · 멍거 · 그레이엄 · 린치 · 드러켄밀러) */}
-                                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+                                                                                {/* 5대 거장 초압축 요약 카드 그리드 (버핏 · 멍거 · 그레이엄 · 린치 · 드러켄밀러) */}
+                                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
                                                                                     {council.analysts.map((a: any, aIdx: number) => {
                                                                                         const isBuy = a.vote === 'BUY';
                                                                                         const isSell = a.vote === 'SELL';
@@ -7332,18 +7349,54 @@ export default function CeoOfficePage() {
                                                                                             desc: a.reason
                                                                                         };
 
-                                                                                        // 툴팁 위치 좌/우/중앙 스마트 정렬 (화면 밖 잘림 방지)
-                                                                                        const tipAlign = aIdx === 0
-                                                                                            ? 'left-0 translate-x-0'
-                                                                                            : aIdx === council.analysts.length - 1
-                                                                                            ? 'right-0 left-auto translate-x-0'
-                                                                                            : 'left-1/2 -translate-x-1/2';
+                                                                                        // 긴 줄글을 [핵심 팩트 1줄 + 결론 1줄]로 초압축
+                                                                                        const reasonStr = String(a.reason || '');
+                                                                                        const snap = council?.snapshot || {};
+                                                                                        const fmtFlowCompact = (n: number) => {
+                                                                                            const absN = Math.abs(n);
+                                                                                            const sign = n > 0 ? '+' : '-';
+                                                                                            if (absN >= 10000) return `${sign}${(absN / 10000).toFixed(1)}만`;
+                                                                                            return `${sign}${absN.toLocaleString()}`;
+                                                                                        };
+                                                                                        const roeM = reasonStr.match(/ROE\s*[+\-]?\d+(?:\.\d+)?%/i)?.[0];
+                                                                                        const perM = reasonStr.match(/PER\s*\d+(?:\.\d+)?배/i)?.[0];
+                                                                                        const pbrM = reasonStr.match(/PBR\s*\d+(?:\.\d+)?배/i)?.[0];
+                                                                                        const targetM = reasonStr.match(/목표가\s*\(?([\d,]+원)\)?/)?.[1];
+                                                                                        const pegM = reasonStr.match(/PEG\s*\d+(?:\.\d+)?/i)?.[0];
+
+                                                                                        let shortFact = '';
+                                                                                        let shortAction = '';
+                                                                                        if (a.id === 'buffett') {
+                                                                                            const m = [roeM, perM].filter(Boolean).join('·');
+                                                                                            shortFact = isSell ? `수익성 둔화${m ? ` (${m})` : ''}` : isBuy ? `해자·수익력 우수${m ? ` (${m})` : ''}` : `수익 방어력 재점검${m ? ` (${m})` : ''}`;
+                                                                                            shortAction = isSell ? '➔ 무리한 매수 보류' : isBuy ? '➔ 분할 매수 유효' : '➔ 실적 확인 대기';
+                                                                                        } else if (a.id === 'munger') {
+                                                                                            shortFact = isSell ? '목표가·실적 하향 리스크' : isBuy ? '하방 리스크 낮고 체력 탄탄' : '단기 업황·리스크 혼재';
+                                                                                            shortAction = isSell ? '➔ 성급한 저가매수 금지' : isBuy ? '➔ 안정적 분할 접근' : '➔ 추세 안정 후 진입';
+                                                                                        } else if (a.id === 'graham') {
+                                                                                            const m = [pbrM, targetM ? `목표 ${targetM}` : ''].filter(Boolean).join('·');
+                                                                                            shortFact = m || (isBuy ? '저평가 안전마진 확보' : '안전 에어백 재검증');
+                                                                                            shortAction = isBuy ? '➔ 저평가 분할 매수' : '➔ 바닥 확인까지 보류';
+                                                                                        } else if (a.id === 'lynch') {
+                                                                                            shortFact = isSell ? '성장 엔진 둔화 감지' : isBuy ? (pegM ? `성장 저평가 (${pegM})` : '이익 성장 대비 합리 가격') : '성장 재가속 확인 필요';
+                                                                                            shortAction = isSell ? '➔ 섣부른 물타기 금지' : isBuy ? '➔ 눌림목 분할 매수' : '➔ 실적 반등 대기';
+                                                                                        } else {
+                                                                                            const f5n = typeof snap.foreign_5d_net === 'number' ? snap.foreign_5d_net : null;
+                                                                                            const o5n = typeof snap.organ_5d_net === 'number' ? snap.organ_5d_net : null;
+                                                                                            const flowLabel =
+                                                                                                f5n !== null && o5n !== null
+                                                                                                    ? `외인 ${fmtFlowCompact(f5n)} · 기관 ${fmtFlowCompact(o5n)}`
+                                                                                                    : (isSell ? '외인·기관 수급 이탈' : isBuy ? '외인·기관 수급 유입' : '수급 방향성 혼조');
+                                                                                            shortFact = flowLabel;
+                                                                                            shortAction = isSell ? '➔ 현금 비중 방어' : isBuy ? '➔ 수급 추세 진입' : '➔ 수급 전환 대기';
+                                                                                        }
 
                                                                                         return (
                                                                                             <div
                                                                                                 key={a.id}
                                                                                                 role="button"
                                                                                                 tabIndex={0}
+                                                                                                title={`💡 ${a.name} (${easyInfo.tag})\n${a.reason}`}
                                                                                                 onClick={() => setSelectedCouncilDetail({ doc: activeDoc, council, activeAnalystId: a.id })}
                                                                                                 onKeyDown={(e) => {
                                                                                                     if (e.key === 'Enter' || e.key === ' ') {
@@ -7351,86 +7404,57 @@ export default function CeoOfficePage() {
                                                                                                         setSelectedCouncilDetail({ doc: activeDoc, council, activeAnalystId: a.id });
                                                                                                     }
                                                                                                 }}
-                                                                                                className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md hover:-translate-y-0.5 hover:shadow-lg flex flex-col justify-between cursor-pointer group/card ${cardBorder}`}
+                                                                                                className={`rounded-xl p-2.5 border transition-all shadow-md hover:-translate-y-0.5 hover:shadow-lg flex flex-col justify-between gap-2 cursor-pointer group/card ${cardBorder}`}
                                                                                             >
-                                                                                                <div className="space-y-2">
-                                                                                                    {/* 1행: 아바타 + 거장 풀네임 (단독 1행 100% 너비 확보로 글자 잘림 완전 방지) */}
-                                                                                                    <div className="flex items-center gap-1.5 min-w-0 pb-0.5">
-                                                                                                        <span className="text-lg shrink-0 select-none leading-none">{a.avatar}</span>
-                                                                                                        <span className="text-xs sm:text-[13px] font-black text-white whitespace-nowrap tracking-tight">
-                                                                                                            {a.name}
+                                                                                                <div className="space-y-1.5">
+                                                                                                    {/* 1행: 아바타 + 이름 + 확신도 점수 한 줄 */}
+                                                                                                    <div className="flex items-center justify-between gap-1 min-w-0">
+                                                                                                        <div className="flex items-center gap-1 min-w-0">
+                                                                                                            <span className="text-base shrink-0 select-none leading-none">{a.avatar}</span>
+                                                                                                            <span className="text-xs font-black text-white truncate tracking-tight">
+                                                                                                                {a.name}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        <span className="text-[10px] font-mono font-black text-zinc-300 bg-white/5 px-1.5 py-0.5 rounded shrink-0">
+                                                                                                            {a.confidence}점
                                                                                                         </span>
                                                                                                     </div>
 
-                                                                                                    {/* 2행: 투표 판정 뱃지 (가로 100% 꽉 채운 선명한 버튼형 뱃지) */}
-                                                                                                    <div>
-                                                                                                        <div className={`w-full py-1 px-2 rounded-lg border text-center text-[10.5px] font-black shadow-sm ${badgeColor}`}>
+                                                                                                    {/* 2행: 판정 뱃지 + 슬림 확신도 게이지 바 */}
+                                                                                                    <div className="space-y-1">
+                                                                                                        <div className={`w-full py-0.5 px-2 rounded-md border text-center text-[10.5px] font-black ${badgeColor}`}>
                                                                                                             {a.vote_label}
                                                                                                         </div>
-                                                                                                    </div>
-
-                                                                                                    {/* 3행: 전문 투자 철학/역할 태그 & 마우스 호버 시 3초 쉬운 요약 말풍선 */}
-                                                                                                    <div className="relative group/analyst-tip pb-1 border-b border-white/10">
-                                                                                                        <div
-                                                                                                            className="cursor-help flex items-center justify-center gap-1 text-[9.5px] sm:text-[10px] text-zinc-300 hover:text-amber-300 font-bold bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/40 px-1.5 py-0.5 rounded text-center transition-colors"
-                                                                                                            title={`💡 [${easyInfo.tag} · ${easyInfo.analogy}]\n${easyInfo.desc}`}
-                                                                                                        >
-                                                                                                            <span className="truncate">{a.role}</span>
-                                                                                                            <span className="text-[10px] text-amber-400/80 group-hover/analyst-tip:text-amber-300 shrink-0">ⓘ</span>
-                                                                                                        </div>
-
-                                                                                                        {/* 팝업 말풍선 (마우스 올리면 3초 만에 이해되는 초간단 요약) */}
-                                                                                                        <div className={`pointer-events-none absolute bottom-full mb-2 w-64 p-3 rounded-xl bg-slate-950/95 border border-amber-400/50 text-left shadow-2xl backdrop-blur-md opacity-0 group-hover/analyst-tip:opacity-100 transition-all duration-200 z-50 ${tipAlign}`}>
-                                                                                                            <div className="flex items-center justify-between gap-1 pb-1 mb-1.5 border-b border-white/10">
-                                                                                                                <span className="text-xs font-black text-amber-300 flex items-center gap-1">
-                                                                                                                    <span>{a.avatar}</span>
-                                                                                                                    <span>{a.name}의 3초 요약</span>
-                                                                                                                </span>
-                                                                                                                <span className="text-[9px] text-amber-400/80 font-bold px-1.5 py-0.2 bg-amber-500/10 rounded border border-amber-500/20">
-                                                                                                                    {easyInfo.tag}
-                                                                                                                </span>
-                                                                                                            </div>
-                                                                                                            <div className="text-[10.5px] font-extrabold text-white mb-1.5 flex items-start gap-1">
-                                                                                                                <span className="text-amber-400 text-xs shrink-0 mt-0.5">💡</span>
-                                                                                                                <span className="break-keep">{easyInfo.analogy}</span>
-                                                                                                            </div>
-                                                                                                            <p className="text-[10px] text-zinc-300 font-medium leading-relaxed break-keep">
-                                                                                                                {easyInfo.desc}
-                                                                                                            </p>
-                                                                                                        </div>
-                                                                                                    </div>
-
-                                                                                                    {/* 4행: 확신도 점수 & 게이지 바 */}
-                                                                                                    <div className="space-y-1 pt-0.5">
-                                                                                                        <div className="flex items-center justify-between text-[10px]">
-                                                                                                            <span className="text-zinc-400 font-bold">확신도</span>
-                                                                                                            <span className="font-mono font-black text-white">{a.confidence}점</span>
-                                                                                                        </div>
-                                                                                                        <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                                                                                        <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
                                                                                                             <div
-                                                                                                                className={`h-full rounded-full transition-all duration-500 ${gaugeColor}`}
+                                                                                                                className={`h-full rounded-full ${gaugeColor}`}
                                                                                                                 style={{ width: `${a.confidence}%` }}
                                                                                                             />
                                                                                                         </div>
                                                                                                     </div>
 
-                                                                                                    {/* 5행: 한 줄 핵심 근거 (충분한 행간 & 쾌적한 폰트 패딩) */}
-                                                                                                    <div className="text-[11px] text-zinc-200 font-medium leading-relaxed break-keep p-2 rounded-lg bg-black/40 border border-white/5 min-h-[58px] flex items-center">
-                                                                                                        {a.reason}
+                                                                                                    {/* 3행: 초압축 2줄 핵심 요약 (팩트 + 행동 결론) */}
+                                                                                                    <div className="rounded-lg bg-black/45 border border-white/5 px-2 py-1.5 space-y-0.5">
+                                                                                                        <div className="text-[10.5px] text-zinc-300 font-medium truncate" title={shortFact}>
+                                                                                                            {shortFact}
+                                                                                                        </div>
+                                                                                                        <div className={`text-[11px] font-black truncate ${
+                                                                                                            isSell ? 'text-rose-200' : isBuy ? 'text-emerald-200' : 'text-amber-200'
+                                                                                                        }`}>
+                                                                                                            {shortAction}
+                                                                                                        </div>
                                                                                                     </div>
                                                                                                 </div>
 
-                                                                                                {/* 6행: 세부 근거 팝업 열기 버튼 */}
-                                                                                                <div className={`mt-2.5 pt-2 border-t border-white/10 text-center text-[10.5px] font-black flex items-center justify-center gap-1 transition-colors ${
+                                                                                                {/* 4행: 깔끔한 1줄 상세 근거 링크 */}
+                                                                                                <div className={`pt-1.5 border-t border-white/10 text-center text-[10.5px] font-black whitespace-nowrap transition-colors ${
                                                                                                     isSell
                                                                                                         ? 'text-rose-300 group-hover/card:text-rose-200'
                                                                                                         : isBuy
                                                                                                         ? 'text-emerald-300 group-hover/card:text-emerald-200'
                                                                                                         : 'text-amber-300 group-hover/card:text-amber-200'
                                                                                                 }`}>
-                                                                                                    <span>🔍</span>
-                                                                                                    <span>{isSell ? '관망/축소 세부 근거 보기' : isBuy ? '매수 세부 근거 보기' : '중립 세부 근거 보기'}</span>
-                                                                                                    <span>→</span>
+                                                                                                    상세 근거 보기 →
                                                                                                 </div>
                                                                                             </div>
                                                                                         );
