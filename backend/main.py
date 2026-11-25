@@ -924,6 +924,33 @@ def api_admin_auto_trader_test_fcm():
     return {"status": "success", "message": "✅ 대표님 스마트폰(FCM) 및 [🤖 자동매매 알림] 탭으로 실시간 체결 알림이 발송되었습니다!", "data": res}
 
 
+@app.get("/api/system/admin/sidecar-guard")
+def api_admin_get_sidecar_guard(
+    x_admin_key: Optional[str] = Header(None),
+    authorization: Optional[str] = Header(None),
+    x_ceo_email: Optional[str] = Header(None),
+):
+    ceo_ok = str(x_ceo_email or "").strip().lower() in ("rnfjr@gmail.com", "rnfjrlakdmf@gmail.com")
+    if not ceo_ok and not _verify_admin_key(x_admin_key, authorization):
+        raise HTTPException(status_code=403, detail="Admin access only")
+    from auto_trader_service import get_sidecar_guard_status
+    return {"status": "success", "data": get_sidecar_guard_status()}
+
+
+@app.post("/api/system/admin/sidecar-guard")
+def api_admin_update_sidecar_guard(
+    payload: dict = Body(...),
+    x_admin_key: Optional[str] = Header(None),
+    authorization: Optional[str] = Header(None),
+    x_ceo_email: Optional[str] = Header(None),
+):
+    ceo_ok = str(x_ceo_email or "").strip().lower() in ("rnfjr@gmail.com", "rnfjrlakdmf@gmail.com")
+    if not ceo_ok and not _verify_admin_key(x_admin_key, authorization):
+        raise HTTPException(status_code=403, detail="Admin access only")
+    from auto_trader_service import update_sidecar_guard_config
+    return {"status": "success", "data": update_sidecar_guard_config(payload)}
+
+
 @app.post("/api/system/admin/log-client-error")
 async def api_admin_log_client_error(req: Request):
     try:

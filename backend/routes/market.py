@@ -6105,6 +6105,35 @@ def _generate_wall_street_council(doc: dict, include_deep: bool = False) -> dict
     }
 
 
+@router.get("/sidecar-status")
+def get_market_sidecar_status_api(refresh: bool = Query(False)):
+    """
+    한·미 실시간 매도/매수 사이드카 & 서킷브레이커 통합 경보 레이더 API (15초 캐시).
+    - 코스피200 선물(±5%), 코스피(-8/-15/-20%), 코스닥(±6%/-8%), 미국 S&P500(-7/-13/-20%) 실시간 추적
+    - 자동매매 계좌 보호 사이드카 연동 발동 여부(account_brake_active) 요약 함께 제공
+    """
+    try:
+        from sidecar_monitor import get_market_sidecar_status, evaluate_account_sidecar
+        data = get_market_sidecar_status(force_refresh=refresh)
+        brake_active = False
+        try:
+            from auto_trader_service import load_state
+            st = load_state()
+            ge = evaluate_account_sidecar(st, data)
+            brake_active = bool(ge.get("buy_blocked", False))
+        except Exception:
+            pass
+        return {
+            "status": "success",
+            "data": {
+                **data,
+                "account_brake_active": brake_active,
+            },
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 @router.post("/ceo-office/council-deep")
 def post_ceo_office_council_deep(payload: Dict[str, Any] = Body(...)):
     """

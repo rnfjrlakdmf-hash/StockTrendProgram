@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react';
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import GlobalProgressWatcher from "@/components/GlobalProgressWatcher";
+import GlobalSidecarBanner from "@/components/GlobalSidecarBanner";
 import Script from "next/script";
 import { AuthProvider } from "@/context/AuthContext";
 import FCMWrapper from "@/components/FCMWrapper";
@@ -152,6 +153,7 @@ export default function RootLayout({
               <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary-900/20 blur-[120px] pointer-events-none -z-10 mix-blend-screen" />
               <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] rounded-full bg-indigo-900/10 blur-[120px] pointer-events-none -z-10 mix-blend-screen" />
 
+              <GlobalSidecarBanner />
               {children}
 
               {/* Site Footer - AdSense 및 YMYL 정책 준수 푸터 */}

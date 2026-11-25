@@ -423,6 +423,16 @@ def _default_state() -> Dict[str, Any]:
             "kis_app_key": "",
             "kis_app_secret": "",
             "kis_account_no": "",  # 예: 50123456-01
+            "sidecar_guard": {
+                "enabled": True,
+                "market_drop_threshold_pct": 3.5,
+                "block_on_sell_sidecar": True,
+                "block_strategy_lab": True,
+                "daily_loss_limit_enabled": True,
+                "daily_loss_limit_pct": 3.5,
+                "manual_lock": False,
+                "fcm_notify": True,
+            },
         },
         "account": {
             "cash_krw": 10000000,
@@ -442,6 +452,7 @@ def _default_state() -> Dict[str, Any]:
             "paper_enabled": True,   # 가상매매(모의) 마스터 스위치
             "real_enabled": False,   # 실전매매(한투 실계좌) 마스터 스위치 (안전 기본 OFF)
         },
+        "sidecar_events": [],  # 계좌 보호 사이드카 발동 이력
         "last_cycle_at": "",
         "kis_token": {"access_token": "", "expires_at": 0},
         "kis_token_real": {"access_token": "", "expires_at": 0},
@@ -494,7 +505,13 @@ def load_state() -> Dict[str, Any]:
 
     try:
         if isinstance(saved, dict):
-            state["config"].update(saved.get("config", {}))
+            default_sg = dict(state["config"].get("sidecar_guard") or {})
+            saved_cfg = saved.get("config", {})
+            state["config"].update(saved_cfg)
+            merged_sg = dict(default_sg)
+            if isinstance(saved_cfg.get("sidecar_guard"), dict):
+                merged_sg.update(saved_cfg["sidecar_guard"])
+            state["config"]["sidecar_guard"] = merged_sg
             state["account"].update(saved.get("account", {}))
             state["positions"] = saved.get("positions", [])
             state["paper_positions_backup"] = saved.get("paper_positions_backup", [])
@@ -506,6 +523,7 @@ def load_state() -> Dict[str, Any]:
             state["strategy_lab_logs"] = saved.get("strategy_lab_logs", [])[:100]
             if isinstance(saved.get("strategy_lab_settings"), dict):
                 state["strategy_lab_settings"].update(saved.get("strategy_lab_settings", {}))
+            state["sidecar_events"] = saved.get("sidecar_events", [])[:30]
             state["last_cycle_at"] = saved.get("last_cycle_at", "")
             state["kis_token"] = saved.get("kis_token", {"access_token": "", "expires_at": 0})
             state["kis_token_real"] = saved.get("kis_token_real", {"access_token": "", "expires_at": 0})
@@ -1762,6 +1780,36 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     active_market = session_info["active_market"]  # "KR" (08:00~17:00) | "US" (17:00~08:00)
     state["active_session"] = session_info
 
+    # [계좌 보호 사이드카(비상 브레이크) 실시간 판정 — 거래소 매도 사이드카·급락·일일 손실한도 통합 연동]
+    try:
+        from sidecar_monitor import get_market_sidecar_status, evaluate_account_sidecar, notify_sidecar_if_needed
+        _live_sidecar_market = get_market_sidecar_status()
+        _sidecar_guard_eval = evaluate_account_sidecar(state, _live_sidecar_market)
+        state["sidecar_guard_live"] = _sidecar_guard_eval
+        if _sidecar_guard_eval.get("buy_blocked"):
+            _ev_list = state.setdefault("sidecar_events", [])
+            _today_d = datetime.now(KST).strftime("%Y-%m-%d")
+            _ev_code = str(_sidecar_guard_eval.get("trigger_code") or "BRAKE")
+            _dup = any(
+                e.get("date") == _today_d and e.get("code") == _ev_code and abs(time.time() - float(e.get("ts", 0))) < 1800
+                for e in _ev_list[:8]
+            )
+            if not _dup:
+                _ev_list.insert(0, {
+                    "ts": time.time(),
+                    "date": _today_d,
+                    "time": datetime.now(KST).strftime("%H:%M:%S"),
+                    "code": _ev_code,
+                    "reason": " · ".join(_sidecar_guard_eval.get("triggers") or []),
+                    "market_snapshot": _sidecar_guard_eval.get("market_snapshot") or {},
+                })
+                state["sidecar_events"] = _ev_list[:30]
+            notify_sidecar_if_needed(_sidecar_guard_eval, _send_admin_trade_notification)
+    except Exception as _sc_err:
+        print(f"[AutoTrader] sidecar_guard eval warning: {_sc_err}")
+        _sidecar_guard_eval = {"buy_blocked": False, "block_strategy_lab": False, "triggers": [], "summary_text": ""}
+        state["sidecar_guard_live"] = _sidecar_guard_eval
+
     # 1. 현재 보유 종목 실시간 시세 갱신 및 자동 익절 / 트레일링 스탑 / 자동 손절 체크
     is_kis_mode = cfg.get("mode") in ("KIS_REAL", "KIS_VIRTUAL")
     remaining_positions = []
@@ -1803,8 +1851,8 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         use_sl = bool(cfg.get("use_stop_loss", False))
         auto_avg = bool(cfg.get("auto_averaging_down", True))
 
-        # [자동 물타기(평단가 낮추기) 로직]: 무손절 모드에서 -5.0% 이하 하락 시 1회 자동 추매하여 평단가를 낮추고 빠른 탈출/익절 유도
-        if (cfg.get("enabled") or force_buy) and not use_sl and auto_avg and pnl_pct <= -5.0 and not pos.get("averaged_down", False):
+        # [자동 물타기(평단가 낮추기) 로직]: 무손절 모드에서 -5.0% 이하 하락 시 1회 자동 추매 (단, 계좌 보호 사이드카 발동 시 추매 자동 차단!)
+        if (cfg.get("enabled") or force_buy) and not _sidecar_guard_eval.get("buy_blocked") and not use_sl and auto_avg and pnl_pct <= -5.0 and not pos.get("averaged_down", False):
             max_invest_cap = int(cfg.get("max_total_invest_krw", 0) or 0)
             curr_invested_krw = sum(
                 int(round(p.get("avg_price", 0) * p.get("qty", 0) * (fx_rate if p.get("is_us") else 1.0)))
@@ -2008,12 +2056,19 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     if int(learning_fb_cycle.get("today_pnl_krw", 0)) <= daily_loss_limit_krw:
         min_score = min(92, min_score + 5)
 
-    market_crash_brake = (avg_market_chg <= -3.0) and not force_buy
-    state["risk_guard_status"] = (
-        f"🚨 시장 급락 서킷브레이커 작동 중 (평균 {avg_market_chg:+.2f}%) — 신규 매수 보류·현금 보호"
-        if market_crash_brake
-        else f"🛡️ 5중 리스크 방어 정상 가동 중 (시장 평균 {avg_market_chg:+.2f}% · 커트라인 {min_score}점 · 섹터분산 · 일일손실한도 방어)"
-    )
+    market_crash_brake = (_sidecar_guard_eval.get("buy_blocked") or (avg_market_chg <= -3.0)) and not force_buy
+    if _sidecar_guard_eval.get("buy_blocked"):
+        state["risk_guard_status"] = _sidecar_guard_eval.get("summary_text") or (
+            f"🚨 계좌 보호 사이드카 발동 중 — 신규 매수 자동 잠금 (현금 보호)"
+        )
+    elif market_crash_brake:
+        state["risk_guard_status"] = (
+            f"🚨 시장 급락 서킷브레이커 작동 중 (평균 {avg_market_chg:+.2f}%) — 신규 매수 보류·현금 보호"
+        )
+    else:
+        state["risk_guard_status"] = (
+            f"🛡️ 5중 리스크 방어 + 계좌 보호 사이드카 정상 감시 중 (시장 평균 {avg_market_chg:+.2f}% · 커트라인 {min_score}점 · 섹터분산 · 일일손실한도 방어)"
+        )
 
     single_market_max = cfg_max
 
@@ -2361,6 +2416,15 @@ def execute_custom_ai_strategies(state: Dict[str, Any]) -> List[str]:
 
         if live_p <= 0:
             strat["monitor_status"] = "⚠️ 실시간 시세 조회 대기 중"
+            continue
+
+        # [계좌 보호 사이드카 연동] 시장 매도 사이드카/급락 또는 일일 손실 한도 도달 시 전략랩 신규 매수 차단
+        _lab_guard = state.get("sidecar_guard_live") or {}
+        if _lab_guard.get("block_strategy_lab"):
+            strat["monitor_status"] = (
+                f"🛡️ [계좌 사이드카 발동] 시장 급락/매도 사이드카 감지로 신규 매수 자동 잠금 중 "
+                f"(현재 {chg_pct:+.2f}% · 보유 익절/손절 매도는 정상 작동)"
+            )
             continue
 
         # 매수 트리거 충족 여부 판단: 당일 등락률 <= -buy_dip%
@@ -3110,6 +3174,17 @@ def _sync_and_trade_paper_portfolio(state: Dict[str, Any], candidates: List[Dict
 
     def _fill_market_slots(pool: List[Dict[str, Any]], need_count: int, market_label: str):
         nonlocal changed
+        # [계좌 보호 사이드카 연동] 거래소 매도 사이드카/급락 또는 수동 잠금 발동 시 모의투자 신규 매수도 자동 일시 차단
+        _paper_guard = state.get("sidecar_guard_live")
+        if _paper_guard is None:
+            try:
+                from sidecar_monitor import evaluate_account_sidecar
+                _paper_guard = evaluate_account_sidecar(state)
+                state["sidecar_guard_live"] = _paper_guard
+            except Exception:
+                _paper_guard = {}
+        if _paper_guard.get("buy_blocked"):
+            return
         added = 0
         newly_bought_items = []
         sorted_pool = sorted(
@@ -3642,8 +3717,83 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
         "strategy_lab_positions": state.get("strategy_lab_positions", []),
         "strategy_lab_logs": state.get("strategy_lab_logs", [])[:30],
         "strategy_lab_settings": state.get("strategy_lab_settings", {"paper_enabled": True, "real_enabled": False}),
+        "sidecar_guard": state.get("sidecar_guard_live") or (
+            __import__("sidecar_monitor").evaluate_account_sidecar(state)
+        ),
+        "sidecar_events": state.get("sidecar_events", [])[:20],
         "last_cycle_at": state.get("last_cycle_at", ""),
         "last_quote_refresh_at": state.get("last_quote_refresh_at", datetime.now(KST).strftime("%H:%M:%S")),
+    }
+
+
+def get_sidecar_guard_status() -> Dict[str, Any]:
+    """대표님 전용 계좌 보호 사이드카 실시간 상태 + 시장 사이드카 현황 통합 조회"""
+    from sidecar_monitor import get_market_sidecar_status, evaluate_account_sidecar
+    state = load_state()
+    market_stat = get_market_sidecar_status()
+    guard_eval = evaluate_account_sidecar(state, market_stat)
+    state["sidecar_guard_live"] = guard_eval
+    return {
+        "market": market_stat,
+        "guard": guard_eval,
+        "events": state.get("sidecar_events", [])[:20],
+        "auto_trader_enabled": bool(state.get("config", {}).get("enabled", True)),
+        "auto_trader_mode": state.get("config", {}).get("mode", "AI_PAPER"),
+        "strategy_lab_settings": state.get("strategy_lab_settings", {"paper_enabled": True, "real_enabled": False}),
+    }
+
+
+def update_sidecar_guard_config(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """대표님 전용 계좌 보호 사이드카 설정 저장 및 수동 잠금 원클릭 제어"""
+    from sidecar_monitor import default_sidecar_guard_config, get_market_sidecar_status, evaluate_account_sidecar
+    state = load_state()
+    sg = dict(default_sidecar_guard_config())
+    if isinstance(state["config"].get("sidecar_guard"), dict):
+        sg.update(state["config"]["sidecar_guard"])
+
+    bool_keys = (
+        "enabled",
+        "block_on_sell_sidecar",
+        "block_strategy_lab",
+        "daily_loss_limit_enabled",
+        "manual_lock",
+        "fcm_notify",
+    )
+    for bk in bool_keys:
+        if bk in payload and payload[bk] is not None:
+            sg[bk] = bool(payload[bk])
+
+    if "market_drop_threshold_pct" in payload and payload["market_drop_threshold_pct"] is not None:
+        sg["market_drop_threshold_pct"] = max(1.0, min(15.0, abs(float(payload["market_drop_threshold_pct"]))))
+    if "daily_loss_limit_pct" in payload and payload["daily_loss_limit_pct"] is not None:
+        sg["daily_loss_limit_pct"] = max(0.5, min(20.0, abs(float(payload["daily_loss_limit_pct"]))))
+
+    state["config"]["sidecar_guard"] = sg
+    market_stat = get_market_sidecar_status()
+    guard_eval = evaluate_account_sidecar(state, market_stat)
+    state["sidecar_guard_live"] = guard_eval
+
+    # 수동 잠금 토글 시 이력에 즉시 기록
+    if "manual_lock" in payload:
+        now_kst = datetime.now(KST)
+        state.setdefault("sidecar_events", []).insert(0, {
+            "ts": time.time(),
+            "date": now_kst.strftime("%Y-%m-%d"),
+            "time": now_kst.strftime("%H:%M:%S"),
+            "code": "MANUAL_LOCK_ON" if sg["manual_lock"] else "MANUAL_LOCK_OFF",
+            "reason": "🔒 대표님 수동 매수 사이드카 비상 잠금 ON" if sg["manual_lock"] else "🔓 대표님 수동 매수 사이드카 잠금 해제 OFF",
+            "market_snapshot": guard_eval.get("market_snapshot") or {},
+        })
+        state["sidecar_events"] = state["sidecar_events"][:30]
+
+    save_state(state)
+    return {
+        "market": market_stat,
+        "guard": guard_eval,
+        "events": state.get("sidecar_events", [])[:20],
+        "auto_trader_enabled": bool(state.get("config", {}).get("enabled", True)),
+        "auto_trader_mode": state.get("config", {}).get("mode", "AI_PAPER"),
+        "strategy_lab_settings": state.get("strategy_lab_settings", {"paper_enabled": True, "real_enabled": False}),
     }
 
 

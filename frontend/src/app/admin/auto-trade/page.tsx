@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { API_BASE_URL } from "@/lib/config";
 import Header from "@/components/Header";
+import AccountSidecarControlPanel from "@/components/AccountSidecarControlPanel";
 import { getMarketInfo } from "@/lib/marketTag";
 import {
   Bot,
@@ -1509,6 +1510,9 @@ export default function AdminAutoTradePage() {
             </div>
           </div>
         </div>
+
+        {/* 🛡️ [통합 패키지] 시장 매도 사이드카 연동 & 계좌 보호 비상 브레이크 사령부 */}
+        <AccountSidecarControlPanel adminKey={ADMIN_KEY} />
 
         {/* 🏢 0. AI 증권사 9대 부서 24시간 무인 협업 파이프라인 (투자의 전 과정을 대신 돌리는 9단계 컨트롤 타워) */}
         <div className="rounded-3xl bg-gradient-to-b from-emerald-950/35 via-zinc-950/95 to-black/95 border border-emerald-500/40 p-4 sm:p-6 space-y-5 shadow-2xl shadow-emerald-500/5 relative overflow-hidden">

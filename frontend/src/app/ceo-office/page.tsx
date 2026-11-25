@@ -9,6 +9,7 @@ import KakaoRevenueAd from '@/components/KakaoRevenueAd';
 import { useAuth, isAdminEmail } from '@/context/AuthContext';
 import { Compass, TrendingUp, ShieldAlert, Sparkles, AlertTriangle, BookOpen, CheckCircle2, FileText, ArrowRight, Users, Target, Shield, Award, Flame, Briefcase, DollarSign, RefreshCw, Printer, X, BarChart3, Clock, Loader2, Zap, Globe } from 'lucide-react';
 import StrategyLabWidget from '@/components/StrategyLabWidget';
+import AccountSidecarControlPanel from '@/components/AccountSidecarControlPanel';
 
 
 // [Smart Executive Opinion Parser]
@@ -6042,6 +6043,9 @@ export default function CeoOfficePage() {
             <div ref={mainSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
                 {/* 🚨 대표님 전용 글로벌 리스크 레이더 (내 관심종목 자동 판단) */}
                 <RiskRadarPanel email={getCeoEmail()} />
+
+                {/* 🛡️ [통합 패키지] 거래소 사이드카 연동 & 계좌 보호 비상 브레이크 제어판 */}
+                <AccountSidecarControlPanel ceoEmail={getCeoEmail()} compactDefault />
 
                 {/* 🧪 [신규 오픈] AI 매매 전략 자율 연습장 바로가기 하이라이트 배너 */}
                 <div className="bg-gradient-to-r from-violet-950/90 via-purple-900/70 to-indigo-950/90 border-2 border-violet-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5">

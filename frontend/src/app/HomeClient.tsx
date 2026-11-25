@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import LiveMarketHub from "@/components/LiveMarketHub";
 import MarketIndicators from "@/components/MarketIndicators";
 import FearGreedSpeedometer from "@/components/FearGreedSpeedometer";
+import MarketSidecarRadar from "@/components/MarketSidecarRadar";
 import { CalendarClock, ChevronRight, Newspaper, Flame, BookOpen, Calculator } from "lucide-react";
 import Link from "next/link";
 import { useAuth, isAdminEmail } from "@/context/AuthContext";
@@ -96,6 +97,9 @@ export default function HomeClient() {
           <FearGreedSpeedometer />
           <LiveMarketHub />
         </div>
+
+        {/* 2.5. 🛡️ 한·미 실시간 사이드카 · 서킷브레이커 경보 레이더 */}
+        <MarketSidecarRadar />
 
         {/* 3. 핵심 아카데미 & 리서치 바로가기 3단 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
