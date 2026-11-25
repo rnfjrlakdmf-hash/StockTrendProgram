@@ -3421,7 +3421,7 @@ function getStockOverseasDirectHitSummary(stockName: string, stockCode?: string,
 function RiskRadarPanel({ email }: { email: string }) {
     const [report, setReport] = useState<any>(null);
     const [loading, setLoading] = useState<boolean>(false);
-    const [open, setOpen] = useState<boolean>(true);
+    const [open, setOpen] = useState<boolean>(false);
     const [errorMsg, setErrorMsg] = useState<string>('');
 
     const load = useCallback(async (scan: boolean) => {

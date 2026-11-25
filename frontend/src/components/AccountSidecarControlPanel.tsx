@@ -80,14 +80,13 @@ interface Props {
 export default function AccountSidecarControlPanel({
   ceoEmail,
   adminKey,
-  compactDefault = false,
+  compactDefault = true,
 }: Props) {
   const [payload, setPayload] = useState<SidecarGuardApiPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(!compactDefault);
-  const [didAutoExpand, setDidAutoExpand] = useState(false);
 
   const buildHeaders = useCallback((): Record<string, string> => {
     const h: Record<string, string> = { "Content-Type": "application/json" };
@@ -130,14 +129,6 @@ export default function AccountSidecarControlPanel({
     const timer = setInterval(fetchGuard, 20000);
     return () => clearInterval(timer);
   }, [fetchGuard]);
-
-  // 비상 브레이크가 실제로 발동된 경우 compact 모드라도 자동 펼침
-  useEffect(() => {
-    if (!didAutoExpand && payload?.guard?.buy_blocked) {
-      setExpanded(true);
-      setDidAutoExpand(true);
-    }
-  }, [payload?.guard?.buy_blocked, didAutoExpand]);
 
   const patchConfig = async (patch: Partial<SidecarGuardConfig>, successText: string) => {
     setSaving(true);
@@ -184,10 +175,10 @@ export default function AccountSidecarControlPanel({
 
   return (
     <div
-      className={`rounded-2xl border p-4 sm:p-5 space-y-4 transition-all relative overflow-hidden ${
+      className={`rounded-2xl border-2 p-4 sm:p-5 space-y-3 shadow-xl transition-all relative overflow-hidden ${
         isBlocked
-          ? "bg-gradient-to-br from-rose-950/60 via-zinc-950/95 to-black border-rose-500/60 shadow-[0_0_32px_rgba(244,63,94,0.18)]"
-          : "bg-gradient-to-br from-emerald-950/25 via-zinc-950/95 to-black border-emerald-500/35"
+          ? "bg-gradient-to-br from-rose-950/40 via-[#10101c] to-slate-950 border-rose-500/50"
+          : "bg-gradient-to-br from-emerald-950/25 via-[#0d1424] to-slate-950 border-emerald-500/30"
       }`}
     >
       {/* 저장 완료 토스트 */}
@@ -198,78 +189,58 @@ export default function AccountSidecarControlPanel({
         </div>
       )}
 
-      {/* 1. 상단 핵심 상태 바 (접혀 있어도 항상 즉시 파악 가능) */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div className="space-y-1.5 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black ${
-                isBlocked
-                  ? "bg-rose-500 text-white shadow-md shadow-rose-500/40"
-                  : "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40"
-              }`}
-            >
-              {isBlocked ? (
-                <ShieldAlert className="w-3.5 h-3.5 animate-pulse" />
-              ) : (
-                <ShieldCheck className="w-3.5 h-3.5" />
-              )}
-              <span>
-                {isBlocked
-                  ? "🚨 계좌 보호 사이드카 발동 중 (신규 매수 잠금)"
-                  : "🛡️ 계좌 보호 사이드카 정상 감시 중"}
-              </span>
+      {/* 1. 슬림 1줄 접힘 헤더 바 (글로벌 리스크 레이더와 동일한 컴팩트 1줄 스타일) */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="flex flex-wrap items-center gap-2 cursor-pointer text-left min-w-0"
+        >
+          <span
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-black text-xs shrink-0 ${
+              isBlocked
+                ? "bg-rose-500 text-white"
+                : "bg-emerald-400 text-slate-950"
+            }`}
+          >
+            {isBlocked ? (
+              <ShieldAlert className="w-3.5 h-3.5 animate-pulse" />
+            ) : (
+              <ShieldCheck className="w-3.5 h-3.5" />
+            )}
+            <span>
+              {isBlocked
+                ? "계좌 보호 사이드카 발동 중 (신규 매수 잠금)"
+                : "계좌 보호 사이드카 정상 감시 중"}
             </span>
+          </span>
 
-            <span className="px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-[11px] font-bold text-gray-300">
-              거래소: {market?.overall_badge || snap?.overall_badge}
+          <span className="text-xs font-black text-white flex flex-wrap items-center gap-1.5">
+            <span>
+              선물 <b className={pctClass(snap.kospi200_fut_pct)}>{fmtPct(snap.kospi200_fut_pct)}</b>
             </span>
-
-            <span className="text-[11px] font-mono text-gray-400 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              <span>{snap?.updated_time || market?.updated_time || "-"}</span>
+            <span className="text-gray-500">·</span>
+            <span>
+              코스피 <b className={pctClass(snap.kospi_pct)}>{fmtPct(snap.kospi_pct)}</b>
             </span>
-          </div>
+            <span className="text-gray-500 hidden sm:inline">·</span>
+            <span className="hidden sm:inline text-gray-300 font-bold">
+              {isBlocked ? "신규 매수 자동 차단 (익절·손절 유지)" : "신규 매수 정상 허용"}
+            </span>
+          </span>
 
-          {isBlocked && guard.triggers.length > 0 ? (
-            <div className="space-y-1">
-              {guard.triggers.map((t, i) => (
-                <p key={i} className="text-xs font-bold text-rose-200 leading-snug">
-                  • {t}
-                </p>
-              ))}
-              <p className="text-[11px] text-amber-200/90 font-semibold">
-                ✅ 신규 매수·물타기·전략랩 진입만 자동 차단되었습니다. 보유 종목의 익절·손절 방어 매도는 정상 작동합니다.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-300 font-mono">
-              <span>
-                선물 <b className={pctClass(snap.kospi200_fut_pct)}>{fmtPct(snap.kospi200_fut_pct)}</b>
-              </span>
-              <span>
-                코스피 <b className={pctClass(snap.kospi_pct)}>{fmtPct(snap.kospi_pct)}</b>
-              </span>
-              <span>
-                코스닥 <b className={pctClass(snap.kosdaq_pct)}>{fmtPct(snap.kosdaq_pct)}</b>
-              </span>
-              <span>
-                S&amp;P500 <b className={pctClass(snap.sp500_pct)}>{fmtPct(snap.sp500_pct)}</b>
-              </span>
-              <span className="text-gray-500">|</span>
-              <span>
-                당일 손익{" "}
-                <b className={pctClass(guard.today_pnl_pct)}>
-                  {guard.today_pnl_krw >= 0 ? "+" : ""}
-                  {guard.today_pnl_krw.toLocaleString()}원 ({fmtPct(guard.today_pnl_pct)})
-                </b>
-              </span>
-            </div>
-          )}
-        </div>
+          <span className="text-[11px] text-gray-400 shrink-0">
+            {expanded ? "▲ 접기" : "▼ 펼치기"}
+          </span>
+        </button>
 
-        {/* 우측 원클릭 비상 버튼 + 펼치기 */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        {/* 우측 컴팩트 컨트롤 */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] text-gray-400 font-mono hidden md:inline-flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            <span>{snap?.updated_time || market?.updated_time || "-"}</span>
+          </span>
+
           <button
             type="button"
             disabled={saving}
@@ -281,35 +252,24 @@ export default function AccountSidecarControlPanel({
                   : "🔓 대표님 수동 매수 잠금을 해제했습니다."
               )
             }
-            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer active:scale-95 disabled:opacity-50 shadow-lg ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer active:scale-95 disabled:opacity-50 ${
               cfg.manual_lock
-                ? "bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-amber-500/25"
-                : "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/25"
+                ? "bg-amber-400 hover:bg-amber-300 text-slate-950"
+                : "bg-rose-600/90 hover:bg-rose-500 text-white"
             }`}
           >
-            {cfg.manual_lock ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            <span>
-              {cfg.manual_lock ? "수동 매수 잠금 해제" : "수동 매수 사이드카 발동"}
-            </span>
+            {cfg.manual_lock ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+            <span>{cfg.manual_lock ? "수동 잠금 해제" : "수동 잠금"}</span>
           </button>
 
           <button
             type="button"
             onClick={fetchGuard}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white transition-colors cursor-pointer"
+            className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-gray-100 border border-white/15 text-[11px] font-bold cursor-pointer inline-flex items-center gap-1"
             title="실시간 상태 새로고침"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setExpanded((prev) => !prev)}
-            className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-200 transition-colors cursor-pointer"
-          >
-            <Sliders className="w-3.5 h-3.5 text-amber-300" />
-            <span>{expanded ? "규칙 접기" : "세부 규칙 설정"}</span>
-            {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            <RefreshCw className="w-3 h-3" />
+            <span>갱신</span>
           </button>
         </div>
       </div>
@@ -317,6 +277,20 @@ export default function AccountSidecarControlPanel({
       {/* 2. 펼쳐진 세부 연동 도식 & 제어 패널 */}
       {expanded && (
         <div className="space-y-4 pt-3 border-t border-white/10">
+          {/* 발동 사유 상세 안내 (발동 중일 때) */}
+          {isBlocked && guard.triggers.length > 0 && (
+            <div className="rounded-xl bg-rose-950/40 border border-rose-500/35 p-3 space-y-1">
+              {guard.triggers.map((t, i) => (
+                <p key={i} className="text-xs font-bold text-rose-200 leading-snug">
+                  • {t.replace(/🚨\s*거래소\s*🚨/g, "🚨 거래소")}
+                </p>
+              ))}
+              <p className="text-[11px] text-amber-200/90 font-semibold pt-1">
+                ✅ 신규 매수·물타기·전략랩 진입만 자동 차단되었습니다. 보유 종목의 익절·손절 방어 매도는 정상 작동합니다.
+              </p>
+            </div>
+          )}
+
           {/* 거래소 경보 ➔ 자동매매 브레이크 실시간 연결 상태 바 */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-2.5 bg-black/50 border border-white/10 rounded-xl p-3.5">
             <div className="space-y-1">
