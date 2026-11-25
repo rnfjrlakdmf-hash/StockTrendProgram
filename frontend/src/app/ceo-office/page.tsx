@@ -7349,7 +7349,7 @@ export default function CeoOfficePage() {
                                                                                             desc: a.reason
                                                                                         };
 
-                                                                                        // 긴 줄글을 [핵심 팩트 1줄 + 결론 1줄]로 초압축
+                                                                                        // 긴 줄글을 [핵심 수치 칩 + 알찬 2~3줄 쉬운 요약]으로 깔끔하게 정제 (잘림 없이 내용 보존)
                                                                                         const reasonStr = String(a.reason || '');
                                                                                         const snap = council?.snapshot || {};
                                                                                         const fmtFlowCompact = (n: number) => {
@@ -7358,37 +7358,54 @@ export default function CeoOfficePage() {
                                                                                             if (absN >= 10000) return `${sign}${(absN / 10000).toFixed(1)}만`;
                                                                                             return `${sign}${absN.toLocaleString()}`;
                                                                                         };
-                                                                                        const roeM = reasonStr.match(/ROE\s*[+\-]?\d+(?:\.\d+)?%/i)?.[0];
-                                                                                        const perM = reasonStr.match(/PER\s*\d+(?:\.\d+)?배/i)?.[0];
-                                                                                        const pbrM = reasonStr.match(/PBR\s*\d+(?:\.\d+)?배/i)?.[0];
-                                                                                        const targetM = reasonStr.match(/목표가\s*\(?([\d,]+원)\)?/)?.[1];
-                                                                                        const pegM = reasonStr.match(/PEG\s*\d+(?:\.\d+)?/i)?.[0];
+                                                                                        const roeM = reasonStr.match(/ROE\s*[+\-]?\d+(?:\.\d+)?%/i)?.[0] || (snap.roe && snap.roe !== 'N/A' ? `ROE ${snap.roe}` : '');
+                                                                                        const perM = reasonStr.match(/PER\s*\d+(?:\.\d+)?배/i)?.[0] || (snap.per && snap.per !== 'N/A' ? `PER ${snap.per}` : '');
+                                                                                        const pbrM = reasonStr.match(/PBR\s*\d+(?:\.\d+)?배/i)?.[0] || (snap.pbr && snap.pbr !== 'N/A' ? `PBR ${snap.pbr}` : '');
+                                                                                        const targetM = reasonStr.match(/목표가\s*\(?([\d,]+원)\)?/)?.[1] || (snap.target_price && snap.target_price !== '-' ? snap.target_price : '');
+                                                                                        const pegM = reasonStr.match(/PEG\s*\d+(?:\.\d+)?/i)?.[0] || (snap.peg != null ? `PEG ${snap.peg}` : '');
+                                                                                        const f5n = typeof snap.foreign_5d_net === 'number' ? snap.foreign_5d_net : null;
+                                                                                        const o5n = typeof snap.organ_5d_net === 'number' ? snap.organ_5d_net : null;
 
-                                                                                        let shortFact = '';
-                                                                                        let shortAction = '';
+                                                                                        let keyMetric = '';
+                                                                                        let easySummary = '';
                                                                                         if (a.id === 'buffett') {
-                                                                                            const m = [roeM, perM].filter(Boolean).join('·');
-                                                                                            shortFact = isSell ? `수익성 둔화${m ? ` (${m})` : ''}` : isBuy ? `해자·수익력 우수${m ? ` (${m})` : ''}` : `수익 방어력 재점검${m ? ` (${m})` : ''}`;
-                                                                                            shortAction = isSell ? '➔ 무리한 매수 보류' : isBuy ? '➔ 분할 매수 유효' : '➔ 실적 확인 대기';
+                                                                                            keyMetric = [roeM, perM].filter(Boolean).join(' · ') || (isBuy ? '경제적 해자 · 수익성' : '수익성 방어력 점검');
+                                                                                            easySummary = isSell
+                                                                                                ? '실적·마진 방어력이 흔들리는 구간이라 회복이 확인될 때까지 무리한 매수를 피합니다.'
+                                                                                                : isBuy
+                                                                                                ? '탄탄한 시장 지위와 수익 체력이 뒷받침되어 눌림목 분할 매수가 유효합니다.'
+                                                                                                : '본업 수익성과 마진 흐름을 한 번 더 확인한 뒤 보수적으로 접근합니다.';
                                                                                         } else if (a.id === 'munger') {
-                                                                                            shortFact = isSell ? '목표가·실적 하향 리스크' : isBuy ? '하방 리스크 낮고 체력 탄탄' : '단기 업황·리스크 혼재';
-                                                                                            shortAction = isSell ? '➔ 성급한 저가매수 금지' : isBuy ? '➔ 안정적 분할 접근' : '➔ 추세 안정 후 진입';
+                                                                                            keyMetric = isSell ? '목표가·실적 눈높이 하향' : isBuy ? '재무 안정 · 하방 방어' : '단기 업황·리스크 점검';
+                                                                                            easySummary = isSell
+                                                                                                ? '증권사 실적 추정치와 목표가가 낮아진 만큼 성급한 저가 매수 대신 지켜봅니다.'
+                                                                                                : isBuy
+                                                                                                ? '치명적인 재무 리스크가 적고 사업 체력이 탄탄해 안정적인 분할 진입이 가능합니다.'
+                                                                                                : '단기 호재와 리스크가 엇갈려 확실한 실적 안정 신호를 확인하고 움직입니다.';
                                                                                         } else if (a.id === 'graham') {
-                                                                                            const m = [pbrM, targetM ? `목표 ${targetM}` : ''].filter(Boolean).join('·');
-                                                                                            shortFact = m || (isBuy ? '저평가 안전마진 확보' : '안전 에어백 재검증');
-                                                                                            shortAction = isBuy ? '➔ 저평가 분할 매수' : '➔ 바닥 확인까지 보류';
+                                                                                            keyMetric = [pbrM, targetM ? `목표 ${targetM}` : ''].filter(Boolean).join(' · ') || (isBuy ? '저평가 안전마진' : '안전마진 재검증');
+                                                                                            easySummary = isBuy
+                                                                                                ? '현재 주가가 내재가치와 목표가 대비 싸서 안전마진을 확보한 매수 구간입니다.'
+                                                                                                : isSell
+                                                                                                ? '가격 안전 에어백이 얇아져 추가 하락에 대비해 신규 진입을 중단합니다.'
+                                                                                                : '주가 지표는 부담이 덜하나 실적 바닥이 완전히 다져질 때까지 보류합니다.';
                                                                                         } else if (a.id === 'lynch') {
-                                                                                            shortFact = isSell ? '성장 엔진 둔화 감지' : isBuy ? (pegM ? `성장 저평가 (${pegM})` : '이익 성장 대비 합리 가격') : '성장 재가속 확인 필요';
-                                                                                            shortAction = isSell ? '➔ 섣부른 물타기 금지' : isBuy ? '➔ 눌림목 분할 매수' : '➔ 실적 반등 대기';
+                                                                                            keyMetric = isSell ? '단기 성장 모멘텀 둔화' : isBuy ? (pegM ? `${pegM} · 이익 성장` : '이익 성장 대비 합리 가격') : '성장 재가속 확인 필요';
+                                                                                            easySummary = isSell
+                                                                                                ? '이익 성장세가 꺾인 구간은 추가 하락 위험이 크므로 섣부른 물타기를 금합니다.'
+                                                                                                : isBuy
+                                                                                                ? '실적 성장 속도 대비 주가가 합리적이라 눌림목에서 분할 매수하기 좋습니다.'
+                                                                                                : '매출·이익이 다시 탄력을 받는 분기 실적 확인 후 진입하는 것이 안전합니다.';
                                                                                         } else {
-                                                                                            const f5n = typeof snap.foreign_5d_net === 'number' ? snap.foreign_5d_net : null;
-                                                                                            const o5n = typeof snap.organ_5d_net === 'number' ? snap.organ_5d_net : null;
-                                                                                            const flowLabel =
+                                                                                            keyMetric =
                                                                                                 f5n !== null && o5n !== null
                                                                                                     ? `외인 ${fmtFlowCompact(f5n)} · 기관 ${fmtFlowCompact(o5n)}`
                                                                                                     : (isSell ? '외인·기관 수급 이탈' : isBuy ? '외인·기관 수급 유입' : '수급 방향성 혼조');
-                                                                                            shortFact = flowLabel;
-                                                                                            shortAction = isSell ? '➔ 현금 비중 방어' : isBuy ? '➔ 수급 추세 진입' : '➔ 수급 전환 대기';
+                                                                                            easySummary = isSell
+                                                                                                ? '외국인·기관 큰손 자금이 빠져나가고 추세가 약해 현금 비중을 지킵니다.'
+                                                                                                : isBuy
+                                                                                                ? '큰손 수급이 유입되며 상승 추세가 살아나 분할 추세 진입을 권합니다.'
+                                                                                                : '외국인·기관 수급이 엇갈려 방향성이 뚜렷해질 때까지 관망합니다.';
                                                                                         }
 
                                                                                         return (
@@ -7404,26 +7421,26 @@ export default function CeoOfficePage() {
                                                                                                         setSelectedCouncilDetail({ doc: activeDoc, council, activeAnalystId: a.id });
                                                                                                     }
                                                                                                 }}
-                                                                                                className={`rounded-xl p-2.5 border transition-all shadow-md hover:-translate-y-0.5 hover:shadow-lg flex flex-col justify-between gap-2 cursor-pointer group/card ${cardBorder}`}
+                                                                                                className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md hover:-translate-y-0.5 hover:shadow-lg flex flex-col justify-between gap-2 cursor-pointer group/card ${cardBorder}`}
                                                                                             >
-                                                                                                <div className="space-y-1.5">
-                                                                                                    {/* 1행: 아바타 + 이름 + 확신도 점수 한 줄 */}
-                                                                                                    <div className="flex items-center justify-between gap-1 min-w-0">
-                                                                                                        <div className="flex items-center gap-1 min-w-0">
-                                                                                                            <span className="text-base shrink-0 select-none leading-none">{a.avatar}</span>
-                                                                                                            <span className="text-xs font-black text-white truncate tracking-tight">
-                                                                                                                {a.name}
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                        <span className="text-[10px] font-mono font-black text-zinc-300 bg-white/5 px-1.5 py-0.5 rounded shrink-0">
-                                                                                                            {a.confidence}점
+                                                                                                <div className="space-y-2">
+                                                                                                    {/* 1행: 아바타 + 거장 풀네임 (100% 너비로 이름 잘림 완전 방지) */}
+                                                                                                    <div className="flex items-center gap-1.5">
+                                                                                                        <span className="text-base shrink-0 select-none leading-none">{a.avatar}</span>
+                                                                                                        <span className="text-xs sm:text-[13px] font-black text-white whitespace-nowrap tracking-tight">
+                                                                                                            {a.name}
                                                                                                         </span>
                                                                                                     </div>
 
-                                                                                                    {/* 2행: 판정 뱃지 + 슬림 확신도 게이지 바 */}
+                                                                                                    {/* 2행: 판정 뱃지 + 확신도 점수 + 슬림 게이지 바 */}
                                                                                                     <div className="space-y-1">
-                                                                                                        <div className={`w-full py-0.5 px-2 rounded-md border text-center text-[10.5px] font-black ${badgeColor}`}>
-                                                                                                            {a.vote_label}
+                                                                                                        <div className="flex items-center justify-between gap-1.5">
+                                                                                                            <span className={`flex-1 py-0.5 px-2 rounded-md border text-center text-[10.5px] font-black whitespace-nowrap ${badgeColor}`}>
+                                                                                                                {a.vote_label}
+                                                                                                            </span>
+                                                                                                            <span className="text-[10.5px] font-mono font-black text-zinc-200 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md shrink-0">
+                                                                                                                {a.confidence}점
+                                                                                                            </span>
                                                                                                         </div>
                                                                                                         <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
                                                                                                             <div
@@ -7433,16 +7450,16 @@ export default function CeoOfficePage() {
                                                                                                         </div>
                                                                                                     </div>
 
-                                                                                                    {/* 3행: 초압축 2줄 핵심 요약 (팩트 + 행동 결론) */}
-                                                                                                    <div className="rounded-lg bg-black/45 border border-white/5 px-2 py-1.5 space-y-0.5">
-                                                                                                        <div className="text-[10.5px] text-zinc-300 font-medium truncate" title={shortFact}>
-                                                                                                            {shortFact}
-                                                                                                        </div>
-                                                                                                        <div className={`text-[11px] font-black truncate ${
+                                                                                                    {/* 3행: 핵심 근거 수치 + 알찬 2~3줄 쉬운 요약 (글자 잘림 없음!) */}
+                                                                                                    <div className="rounded-lg bg-black/45 border border-white/5 p-2 space-y-1">
+                                                                                                        <div className={`text-[10.5px] font-black leading-snug break-keep ${
                                                                                                             isSell ? 'text-rose-200' : isBuy ? 'text-emerald-200' : 'text-amber-200'
                                                                                                         }`}>
-                                                                                                            {shortAction}
+                                                                                                            {keyMetric}
                                                                                                         </div>
+                                                                                                        <p className="text-[11px] text-zinc-200 font-medium leading-snug break-keep">
+                                                                                                            {easySummary}
+                                                                                                        </p>
                                                                                                     </div>
                                                                                                 </div>
 
