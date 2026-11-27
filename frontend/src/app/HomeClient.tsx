@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import LiveMarketHub from "@/components/LiveMarketHub";
@@ -10,7 +11,7 @@ import { CalendarClock, ChevronRight, Newspaper, Flame, BookOpen, Calculator } f
 import Link from "next/link";
 import { useAuth, isAdminEmail } from "@/context/AuthContext";
 
-export default function HomeClient() {
+export default function HomeClient({ editorialSlot }: { editorialSlot?: ReactNode }) {
   const router = useRouter();
   const { user } = useAuth();
   const isAdmin = isAdminEmail(user?.email);
@@ -91,6 +92,9 @@ export default function HomeClient() {
             </Link>
           </div>
         </div>
+
+        {/* 1.5. 슬림 SSR 에디토리얼 마스트헤드 (헤더·로그인 바 아래에 정돈 배치, 애드센스·SEO용 H1 유지) */}
+        {editorialSlot}
 
         {/* 2. [최상단 배치] 핵심 마켓 상황판 2단 그리드: 좌측(공포·탐욕 지수) / 우측(실시간 시세 & 랭킹 허브) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-stretch">

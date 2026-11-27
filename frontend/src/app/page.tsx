@@ -184,45 +184,38 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* ── 0. [SSR 에디토리얼 마스트헤드] 검색엔진·독자 모두에게 명확한 H1 및 금융 교육 미디어 정체성 선언 ── */}
-      <section className="border-b border-white/10 bg-gradient-to-b from-[#0b1020] via-[#090c14] to-transparent">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 pb-5">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-            <div className="space-y-2 max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-bold">
-                <span>🏛️ 금융 리서치 · 경제학 · 재무 교육 미디어</span>
-                <span className="text-white/25">|</span>
-                <span className="text-gray-300">KRX · DART · SEC 공식 공공데이터 기반</span>
+      {/* ── 1. 최상단 헤더(검색·로그인) + 슬림 SSR 에디토리얼 마스트헤드 + 통합 마켓 대시보드 ── */}
+      <HomeClient
+        editorialSlot={
+          <section className="rounded-2xl border border-white/10 bg-gradient-to-r from-[#0d1428]/90 via-[#0a0f1d]/90 to-[#0d1428]/80 px-4 py-3 sm:px-5 sm:py-3.5">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+              <div className="space-y-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[10.5px] font-bold shrink-0">
+                    <span>🏛️ 금융 리서치 · 재무 교육 미디어</span>
+                    <span className="text-white/25">|</span>
+                    <span className="text-gray-300">KRX · DART · SEC 공식 공공데이터</span>
+                  </span>
+                  <h1 className="text-base sm:text-lg md:text-xl font-black text-white tracking-tight leading-snug break-keep">
+                    스마트 투자 비서 — 거시경제 시황·재무 분석·매일 1일 1경제학
+                  </h1>
+                </div>
+                <p className="text-[11.5px] sm:text-xs text-gray-300 leading-relaxed break-keep">
+                  한국거래소(KRX)·금감원 DART·미국 SEC 공시 데이터를 바탕으로{' '}
+                  <strong className="text-white">거시경제 리서치 칼럼</strong>, <strong className="text-white">46대 주식 용어 백과사전</strong>,{' '}
+                  <strong className="text-white">20대 산업 밸류체인 보고서</strong>, <strong className="text-white">매일 1일 1경제학 아카데미</strong>를 100% 무료로 제공합니다.
+                </p>
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight break-keep">
-                스마트 투자 비서 — 거시경제 시황·재무 분석·매일 1일 1경제학
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed break-keep">
-                한국거래소(KRX), 금융감독원 전자공시(DART), 미국 SEC EDGAR 공시 데이터를 바탕으로 초보 투자자부터 실전 연구자까지 누구나 무료로 읽을 수 있는{' '}
-                <strong className="text-white">거시경제 리서치 칼럼</strong>, <strong className="text-white">46대 주식 용어 백과사전</strong>,{' '}
-                <strong className="text-white">20대 산업 밸류체인 보고서</strong>, <strong className="text-white">매일 1일 1경제학 아카데미</strong>를 발행합니다.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0 text-xs">
-              <Link href="/economics" className="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-200 font-bold transition-colors">
-                🎓 매일 1일 1경제학
-              </Link>
-              <Link href="/blog" className="px-3.5 py-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/35 text-blue-200 font-bold transition-colors">
-                📰 마켓 리서치 칼럼
-              </Link>
-              <Link href="/guide" className="px-3.5 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/35 text-purple-200 font-bold transition-colors">
-                📚 용어 백과 46선
-              </Link>
-              <Link href="/about" className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 font-bold transition-colors">
-                운영·편집 원칙
+              <Link
+                href="/about"
+                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-gray-300 hover:text-white font-bold transition-colors shrink-0 self-start lg:self-center"
+              >
+                운영·편집 원칙 →
               </Link>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 1. 실시간 통합 마켓 대시보드 (공포·탐욕 지수 · 실시간 시세 & 거시경제 지표) ── */}
-      <HomeClient />
+          </section>
+        }
+      />
 
       {/* ── 2. 금융 리서치 & 투자 지식 아카이브 (전체 핵심 섹션 100% SSR 초기 렌더링) ── */}
       <div className="border-t border-white/10 bg-[#06070a]">
