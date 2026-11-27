@@ -2225,6 +2225,116 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
     return get_dashboard_summary(state)
 
 
+_LAB_FILTER_CACHE: Dict[str, tuple] = {}  # {sym: (ts, metrics_dict)}
+_LAB_FILTER_TTL_SEC = 300.0
+
+
+def _get_lab_live_filter_metrics(sym: str, is_us: bool, live_price: float = 0.0) -> Dict[str, Any]:
+    """
+    전략랩 실시간 악재 칼날 방지 필터 & 거래량·수급 돌파 판정용 경량 지표 (5분 캐시):
+    - ma20, ma60, rsi14, vol_ratio (당일 경과시간 보정 거래량 배수)
+    - 국내 6자리 종목: 최근 5일 외국인/기관 순매수(foreign_5d_net, organ_5d_net)
+    """
+    now_ts = time.time()
+    cached = _LAB_FILTER_CACHE.get(sym)
+    if cached and (now_ts - cached[0] < _LAB_FILTER_TTL_SEC):
+        return cached[1]
+
+    metrics: Dict[str, Any] = {
+        "ma20": None,
+        "ma60": None,
+        "rsi14": None,
+        "vol_ratio": None,
+        "foreign_5d_net": None,
+        "organ_5d_net": None,
+    }
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+
+    try:
+        closes: List[float] = []
+        vols: List[float] = []
+        if not is_us and sym.isdigit() and len(sym) == 6:
+            # 1) 네이버 fchart XML (0.08초 초고속 일봉 70일 조회)
+            r = requests.get(
+                f"https://fchart.stock.naver.com/sise.nhn?symbol={sym}&timeframe=day&count=70&requestType=0",
+                headers=headers,
+                timeout=3.5,
+            )
+            if r.status_code == 200 and "<item" in r.text:
+                import re as _re
+                for m in _re.finditer(r'data="([^"]+)"', r.text):
+                    parts = m.group(1).split("|")
+                    if len(parts) >= 6:
+                        try:
+                            closes.append(float(parts[4]))
+                            vols.append(float(parts[5]))
+                        except Exception:
+                            pass
+            # 2) 최근 5일 외국인·기관 수급
+            try:
+                r2 = requests.get(
+                    f"https://m.stock.naver.com/api/stock/{sym}/integration",
+                    headers=headers,
+                    timeout=3.5,
+                )
+                if r2.status_code == 200:
+                    deals = (r2.json() or {}).get("dealTrendInfos") or []
+                    if deals:
+                        f5 = 0
+                        o5 = 0
+                        for d_item in deals[:5]:
+                            f5 += int(str(d_item.get("foreignerPureBuyQuant") or "0").replace(",", "").replace("+", "").strip() or 0)
+                            o5 += int(str(d_item.get("organPureBuyQuant") or "0").replace(",", "").replace("+", "").strip() or 0)
+                        metrics["foreign_5d_net"] = f5
+                        metrics["organ_5d_net"] = o5
+            except Exception:
+                pass
+        else:
+            # 미국 종목/ETF: yfinance 최근 4개월 일봉
+            import yfinance as yf
+            hist = yf.Ticker(sym).history(period="4mo", auto_adjust=True)
+            if hist is not None and len(hist) >= 15:
+                closes = [float(x) for x in hist["Close"].dropna().tolist()]
+                vols = [float(x) for x in hist["Volume"].dropna().tolist()]
+
+        if len(closes) >= 15:
+            if live_price > 0:
+                closes[-1] = live_price
+            metrics["ma20"] = round(sum(closes[-20:]) / min(20, len(closes)), 2)
+            metrics["ma60"] = round(sum(closes[-60:]) / min(60, len(closes)), 2)
+
+            # RSI(14)
+            diffs = [closes[i] - closes[i - 1] for i in range(max(1, len(closes) - 14), len(closes))]
+            gains = [d for d in diffs if d > 0]
+            losses = [-d for d in diffs if d < 0]
+            avg_g = sum(gains) / max(1, len(diffs))
+            avg_l = sum(losses) / max(1, len(diffs))
+            if avg_l == 0:
+                metrics["rsi14"] = 100.0 if avg_g > 0 else 50.0
+            else:
+                rs = avg_g / avg_l
+                metrics["rsi14"] = round(100.0 - (100.0 / (1.0 + rs)), 1)
+
+        if len(vols) >= 6:
+            prev_vols = vols[-21:-1] if len(vols) > 21 else vols[:-1]
+            avg_v = sum(prev_vols) / max(1, len(prev_vols))
+            today_v = vols[-1]
+            if avg_v > 0:
+                # 국내 정규장 장중에는 경과 시간 비율로 예상 일일 거래량 보정 (오전 돌파 거래량 과소평가 방지)
+                scale = 1.0
+                if not is_us:
+                    now_dt = datetime.now(KST)
+                    mins_open = (now_dt.hour * 60 + now_dt.minute) - (9 * 60)
+                    if 10 <= mins_open < 380:
+                        scale = min(4.0, 390.0 / max(20.0, float(mins_open)))
+                metrics["vol_ratio"] = round((today_v * scale) / avg_v, 2)
+    except Exception as e:
+        print(f"[StrategyLab-Filter] metrics fetch warning ({sym}): {e}")
+
+    _LAB_FILTER_CACHE[sym] = (now_ts, metrics)
+    return metrics
+
+
 def execute_custom_ai_strategies(state: Dict[str, Any]) -> List[str]:
     """
     AI 매매 전략 자율 연습장에서 등록된 사용자 맞춤 전략(가상매매 PAPER / 실전매매 REAL)을
@@ -2365,6 +2475,13 @@ def execute_custom_ai_strategies(state: Dict[str, Any]) -> List[str]:
         buy_dip = abs(float(strat.get("buy_dip_threshold_pct") or 3.5))
         tp_pct = abs(float(strat.get("take_profit_threshold_pct") or 6.0))
         sl_pct = abs(float(strat.get("stop_loss_pct") or 4.0))
+        st_type = str(strat.get("strategy_type") or "SIMPLE_DIP").strip().upper()
+        if st_type not in ("SAFE_DIP", "BREAKOUT", "SIMPLE_DIP"):
+            st_type = "SIMPLE_DIP"
+        strat["strategy_type"] = st_type
+        vol_mult = max(1.1, float(strat.get("vol_mult") or 1.5))
+        strat["vol_mult"] = vol_mult
+
         is_us = bool(any(c.isalpha() for c in sym))
         q = quotes.get(sym) or {"price": 0.0, "change_pct": 0.0, "is_us": is_us}
         live_p = float(q.get("price") or 0.0)
@@ -2376,9 +2493,78 @@ def execute_custom_ai_strategies(state: Dict[str, Any]) -> List[str]:
         strat["last_change_pct"] = chg_pct
         strat["is_us"] = is_us
         strat["market_open"] = mkt_open
-        # 매수 조건(-buy_dip%)까지 얼마나 더 빠져야 하는지 (0 이하면 이미 조건 충족!)
-        gap_pct = round(chg_pct - (-buy_dip), 2)
+        # 매수 조건까지 남은 거리 (BREAKOUT은 +buy_dip 돌파까지, DIP은 -buy_dip 하락까지)
+        if st_type == "BREAKOUT":
+            gap_pct = round(buy_dip - chg_pct, 2)
+        else:
+            gap_pct = round(chg_pct - (-buy_dip), 2)
         strat["gap_to_trigger_pct"] = gap_pct
+
+        # 실시간 악재 칼날 방지 / 거래량·수급 돌파 필터 지표 조회 (5분 캐시)
+        fm: Dict[str, Any] = {}
+        filter_notes: List[str] = []
+        filter_ok = True
+        filter_block_reason = ""
+        if st_type in ("SAFE_DIP", "BREAKOUT") and live_p > 0:
+            fm = _get_lab_live_filter_metrics(sym, is_us, live_p)
+            ma20 = fm.get("ma20")
+            ma60 = fm.get("ma60")
+            rsi14 = fm.get("rsi14")
+            v_ratio = fm.get("vol_ratio")
+            f5 = fm.get("foreign_5d_net")
+            o5 = fm.get("organ_5d_net")
+            dual_sell = (f5 is not None and o5 is not None and f5 < 0 and o5 < 0)
+
+            if st_type == "SAFE_DIP":
+                reasons_bad = []
+                if ma60 is not None:
+                    if live_p >= ma60 * 0.96:
+                        filter_notes.append("60일선 지지 ✅")
+                    else:
+                        filter_notes.append("60일선 이탈 ⚠️")
+                        reasons_bad.append("60일선 하락추세 이탈")
+                if v_ratio is not None:
+                    if v_ratio <= 2.8:
+                        filter_notes.append(f"거래량 정상({v_ratio:.1f}배) ✅")
+                    else:
+                        filter_notes.append(f"투매 거래량({v_ratio:.1f}배) ⚠️")
+                        reasons_bad.append(f"악재 투매 의심(거래량 {v_ratio:.1f}배)")
+                if rsi14 is not None and rsi14 > 62.0:
+                    reasons_bad.append(f"RSI 과열({rsi14:.0f})")
+                if dual_sell:
+                    filter_notes.append("외인·기관 동반매도 ⚠️")
+                    reasons_bad.append("외인·기관 5일 동반 순매도")
+                elif f5 is not None or o5 is not None:
+                    filter_notes.append("수급 양호 ✅")
+                if reasons_bad:
+                    filter_ok = False
+                    filter_block_reason = " · ".join(reasons_bad)
+            elif st_type == "BREAKOUT":
+                reasons_bad = []
+                if ma20 is not None:
+                    if live_p >= ma20 * 0.995:
+                        filter_notes.append("20일선 상승추세 ✅")
+                    else:
+                        filter_notes.append("20일선 아래 ⚠️")
+                        reasons_bad.append("20일선 아래 역배열")
+                if v_ratio is not None:
+                    if v_ratio >= vol_mult:
+                        filter_notes.append(f"거래량 {v_ratio:.1f}배 돌파 ✅")
+                    else:
+                        filter_notes.append(f"거래량 {v_ratio:.1f}배(기준 {vol_mult:.1f}배)")
+                        reasons_bad.append(f"거래량 부족({v_ratio:.1f}배 < {vol_mult:.1f}배)")
+                if rsi14 is not None and rsi14 > 78.0:
+                    reasons_bad.append(f"꼭대기 과열(RSI {rsi14:.0f})")
+                if dual_sell:
+                    filter_notes.append("외인·기관 이탈 ⚠️")
+                    reasons_bad.append("외인·기관 동반 매도")
+                elif f5 is not None or o5 is not None:
+                    filter_notes.append("수급 통과 ✅")
+                if reasons_bad:
+                    filter_ok = False
+                    filter_block_reason = " · ".join(reasons_bad)
+
+        strat["filter_badge"] = " · ".join(filter_notes) if filter_notes else ("기본 하락 감시" if st_type == "SIMPLE_DIP" else "지표 집계 중")
 
         held_pos = pos_by_strat_id.get(sid)
         if held_pos:
@@ -2410,8 +2596,9 @@ def execute_custom_ai_strategies(state: Dict[str, Any]) -> List[str]:
             continue
 
         if not mkt_open:
+            cond_label = f"+{buy_dip:.2f}% 돌파" if st_type == "BREAKOUT" else f"-{buy_dip:.2f}% 하락"
             strat["monitor_status"] = (
-                f"🌙 정규장 마감 대기 (현재 {chg_pct:+.2f}% · 매수 조건 -{buy_dip:.2f}% | 개장 시 자동 감시)"
+                f"🌙 정규장 마감 대기 (현재 {chg_pct:+.2f}% · 매수 조건 {cond_label} | 개장 시 자동 감시)"
             )
             continue
 
@@ -2428,8 +2615,17 @@ def execute_custom_ai_strategies(state: Dict[str, Any]) -> List[str]:
             )
             continue
 
-        # 매수 트리거 충족 여부 판단: 당일 등락률 <= -buy_dip%
-        if chg_pct <= -buy_dip:
+        # 전략별 매수 가격 조건 충족 여부 판정
+        price_triggered = (chg_pct >= buy_dip) if st_type == "BREAKOUT" else (chg_pct <= -buy_dip)
+
+        if price_triggered and not filter_ok:
+            prefix = "🛑 [가짜 돌파 차단]" if st_type == "BREAKOUT" else "🛡️ [악재 칼날 차단]"
+            strat["monitor_status"] = (
+                f"{prefix} 가격 조건({chg_pct:+.2f}%)은 도달했으나 [{filter_block_reason}] 사유로 안전 보류 중"
+            )
+            continue
+
+        if price_triggered and filter_ok:
             unit_mult = fx_rate if is_us else 1.0
             unit_krw = live_p * unit_mult
             qty = int(alloc_krw // unit_krw) if unit_krw > 0 else 0
@@ -2456,10 +2652,17 @@ def execute_custom_ai_strategies(state: Dict[str, Any]) -> List[str]:
             if order_ok:
                 buy_amt_krw = int(round(unit_krw * qty))
                 stock_label = strat.get("stock_name") or sym
+                if st_type == "BREAKOUT":
+                    buy_reason_str = f"[전략랩 거래량·수급 돌파] 당일 {chg_pct:+.2f}% >= +{buy_dip:.2f}% ({strat.get('filter_badge', '')}){order_tag}"
+                elif st_type == "SAFE_DIP":
+                    buy_reason_str = f"[전략랩 칼날방지 눌림목] 당일 {chg_pct:+.2f}% <= -{buy_dip:.2f}% ({strat.get('filter_badge', '')}){order_tag}"
+                else:
+                    buy_reason_str = f"[전략랩 급락 매수] 당일 {chg_pct:+.2f}% <= -{buy_dip:.2f}% 포착{order_tag}"
                 new_pos = {
                     "strategy_id": sid,
                     "symbol": sym,
                     "name": stock_label,
+                    "strategy_type": st_type,
                     "trade_mode": strat["trade_mode"],
                     "is_us": is_us,
                     "qty": qty,
@@ -2472,7 +2675,7 @@ def execute_custom_ai_strategies(state: Dict[str, Any]) -> List[str]:
                     "bought_at": now_str,
                     "last_checked_at": now_str,
                     "kis_order_confirmed": kis_confirmed,
-                    "reason": f"[전략랩 급락 매수] 당일 {chg_pct:+.2f}% <= -{buy_dip:.2f}% 포착{order_tag}",
+                    "reason": buy_reason_str,
                 }
                 state["strategy_lab_positions"].append(new_pos)
                 pos_by_strat_id[sid] = new_pos
@@ -2506,14 +2709,23 @@ def execute_custom_ai_strategies(state: Dict[str, Any]) -> List[str]:
                     try:
                         _send_admin_trade_notification(
                             f"{'🔥[전략랩 실전매수]' if strat['trade_mode'] == 'REAL' else '🧪[전략랩 가상매수]'} {stock_label}",
-                            f"당일 {chg_pct:+.2f}% 급락(기준 -{buy_dip:.2f}%) 포착! {qty}주 ({buy_amt_krw:,}원) 진입{order_tag}",
+                            f"{buy_reason_str} | {qty}주 ({buy_amt_krw:,}원)",
                         )
                     except Exception:
                         pass
         else:
-            strat["monitor_status"] = (
-                f"🟢 실시간 감시 중 (현재 {chg_pct:+.2f}% · 매수 기준 -{buy_dip:.2f}%까지 {gap_pct:.2f}%p 남음)"
-            )
+            if st_type == "BREAKOUT":
+                strat["monitor_status"] = (
+                    f"🚀 돌파 감시 중 (현재 {chg_pct:+.2f}% · 돌파 기준 +{buy_dip:.2f}%까지 {max(0.0, gap_pct):.2f}%p 남음 | {strat['filter_badge']})"
+                )
+            elif st_type == "SAFE_DIP":
+                strat["monitor_status"] = (
+                    f"🛡️ 칼날방지 감시 중 (현재 {chg_pct:+.2f}% · 매수 기준 -{buy_dip:.2f}%까지 {max(0.0, gap_pct):.2f}%p 남음 | {strat['filter_badge']})"
+                )
+            else:
+                strat["monitor_status"] = (
+                    f"🟢 실시간 감시 중 (현재 {chg_pct:+.2f}% · 매수 기준 -{buy_dip:.2f}%까지 {max(0.0, gap_pct):.2f}%p 남음)"
+                )
 
     state["strategy_lab_logs"] = lab_logs[:100]
     return actions

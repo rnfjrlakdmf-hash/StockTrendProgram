@@ -283,6 +283,9 @@ def api_tune_strategy(payload: Dict[str, Any] = Body(...)):
     max_dd = float(payload.get("max_dd") or payload.get("max_drawdown_pct") or 15.0)
     years = int(payload.get("years") or 5)
     prompt = str(payload.get("prompt") or "")
+    strategy_type = str(payload.get("strategy_type") or "SAFE_DIP").strip().upper()
+    knife_filter = bool(payload.get("knife_filter", strategy_type != "SIMPLE_DIP"))
+    vol_mult = float(payload.get("vol_mult") or 1.5)
 
     # 자연어 프롬프트가 주어졌을 경우 숫자 추출 보조
     if prompt:
@@ -307,6 +310,9 @@ def api_tune_strategy(payload: Dict[str, Any] = Body(...)):
         init_sl=init_sl,
         max_dd=max_dd,
         years=years,
+        strategy_type=strategy_type,
+        knife_filter=knife_filter,
+        vol_mult=vol_mult,
     )
     if res.get("status") != "success":
         return res
@@ -331,6 +337,10 @@ def api_tune_strategy(payload: Dict[str, Any] = Body(...)):
             "buy_dip": s.get("buy_dip", res.get("improved_rules", {}).get("buy_dip", 3.0)),
             "take_profit": s.get("tp", res.get("improved_rules", {}).get("tp", 5.0)),
             "stop_loss": s.get("sl", res.get("improved_rules", {}).get("sl", 4.0)),
+            "vol_mult": s.get("vol_mult", res.get("vol_mult", 1.5)),
+            "is_best": bool(s.get("is_best", False)),
+            "adopted": bool(s.get("adopted", False)),
+            "blocked_knives": int(s.get("blocked_knives", 0)),
             "metrics": {
                 "total_return_pct": ret_val,
                 "win_rate_pct": win_val,
@@ -345,10 +355,18 @@ def api_tune_strategy(payload: Dict[str, Any] = Body(...)):
     bnh_raw = steps[0].get("bnh_return", "0%") if steps else "0%"
     res["benchmark_buy_and_hold_return_pct"] = float(re.sub(r"[^0-9.-]", "", bnh_raw) or 0)
 
-    init_r = res.get("initial_rules", {})
+    impr_r = res.get("improved_rules", {})
+    eff_type = res.get("strategy_type", "SAFE_DIP")
+    eff_vol = float(impr_r.get("vol_mult", res.get("vol_mult", 1.5)))
+    if eff_type == "BREAKOUT":
+        buy_rule_txt = f"주가 +{impr_r.get('buy_dip', 2.5)}% 돌파 + 거래량 평균 대비 {eff_vol:.1f}배↑ + 20일선 지지 + 과열 배제 시 매수"
+    elif eff_type == "SAFE_DIP":
+        buy_rule_txt = f"전일 대비 -{impr_r.get('buy_dip', 3.0)}% 하락 + 🛡️ 악재 칼날 방지(60일선 지지·투매 거래량 차단·RSI·수급) 통과 시 매수"
+    else:
+        buy_rule_txt = f"전일 종가 대비 -{impr_r.get('buy_dip', 3.0)}% 이상 하락한 날 ➔ 필터 없이 즉시 분할 매수"
     res["rule_summary"] = {
-        "buy_rule": f"전일 종가 대비 -{init_r.get('buy_dip', 3.0)}% 이상 급락한 날 ➔ 조건 포착 즉시 분할 매수",
-        "sell_rule": f"매수가 대비 +{init_r.get('tp', 5.0)}% 상승 시 익절, -{init_r.get('sl', 5.0)}% 하락 시 손절",
+        "buy_rule": buy_rule_txt,
+        "sell_rule": f"매수가 대비 +{impr_r.get('tp', 5.0)}% 상승 시 익절, -{impr_r.get('sl', 4.5)}% 하락 시 손절 방어",
     }
 
     oos = res.get("recent_1year_oos", {})
@@ -358,15 +376,16 @@ def api_tune_strategy(payload: Dict[str, Any] = Body(...)):
         "period": oos.get("period", "최근 1년"),
         "before_tune": {
             "return_pct": init_oos_ret,
-            "win_rate_pct": 0,
+            "win_rate_pct": float(oos.get("initial_win_rate_pct") or 0),
             "trades": oos.get("initial_trades", 0),
         },
         "after_tune": {
             "return_pct": impr_oos_ret,
-            "win_rate_pct": 0,
+            "win_rate_pct": float(oos.get("improved_win_rate_pct") or 0),
             "trades": oos.get("improved_trades", 0),
         },
         "status": "OVERFITTING_WARNING" if "CAUTION" in oos.get("eval_status", "") else "STABLE_IMPROVEMENT",
+        "live_readiness": oos.get("live_readiness", res.get("live_readiness", "WATCH")),
         "warning_message": oos.get("comment", ""),
     }
 
@@ -394,6 +413,17 @@ def api_deploy_strategy_to_bot(payload: Dict[str, Any] = Body(...)):
     buy_dip = abs(float(config.get("buy_dip_threshold_pct", 3.0)))
     tp = abs(float(config.get("take_profit_threshold_pct", 5.0)))
     sl = abs(float(config.get("stop_loss_pct", 4.0)))
+    st_type = str(payload.get("strategy_type") or config.get("strategy_type") or "SAFE_DIP").strip().upper()
+    if st_type not in ("SAFE_DIP", "BREAKOUT", "SIMPLE_DIP"):
+        st_type = "SAFE_DIP"
+    vol_mult = max(1.1, float(payload.get("vol_mult") or config.get("vol_mult") or 1.5))
+    knife_filter_enabled = st_type != "SIMPLE_DIP"
+    st_name_map = {
+        "SAFE_DIP": "🛡️ 칼날방지 눌림목",
+        "BREAKOUT": "🚀 거래량·수급 돌파",
+        "SIMPLE_DIP": "📉 단순 하락 매수",
+    }
+    st_name = str(config.get("strategy_name") or st_name_map[st_type])
 
     try:
         from auto_trader_service import load_state, save_state, execute_custom_ai_strategies
@@ -417,6 +447,10 @@ def api_deploy_strategy_to_bot(payload: Dict[str, Any] = Body(...)):
             "strategy_id": strat_id,
             "symbol": sym,
             "stock_name": stock_name,
+            "strategy_type": st_type,
+            "strategy_name": st_name,
+            "knife_filter_enabled": knife_filter_enabled,
+            "vol_mult": vol_mult,
             "trade_mode": trade_mode,
             "allocation_krw": allocation_krw,
             "enabled": True,
@@ -450,18 +484,26 @@ def api_deploy_strategy_to_bot(payload: Dict[str, Any] = Body(...)):
         save_state(state)
 
         mode_ko = "🔥 실전매매 (한국투자증권 실계좌)" if trade_mode == "REAL" else "🧪 가상매매 (모의투자 엔진)"
+        if st_type == "BREAKOUT":
+            buy_cond_txt = f"20일선 위 거래량 {vol_mult:.1f}배↑ · 당일 +{buy_dip:.1f}% 돌파 시 자동 진입"
+        elif st_type == "SAFE_DIP":
+            buy_cond_txt = f"🛡️ 칼날방지(60일선·투매차단·수급) 통과 + 당일 -{buy_dip:.1f}% 눌림목 진입"
+        else:
+            buy_cond_txt = f"당일 -{buy_dip:.1f}% 하락 시 자동 진입"
         return {
             "status": "success",
-            "message": f"[{mode_ko}] '{stock_name}({sym})' 전략이 자동매매 감시 엔진에 등록되었습니다!",
+            "message": f"[{mode_ko}] '{stock_name}({sym})' ({st_name}) 전략이 자동매매 감시 엔진에 등록되었습니다!",
             "strategy": next((s for s in state["custom_ai_strategies"] if s.get("strategy_id") == strat_id), config),
             "strategy_lab_settings": state["strategy_lab_settings"],
             "kis_configured": kis_configured,
             "deployed_rule": {
                 "symbol": sym,
                 "stock_name": stock_name,
+                "strategy_type": st_type,
+                "strategy_name": st_name,
                 "trade_mode": trade_mode,
                 "allocation_krw": allocation_krw,
-                "buy_condition": f"당일 -{buy_dip}% 급락 시 자동 진입",
+                "buy_condition": buy_cond_txt,
                 "take_profit": f"+{tp}% 목표 달성 시 익절",
                 "stop_loss": f"-{sl}% 손절선 엄수",
             },

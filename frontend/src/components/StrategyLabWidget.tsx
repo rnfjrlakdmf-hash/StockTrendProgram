@@ -16,6 +16,10 @@ interface TuningStep {
     buy_dip: number;
     take_profit: number;
     stop_loss: number;
+    vol_mult?: number;
+    is_best?: boolean;
+    adopted?: boolean;
+    blocked_knives?: number;
     metrics: {
         total_return_pct: number;
         win_rate_pct: number;
@@ -30,11 +34,29 @@ interface TuningStep {
     };
 }
 
+interface StrategyComparisonItem {
+    strategy_type: 'SAFE_DIP' | 'BREAKOUT' | 'SIMPLE_DIP';
+    name: string;
+    short_name: string;
+    easy_desc: string;
+    is_selected: boolean;
+    is_best_match: boolean;
+    train_return_pct: number;
+    train_win_rate_pct: number;
+    train_trades: number;
+    oos_return_pct: number;
+    oos_win_rate_pct: number;
+    oos_trades: number;
+    blocked_knives: number;
+    pass_live_criteria: boolean;
+}
+
 interface OutOfSampleResult {
     period: string;
     before_tune: { return_pct: number; win_rate_pct: number; trades: number };
     after_tune: { return_pct: number; win_rate_pct: number; trades: number };
     status: 'OVERFITTING_WARNING' | 'STABLE_IMPROVEMENT' | 'INSUFFICIENT_SAMPLES';
+    live_readiness?: 'PASS' | 'WATCH' | 'CAUTION';
     warning_message: string;
 }
 
@@ -45,6 +67,16 @@ interface StrategyLabResponse {
     stock_name?: string;
     searched_name?: string;
     resolved_symbol?: string;
+    strategy_type?: 'SAFE_DIP' | 'BREAKOUT' | 'SIMPLE_DIP';
+    strategy_name?: string;
+    strategy_easy_desc?: string;
+    knife_filter_enabled?: boolean;
+    vol_mult?: number;
+    blocked_knives_count?: number;
+    live_readiness?: 'PASS' | 'WATCH' | 'CAUTION';
+    recommended_strategy?: 'SAFE_DIP' | 'BREAKOUT' | 'SIMPLE_DIP';
+    strategy_comparison?: StrategyComparisonItem[];
+    improved_rules?: { buy_dip: number; tp: number; sl: number; max_dd: number; vol_mult?: number };
     rule_summary: { buy_rule: string; sell_rule: string };
     benchmark_buy_and_hold_return_pct: number;
     tuning_steps: TuningStep[];
@@ -63,6 +95,10 @@ interface DeployedStrategy {
     strategy_id: string;
     symbol: string;
     stock_name?: string;
+    strategy_type?: 'SAFE_DIP' | 'BREAKOUT' | 'SIMPLE_DIP';
+    strategy_name?: string;
+    vol_mult?: number;
+    filter_badge?: string;
     trade_mode: 'PAPER' | 'REAL';
     allocation_krw: number;
     enabled: boolean;
@@ -111,11 +147,32 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
     const [showDropdown, setShowDropdown] = useState(false);
     const searchWrapRef = useRef<HTMLDivElement>(null);
 
+    const [strategyType, setStrategyType] = useState<'SAFE_DIP' | 'BREAKOUT' | 'SIMPLE_DIP'>('SAFE_DIP');
+    const [volMult, setVolMult] = useState<number>(1.5);
+    const [showEasyGuide, setShowEasyGuide] = useState<boolean>(true);
     const [buyDip, setBuyDip] = useState<number>(3.0);
-    const [takeProfit, setTakeProfit] = useState<number>(5.0);
-    const [stopLoss, setStopLoss] = useState<number>(5.0);
+    const [takeProfit, setTakeProfit] = useState<number>(6.0);
+    const [stopLoss, setStopLoss] = useState<number>(4.5);
     const [maxDd, setMaxDd] = useState<number>(15.0);
     const [years, setYears] = useState<number>(5);
+
+    const handleSelectStrategyType = (nextType: 'SAFE_DIP' | 'BREAKOUT' | 'SIMPLE_DIP') => {
+        setStrategyType(nextType);
+        if (nextType === 'BREAKOUT') {
+            setBuyDip(2.5);
+            setTakeProfit(9.0);
+            setStopLoss(4.5);
+            setVolMult(1.5);
+        } else if (nextType === 'SAFE_DIP') {
+            setBuyDip(3.0);
+            setTakeProfit(6.0);
+            setStopLoss(4.5);
+        } else {
+            setBuyDip(3.0);
+            setTakeProfit(5.0);
+            setStopLoss(5.0);
+        }
+    };
 
     // 2. 백테스트 실행 및 결과 상태
     const [loading, setLoading] = useState(false);
@@ -288,11 +345,18 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
     };
 
     // 백테스트 & AI 3단계 자가 교정 실행
-    const handleRunAutoTuning = async (overrideSymbol?: string) => {
+    const handleRunAutoTuning = async (
+        overrideSymbol?: string,
+        overrideType?: 'SAFE_DIP' | 'BREAKOUT' | 'SIMPLE_DIP'
+    ) => {
         const target = (overrideSymbol ?? symbolInput).trim();
+        const effType = overrideType ?? strategyType;
         if (!target) {
             alert('종목명 또는 종목코드·티커를 입력해주세요.');
             return;
+        }
+        if (overrideType) {
+            setStrategyType(overrideType);
         }
 
         setShowDropdown(false);
@@ -302,12 +366,21 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
         setResult(null);
 
         try {
-            setLoadingStage(`'${target}' 과거 ${years}년 주가 데이터 수집 & 3단계 자율 교정 시뮬레이션 중...`);
+            const modeLabel =
+                effType === 'BREAKOUT'
+                    ? '🚀 거래량·수급 돌파'
+                    : effType === 'SAFE_DIP'
+                    ? '🛡️ 칼날방지 눌림목'
+                    : '📉 단순 하락';
+            setLoadingStage(`'${target}' [${modeLabel}] + 3대 전략 동시 비교 시뮬레이션 중...`);
 
             const payload = {
                 symbol: target,
-                buy_dip: Number(buyDip),
-                take_profit: Number(takeProfit),
+                strategy_type: effType,
+                knife_filter: effType !== 'SIMPLE_DIP',
+                vol_mult: Number(volMult),
+                buy_dip: Number(overrideType === 'BREAKOUT' ? 2.5 : buyDip),
+                take_profit: Number(overrideType === 'BREAKOUT' ? 9.0 : takeProfit),
                 stop_loss: Number(stopLoss),
                 max_dd: Number(maxDd),
                 years: Number(years),
@@ -350,6 +423,8 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                 body: JSON.stringify({
                     strategy_config: result.strategy_config,
                     stock_name: result.stock_name || result.searched_name || result.symbol,
+                    strategy_type: result.strategy_type || strategyType,
+                    vol_mult: result.vol_mult || volMult,
                     trade_mode: deployMode,
                     allocation_krw: Number(allocationKrw),
                     auto_enable_master: deployMode === 'REAL' ? autoEnableRealMaster : true,
@@ -583,13 +658,35 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                                         <span className="text-[11px] font-mono text-zinc-400">
                                                             ({st.symbol})
                                                         </span>
+                                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
+                                                            st.strategy_type === 'BREAKOUT'
+                                                                ? 'bg-amber-500/20 text-amber-200 border-amber-400/40'
+                                                                : st.strategy_type === 'SAFE_DIP'
+                                                                ? 'bg-sky-500/20 text-sky-200 border-sky-400/40'
+                                                                : 'bg-zinc-800 text-zinc-300 border-white/10'
+                                                        }`}>
+                                                            {st.strategy_type === 'BREAKOUT'
+                                                                ? '🚀 거래량·수급 돌파'
+                                                                : st.strategy_type === 'SAFE_DIP'
+                                                                ? '🛡️ 칼날방지 눌림목'
+                                                                : '📉 단순 하락'}
+                                                        </span>
                                                     </div>
                                                     <div className="text-[11px] text-zinc-300 mt-1 font-medium">
-                                                        매수 <strong className="text-sky-300">-{st.buy_dip_threshold_pct}%</strong> ·
+                                                        {st.strategy_type === 'BREAKOUT' ? (
+                                                            <>돌파 <strong className="text-amber-300">+{st.buy_dip_threshold_pct}%</strong> (거래량 {st.vol_mult || 1.5}배↑) · </>
+                                                        ) : (
+                                                            <>매수 <strong className="text-sky-300">-{st.buy_dip_threshold_pct}%</strong> · </>
+                                                        )}
                                                         익절 <strong className="text-emerald-300">+{st.take_profit_threshold_pct}%</strong> ·
                                                         손절 <strong className="text-rose-300">-{st.stop_loss_pct}%</strong> ·
                                                         1회 <strong className="text-amber-300">{(st.allocation_krw || 0).toLocaleString()}원</strong>
                                                     </div>
+                                                    {st.filter_badge && (
+                                                        <div className="text-[10px] text-sky-200/85 mt-1 font-semibold">
+                                                            🔍 실시간 필터: {st.filter_badge}
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 <div className="flex items-center gap-1 shrink-0">
@@ -682,16 +779,112 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                 </div>
             </div>
 
-            {/* 1. 종목 검색 & 매매 규칙 설정 패널 */}
-            <div className="bg-[#0b101d] border border-white/10 rounded-2xl p-5 sm:p-7 shadow-xl space-y-6">
-                <div>
-                    <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-3">
-                        <Sliders className="w-5 h-5 text-violet-400" />
-                        <span>1. 국내·해외 모든 종목 검색 &amp; 매매 규칙 입력</span>
-                    </h3>
+            {/* 1. 종목 검색 & 실전 전략 선택 패널 */}
+            <div className="bg-[#0b101d] border border-white/10 rounded-2xl p-5 sm:p-7 shadow-xl space-y-5">
+                <div className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                            <Sliders className="w-5 h-5 text-violet-400" />
+                            <span>1. 실전 매매 전략 선택 &amp; 전 종목 검색</span>
+                        </h3>
+                        <button
+                            type="button"
+                            onClick={() => setShowEasyGuide((prev) => !prev)}
+                            className="px-3 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/35 text-sky-200 text-xs font-bold cursor-pointer transition-colors"
+                        >
+                            {showEasyGuide ? '📘 쉬운 작동 원리 접기 ▲' : '📘 어떻게 적용되나요? 3초 해설 펼치기 ▼'}
+                        </button>
+                    </div>
+
+                    {/* 📘 초보자 3초 쉬운 설명 카드 (어떻게 적용되는지 한눈에 이해!) */}
+                    {showEasyGuide && (
+                        <div className="rounded-2xl bg-gradient-to-br from-sky-950/35 via-indigo-950/30 to-slate-950 border border-sky-500/35 p-4 space-y-2.5 text-xs">
+                            <div className="font-black text-sky-300 flex items-center gap-1.5">
+                                <span>💡</span>
+                                <span>어떻게 적용되고 돈을 지켜주나요? (3초 쉬운 요약)</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                                <div className="rounded-xl bg-black/45 border border-sky-400/25 p-3 space-y-1">
+                                    <div className="font-black text-sky-200">① 🛡️ 악재 칼날 방지 필터란?</div>
+                                    <p className="text-[11px] text-zinc-300 leading-relaxed break-keep">
+                                        단순히 &quot;싸졌다&quot;고 무조건 사지 않습니다. <strong className="text-white">60일선 상승 추세 생존 + 거래량 폭탄(악재 투매) 차단 + 외인·기관 동반 투매 배제</strong>를 모두 통과한 <strong className="text-sky-300">건강한 눌림목</strong>만 골라 삽니다.
+                                    </p>
+                                </div>
+                                <div className="rounded-xl bg-black/45 border border-amber-400/25 p-3 space-y-1">
+                                    <div className="font-black text-amber-200">② 🚀 거래량·수급 돌파란?</div>
+                                    <p className="text-[11px] text-zinc-300 leading-relaxed break-keep">
+                                        오르는 장에서는 떨어지길 기다리면 기회를 놓칩니다. <strong className="text-white">거래량이 평소 1.5배↑ 터지며 20일선 위에서 치고 올라갈 때</strong> 수급을 확인하고 올라타는 상승장·주도주 전용 전략입니다.
+                                    </p>
+                                </div>
+                                <div className="rounded-xl bg-black/45 border border-emerald-400/25 p-3 space-y-1">
+                                    <div className="font-black text-emerald-200">③ 🏆 자동 비교 &amp; 실전 승격 기준</div>
+                                    <p className="text-[11px] text-zinc-300 leading-relaxed break-keep">
+                                        버튼 한 번이면 <strong className="text-white">3가지 전략을 같은 종목으로 동시 채점</strong>해 최고 궁합을 찾아줍니다. <strong className="text-emerald-300">승률 55%+ &amp; 최근 1년 플러스(+)</strong> 종목만 가상매매 ➔ 실전매매로 올리세요!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 3대 실전 전략 선택 카드 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                        <button
+                            type="button"
+                            onClick={() => handleSelectStrategyType('SAFE_DIP')}
+                            className={`text-left p-3.5 rounded-2xl border-2 transition-all cursor-pointer space-y-1.5 ${
+                                strategyType === 'SAFE_DIP'
+                                    ? 'bg-sky-950/45 border-sky-400 shadow-lg shadow-sky-500/15'
+                                    : 'bg-black/35 border-white/10 hover:border-sky-400/40'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs sm:text-sm font-black text-white">🛡️ 악재 칼날 방지 눌림목</span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-400 text-slate-950 shrink-0">추천 · 안정형</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-300 leading-snug break-keep">
+                                하락 시 싸게 사되, <strong>60일선 이탈·악재 투매·외인기관 동반 매도</strong>는 자동 차단합니다.
+                            </p>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => handleSelectStrategyType('BREAKOUT')}
+                            className={`text-left p-3.5 rounded-2xl border-2 transition-all cursor-pointer space-y-1.5 ${
+                                strategyType === 'BREAKOUT'
+                                    ? 'bg-amber-950/45 border-amber-400 shadow-lg shadow-amber-500/15'
+                                    : 'bg-black/35 border-white/10 hover:border-amber-400/40'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs sm:text-sm font-black text-white">🚀 거래량·수급 추세 돌파</span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 shrink-0">상승장 · 주도주</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-300 leading-snug break-keep">
+                                <strong>거래량 1.5배↑ 급증 + 20일선 정배열 돌파</strong> 시 상승 추세에 올라타 수익을 키웁니다.
+                            </p>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => handleSelectStrategyType('SIMPLE_DIP')}
+                            className={`text-left p-3.5 rounded-2xl border-2 transition-all cursor-pointer space-y-1.5 ${
+                                strategyType === 'SIMPLE_DIP'
+                                    ? 'bg-zinc-900 border-violet-400 shadow-lg shadow-violet-500/15'
+                                    : 'bg-black/35 border-white/10 hover:border-white/25'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs sm:text-sm font-black text-white">📉 기존 단순 하락 매수</span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-zinc-300 shrink-0">비교 기준</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-400 leading-snug break-keep">
+                                필터 없이 일정 % 빠지면 무조건 매수하는 기존 방식입니다. (칼날 방지 효과 비교용)
+                            </p>
+                        </button>
+                    </div>
 
                     {/* 추천 종목 퀵 칩 */}
-                    <div className="flex flex-wrap items-center gap-1.5 mb-4">
+                    <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-xs text-zinc-400 mr-1">인기 종목:</span>
                         {quickPicks.map((p) => (
                             <button
@@ -790,10 +983,10 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                             )}
                         </div>
 
-                        {/* 살 때 (하락률) */}
+                        {/* 살 때 (하락률 또는 돌파 상승률) */}
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-zinc-300">
-                                📉 살 때 (하루 하락률 %)
+                                {strategyType === 'BREAKOUT' ? '🚀 돌파 기준 (당일 상승률 %)' : '📉 살 때 (하루 하락률 %)'}
                             </label>
                             <div className="relative">
                                 <input
@@ -805,7 +998,9 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                     onChange={(e) => setBuyDip(parseFloat(e.target.value) || 0)}
                                     className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-sm text-white focus:outline-none focus:border-violet-500"
                                 />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400">% 하락</span>
+                                <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${strategyType === 'BREAKOUT' ? 'text-amber-400' : 'text-zinc-400'}`}>
+                                    {strategyType === 'BREAKOUT' ? '% 돌파' : '% 하락'}
+                                </span>
                             </div>
                         </div>
 
@@ -847,21 +1042,35 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                             </div>
                         </div>
 
-                        {/* 최대 손실 한도 & 기간 */}
+                        {/* 거래량 배수(돌파) 또는 최대손실한도 & 기간 */}
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-zinc-300">
-                                🛡️ 최대손실한도 / 기간
+                                {strategyType === 'BREAKOUT' ? '🔥 거래량 배수 / 기간' : '🛡️ 최대손실한도 / 기간'}
                             </label>
                             <div className="grid grid-cols-2 gap-1.5">
-                                <input
-                                    type="number"
-                                    min="5"
-                                    max="50"
-                                    value={maxDd}
-                                    onChange={(e) => setMaxDd(parseFloat(e.target.value) || 15)}
-                                    title="최대 손실 한도 (%)"
-                                    className="w-full px-2.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-violet-500"
-                                />
+                                {strategyType === 'BREAKOUT' ? (
+                                    <select
+                                        value={volMult}
+                                        onChange={(e) => setVolMult(parseFloat(e.target.value))}
+                                        title="20일 평균 대비 최소 거래량 배수"
+                                        className="w-full px-2 py-2.5 rounded-xl bg-black/50 border border-amber-400/35 text-xs text-amber-200 font-bold focus:outline-none focus:border-amber-400"
+                                    >
+                                        <option value={1.3}>거래량 1.3배↑</option>
+                                        <option value={1.5}>거래량 1.5배↑★</option>
+                                        <option value={1.8}>거래량 1.8배↑</option>
+                                        <option value={2.0}>거래량 2.0배↑</option>
+                                    </select>
+                                ) : (
+                                    <input
+                                        type="number"
+                                        min="5"
+                                        max="50"
+                                        value={maxDd}
+                                        onChange={(e) => setMaxDd(parseFloat(e.target.value) || 15)}
+                                        title="최대 손실 한도 (%)"
+                                        className="w-full px-2.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-xs text-white focus:outline-none focus:border-violet-500"
+                                    />
+                                )}
                                 <select
                                     value={years}
                                     onChange={(e) => setYears(parseInt(e.target.value, 10))}
@@ -913,6 +1122,99 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
             {/* 결과 리포트 영역 */}
             {result && (
                 <div className="space-y-6 animate-fade-in">
+                    {/* 🏆 0. 3대 전략 동일 구간 자동 비교표 (단순 하락 vs 🛡️ 칼날방지 눌림목 vs 🚀 거래량·수급 돌파) */}
+                    {Array.isArray(result.strategy_comparison) && result.strategy_comparison.length > 0 && (
+                        <div className="bg-gradient-to-br from-[#0d1528] via-[#0b101d] to-[#120e24] border-2 border-amber-400/35 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div>
+                                    <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                                        <span>🏆</span>
+                                        <span>[{result.stock_name || result.symbol}] 3대 전략 동일 기간 한눈에 비교</span>
+                                    </h3>
+                                    <p className="text-xs text-zinc-400 mt-0.5">
+                                        같은 종목에 3가지 방식을 똑같이 시험했습니다. <strong className="text-emerald-300">최근 1년 플러스(+) &amp; 승률 55% 이상</strong> 전략을 고르는 것이 가장 안전합니다.
+                                    </p>
+                                </div>
+                                {typeof result.blocked_knives_count === 'number' && result.blocked_knives_count > 0 && (
+                                    <span className="px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200 text-xs font-black shrink-0 w-fit">
+                                        🛡️ 위험 급락·가짜 돌파 {result.blocked_knives_count}건 사전 차단!
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {result.strategy_comparison.map((cmp) => (
+                                    <div
+                                        key={cmp.strategy_type}
+                                        className={`rounded-2xl p-4 border-2 flex flex-col justify-between gap-3 transition-all ${
+                                            cmp.is_best_match
+                                                ? 'bg-emerald-950/30 border-emerald-400/70 shadow-lg shadow-emerald-500/10'
+                                                : cmp.is_selected
+                                                ? 'bg-violet-950/25 border-violet-400/60'
+                                                : 'bg-black/40 border-white/10'
+                                        }`}
+                                    >
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                                <span className="text-xs sm:text-sm font-black text-white">{cmp.name}</span>
+                                                <div className="flex items-center gap-1">
+                                                    {cmp.is_best_match && (
+                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950">
+                                                            🏆 최고 궁합
+                                                        </span>
+                                                    )}
+                                                    {cmp.pass_live_criteria && (
+                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-400 text-slate-950">
+                                                            ✅ 실전 적합
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-2 text-center">
+                                                <div className="p-2 rounded-xl bg-black/45 border border-white/5">
+                                                    <div className="text-[10px] text-zinc-400">학습 구간 수익률</div>
+                                                    <div className={`text-sm font-black font-mono ${cmp.train_return_pct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                        {cmp.train_return_pct > 0 ? '+' : ''}{cmp.train_return_pct.toFixed(1)}%
+                                                    </div>
+                                                    <div className="text-[10px] text-zinc-500">승률 {cmp.train_win_rate_pct.toFixed(0)}% · {cmp.train_trades}회</div>
+                                                </div>
+                                                <div className="p-2 rounded-xl bg-black/45 border border-white/5">
+                                                    <div className="text-[10px] text-sky-300 font-bold">최근 1년 블라인드</div>
+                                                    <div className={`text-sm font-black font-mono ${cmp.oos_return_pct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                        {cmp.oos_return_pct > 0 ? '+' : ''}{cmp.oos_return_pct.toFixed(1)}%
+                                                    </div>
+                                                    <div className="text-[10px] text-zinc-500">승률 {cmp.oos_win_rate_pct.toFixed(0)}% · {cmp.oos_trades}회</div>
+                                                </div>
+                                            </div>
+
+                                            {cmp.blocked_knives > 0 && (
+                                                <div className="text-[10.5px] text-sky-300 font-semibold">
+                                                    🛡️ 위험 타점 {cmp.blocked_knives}건 자동 걸러냄
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {cmp.is_selected ? (
+                                            <div className="text-center py-1.5 rounded-xl bg-white/10 text-[11px] font-black text-emerald-300">
+                                                ✓ 현재 선택된 전략 (아래 상세 결과)
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                disabled={loading}
+                                                onClick={() => handleRunAutoTuning(result.symbol, cmp.strategy_type)}
+                                                className="w-full py-2 rounded-xl bg-white/10 hover:bg-amber-400 hover:text-slate-950 text-amber-200 text-[11px] font-black transition-all cursor-pointer"
+                                            >
+                                                이 전략으로 바로 시험·적용하기 →
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* 1. 규칙 요약 & 초기 비교 카드 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-[#0e1424] border border-violet-500/30 rounded-2xl p-5 shadow-lg">
@@ -1005,32 +1307,35 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                 </thead>
                                 <tbody className="divide-y divide-white/5 text-zinc-200">
                                     {result.tuning_steps.map((st) => {
-                                        const isFinal = st.step === 3;
+                                        const isFinal = Boolean(st.is_best) || st.step === 3;
                                         const isInitial = st.step === 0;
                                         const ret = st.metrics.total_return_pct;
+                                        const isBrk = result.strategy_type === 'BREAKOUT';
                                         return (
                                             <tr
                                                 key={st.step}
                                                 className={`transition-colors ${
-                                                    isFinal ? 'bg-violet-950/20 hover:bg-violet-950/30' : 'hover:bg-white/[0.02]'
+                                                    st.is_best ? 'bg-emerald-950/25 hover:bg-emerald-950/35' : 'hover:bg-white/[0.02]'
                                                 }`}
                                             >
                                                 <td className="py-3.5 px-3 whitespace-nowrap">
                                                     <span className={`px-2.5 py-1 rounded-lg text-xs font-black inline-flex items-center gap-1 ${
-                                                        isFinal
+                                                        st.is_best
                                                             ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                                                             : isInitial
                                                             ? 'bg-zinc-800 text-zinc-300'
                                                             : 'bg-violet-500/20 text-violet-300'
                                                     }`}>
                                                         {st.title}
-                                                        {isFinal && ' (최종)'}
+                                                        {st.is_best && ' ★최종채택'}
                                                     </span>
                                                 </td>
                                                 <td className="py-3.5 px-3">
                                                     <div className="font-semibold text-white">{st.description}</div>
                                                     <div className="text-[11px] text-sky-300/90 font-mono mt-0.5">
-                                                        매수: -{st.buy_dip}% | 익절: +{st.take_profit}% | 손절: -{st.stop_loss}%
+                                                        {isBrk
+                                                            ? `돌파: +${st.buy_dip}% (거래량 ${st.vol_mult || result.vol_mult || 1.5}배↑)`
+                                                            : `매수: -${st.buy_dip}%`} | 익절: +{st.take_profit}% | 손절: -{st.stop_loss}%
                                                     </div>
                                                 </td>
                                                 <td className="py-3.5 px-3 text-center whitespace-nowrap">
@@ -1217,7 +1522,9 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                         className="mt-0.5 accent-rose-500"
                                     />
                                     <span>
-                                        정규장 중 당일 -{result.tuning_steps[3]?.buy_dip ?? 3.8}% 급락 조건 충족 시 1회 {allocationKrw.toLocaleString()}원 한도로 실제 매수 주문이 발주됨을 확인합니다.
+                                        정규장 중 {result.strategy_type === 'BREAKOUT'
+                                            ? `거래량 ${result.vol_mult || 1.5}배↑ · 당일 +${result.improved_rules?.buy_dip ?? 2.5}% 돌파`
+                                            : `당일 -${result.improved_rules?.buy_dip ?? 3.0}% ${result.strategy_type === 'SAFE_DIP' ? '칼날방지 눌림목' : '하락'}`} 조건 충족 시 1회 {allocationKrw.toLocaleString()}원 한도로 실제 매수 주문이 발주됨을 확인합니다.
                                     </span>
                                 </label>
                                 {!labSettings.real_enabled && (
@@ -1330,21 +1637,25 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
 
                             <div className="grid grid-cols-3 gap-2 text-center">
                                 <div className="p-3 rounded-xl bg-black/40 border border-white/5">
-                                    <div className="text-[11px] text-zinc-400 mb-0.5">매수 조건</div>
+                                    <div className="text-[11px] text-zinc-400 mb-0.5">
+                                        {result.strategy_type === 'BREAKOUT' ? '돌파 매수 조건' : '매수 조건'}
+                                    </div>
                                     <div className="text-sm font-bold text-sky-400">
-                                        -{result.tuning_steps[result.tuning_steps.length - 1]?.buy_dip ?? 3.8}% 급락
+                                        {result.strategy_type === 'BREAKOUT'
+                                            ? `+${result.improved_rules?.buy_dip ?? 2.5}% 돌파 (${result.vol_mult || 1.5}배↑)`
+                                            : `-${result.improved_rules?.buy_dip ?? 3.0}% ${result.strategy_type === 'SAFE_DIP' ? '칼날방지' : '하락'}`}
                                     </div>
                                 </div>
                                 <div className="p-3 rounded-xl bg-black/40 border border-white/5">
                                     <div className="text-[11px] text-zinc-400 mb-0.5">자동 익절</div>
                                     <div className="text-sm font-bold text-emerald-400">
-                                        +{result.tuning_steps[result.tuning_steps.length - 1]?.take_profit ?? 6.2}%
+                                        +{result.improved_rules?.tp ?? 6.0}%
                                     </div>
                                 </div>
                                 <div className="p-3 rounded-xl bg-black/40 border border-white/5">
                                     <div className="text-[11px] text-zinc-400 mb-0.5">자동 손절</div>
                                     <div className="text-sm font-bold text-rose-400">
-                                        -{result.tuning_steps[result.tuning_steps.length - 1]?.stop_loss ?? 4.0}%
+                                        -{result.improved_rules?.sl ?? 4.5}%
                                     </div>
                                 </div>
                             </div>
