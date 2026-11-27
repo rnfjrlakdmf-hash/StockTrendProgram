@@ -38,10 +38,41 @@ def _load_history() -> List[Dict[str, Any]]:
             with open(HISTORY_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, list):
-                    return data[:50]
+                    cleaned: List[Dict[str, Any]] = []
+                    seen = set()
+                    for item in data:
+                        if not isinstance(item, dict):
+                            continue
+                        code = str(item.get("code") or "")
+                        d_str = str(item.get("date") or "")
+                        t_str = str(item.get("time") or "")
+                        if "SP500" not in code and len(t_str) >= 5:
+                            try:
+                                hhmm = int(t_str[:2]) * 100 + int(t_str[3:5])
+                                if hhmm < 900 or hhmm > 1535:
+                                    continue
+                            except Exception:
+                                pass
+                        k = (d_str, code)
+                        if k in seen:
+                            continue
+                        seen.add(k)
+                        cleaned.append(item)
+                        if len(cleaned) >= 50:
+                            break
+                    return cleaned
     except Exception:
         pass
     return []
+
+
+def is_kr_regular_market_open(now_kst: Optional[datetime] = None) -> bool:
+    """국내 정규장(평일 09:00 ~ 15:35 KST) 여부"""
+    dt = now_kst or datetime.now(KST)
+    if dt.weekday() >= 5:
+        return False
+    hhmm = dt.hour * 100 + dt.minute
+    return 900 <= hhmm <= 1535
 
 
 def _record_history_event(event: Dict[str, Any]) -> None:
@@ -49,11 +80,10 @@ def _record_history_event(event: Dict[str, Any]) -> None:
         hist = _load_history()
         today_str = datetime.now(KST).strftime("%Y-%m-%d")
         code = event.get("code", "")
-        # 같은 날짜 + 같은 이벤트 코드는 30분 내 중복 기록 방지
-        for h in hist[:10]:
+        # 같은 날짜 + 같은 이벤트 코드는 당일 1회만 깔끔하게 기록 (30분 반복 스팸 방지)
+        for h in hist:
             if h.get("date") == today_str and h.get("code") == code:
-                if abs(time.time() - float(h.get("ts", 0))) < 1800:
-                    return
+                return
         hist.insert(0, event)
         hist = hist[:50]
         with open(HISTORY_FILE, "w", encoding="utf-8") as f:
@@ -392,7 +422,10 @@ def get_market_sidecar_status(force_refresh: bool = False) -> Dict[str, Any]:
         banner_active = False
 
     now_kst = datetime.now(KST)
-    if overall_level in ("CIRCUIT_BREAKER", "SELL_SIDECAR", "BUY_SIDECAR"):
+    kr_open_now = is_kr_regular_market_open(now_kst)
+    top_is_us = top_market.get("key") == "SP500"
+    top_market_live = bool(top_market.get("market_open")) or (not top_is_us and kr_open_now)
+    if overall_level in ("CIRCUIT_BREAKER", "SELL_SIDECAR", "BUY_SIDECAR") and top_market_live:
         _record_history_event({
             "ts": time.time(),
             "date": now_kst.strftime("%Y-%m-%d"),
@@ -479,9 +512,17 @@ def evaluate_account_sidecar(
     sp500_chg = float((m_map.get("SP500") or {}).get("change_pct") or 0.0)
     overall_lvl = str(m_stat.get("overall_level") or "NORMAL")
 
+    now_kst = datetime.now(KST)
+    kr_live_now = is_kr_regular_market_open(now_kst) or any(
+        bool((m_map.get(k) or {}).get("market_open")) for k in ("KOSPI200_FUT", "KOSPI", "KOSDAQ")
+    )
+    us_live_now = bool((m_map.get("SP500") or {}).get("market_open"))
+    top_alert_key = str(m_stat.get("top_alert_market") or "")
+    top_alert_live = us_live_now if top_alert_key == "SP500" else kr_live_now
+
     # 일일 손실 계산 (실현 손익 + 현재 평가손익 기준)
     if today_pnl_krw is None:
-        today_prefix = datetime.now(KST).strftime("%Y-%m-%d")
+        today_prefix = now_kst.strftime("%Y-%m-%d")
         realized_today = sum(
             int(lg.get("pnl_krw", 0) or 0)
             for lg in (state.get("trade_logs") or [])
@@ -508,23 +549,24 @@ def evaluate_account_sidecar(
         triggers.append("🔒 대표님 수동 매수 사이드카(비상 잠금) 활성화")
         trigger_code = "MANUAL_LOCK"
 
-    # 2. 시장 매도 사이드카 / 서킷브레이커 연동 차단
+    # 2. 시장 매도 사이드카 / 서킷브레이커 연동 차단 (실제 장중일 때만 작동 — 새벽 전일 종가 오발동·이력 도배 방지)
     if bool(guard_cfg.get("enabled", True)):
-        if bool(guard_cfg.get("block_on_sell_sidecar", True)) and overall_lvl in ("SELL_SIDECAR", "CIRCUIT_BREAKER"):
-            triggers.append(f"🚨 거래소 {m_stat.get('overall_badge')} 연동 발동 ({m_stat.get('headline')})")
+        if bool(guard_cfg.get("block_on_sell_sidecar", True)) and overall_lvl in ("SELL_SIDECAR", "CIRCUIT_BREAKER") and top_alert_live:
+            clean_badge = str(m_stat.get("overall_badge") or "").replace("🚨", "").strip()
+            triggers.append(f"🚨 거래소 {clean_badge} 연동 발동 ({m_stat.get('headline')})")
             if not trigger_code:
                 trigger_code = f"MARKET_{overall_lvl}"
 
         drop_th = abs(float(guard_cfg.get("market_drop_threshold_pct", 3.5) or 3.5))
         worst_kr = min(fut_chg, kospi_chg, kosdaq_chg)
-        if worst_kr <= -drop_th:
+        if kr_live_now and worst_kr <= -drop_th:
             triggers.append(
                 f"📉 국내 시장 급락 기준(-{drop_th:.1f}%) 돌파 "
                 f"(선물 {fut_chg:+.2f}% · 코스피 {kospi_chg:+.2f}% · 코스닥 {kosdaq_chg:+.2f}%)"
             )
             if not trigger_code:
                 trigger_code = "KR_MARKET_DROP"
-        elif sp500_chg <= -drop_th:
+        elif us_live_now and sp500_chg <= -drop_th:
             triggers.append(f"📉 미국 S&P 500 급락 기준(-{drop_th:.1f}%) 돌파 ({sp500_chg:+.2f}%)")
             if not trigger_code:
                 trigger_code = "US_MARKET_DROP"
@@ -541,6 +583,7 @@ def evaluate_account_sidecar(
 
     buy_blocked = len(triggers) > 0
     block_lab = buy_blocked and bool(guard_cfg.get("block_strategy_lab", True))
+    is_live_session_event = kr_live_now or us_live_now or trigger_code == "MANUAL_LOCK"
 
     summary_text = (
         f"🚨 [계좌 보호 사이드카 발동] {' · '.join(triggers)} ➔ 신규 매수·추매 자동 잠금 (보유 익절/손절 매도는 정상 작동)"
@@ -561,6 +604,9 @@ def evaluate_account_sidecar(
         "today_pnl_krw": today_pnl_krw,
         "today_pnl_pct": today_pnl_pct,
         "seed_krw": seed_krw,
+        "kr_market_open": kr_live_now,
+        "us_market_open": us_live_now,
+        "is_live_session_event": is_live_session_event,
         "config": guard_cfg,
         "market_snapshot": {
             "overall_level": overall_lvl,

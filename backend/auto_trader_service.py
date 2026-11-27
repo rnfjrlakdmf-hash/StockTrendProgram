@@ -1786,15 +1786,16 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
         _live_sidecar_market = get_market_sidecar_status()
         _sidecar_guard_eval = evaluate_account_sidecar(state, _live_sidecar_market)
         state["sidecar_guard_live"] = _sidecar_guard_eval
-        if _sidecar_guard_eval.get("buy_blocked"):
-            _ev_list = state.setdefault("sidecar_events", [])
+        if _sidecar_guard_eval.get("buy_blocked") and _sidecar_guard_eval.get("is_live_session_event", True):
+            _ev_list = _clean_sidecar_events(state.setdefault("sidecar_events", []))
             _today_d = datetime.now(KST).strftime("%Y-%m-%d")
             _ev_code = str(_sidecar_guard_eval.get("trigger_code") or "BRAKE")
+            # 같은 날짜 + 같은 사유 코드는 하루 1회만 깔끔하게 기록 (장외·30분 반복 스팸 완전 차단)
             _dup = any(
-                e.get("date") == _today_d and e.get("code") == _ev_code and abs(time.time() - float(e.get("ts", 0))) < 1800
-                for e in _ev_list[:8]
+                e.get("date") == _today_d and e.get("code") == _ev_code
+                for e in _ev_list
             )
-            if not _dup:
+            if not _dup and _ev_code != "MANUAL_LOCK":
                 _ev_list.insert(0, {
                     "ts": time.time(),
                     "date": _today_d,
@@ -1803,7 +1804,7 @@ def run_auto_trader_cycle(force_buy: bool = False) -> Dict[str, Any]:
                     "reason": " · ".join(_sidecar_guard_eval.get("triggers") or []),
                     "market_snapshot": _sidecar_guard_eval.get("market_snapshot") or {},
                 })
-                state["sidecar_events"] = _ev_list[:30]
+            state["sidecar_events"] = _ev_list[:30]
             notify_sidecar_if_needed(_sidecar_guard_eval, _send_admin_trade_notification)
     except Exception as _sc_err:
         print(f"[AutoTrader] sidecar_guard eval warning: {_sc_err}")
@@ -3726,6 +3727,47 @@ def get_dashboard_summary(state: Optional[Dict[str, Any]] = None) -> Dict[str, A
     }
 
 
+def _clean_sidecar_events(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    사이드카 발동 이력에서 새벽 장외시간(00:00~08:59) 전일 종가 반복 스팸을 정리하고,
+    수동 제어(MANUAL_LOCK_*)를 제외한 자동 발동 이력은 '날짜 + 코드'당 1회만 깔끔히 유지합니다.
+    """
+    if not isinstance(events, list):
+        return []
+    cleaned: List[Dict[str, Any]] = []
+    seen_day_code = set()
+    for ev in events:
+        if not isinstance(ev, dict):
+            continue
+        ev_copy = dict(ev)
+        code = str(ev_copy.get("code") or "")
+        date_str = str(ev_copy.get("date") or "")
+        time_str = str(ev_copy.get("time") or "")
+        reason = str(ev_copy.get("reason") or "").replace("🚨 거래소 🚨", "🚨 거래소")
+        ev_copy["reason"] = reason
+
+        is_manual = code.startswith("MANUAL_LOCK")
+        if not is_manual:
+            # 국내 시장 장외 새벽(00:00~08:59, 15:36~23:59)에 전일 종가로 중복 기록된 KR 이벤트 필터링
+            is_kr_ev = code in ("KR_MARKET_DROP", "MARKET_SELL_SIDECAR", "MARKET_CIRCUIT_BREAKER") or "국내 시장" in reason or "코스피" in reason
+            if is_kr_ev and len(time_str) >= 5:
+                try:
+                    hhmm = int(time_str[:2]) * 100 + int(time_str[3:5])
+                    if hhmm < 900 or hhmm > 1535:
+                        continue
+                except Exception:
+                    pass
+            dedup_key = (date_str, code)
+            if dedup_key in seen_day_code:
+                continue
+            seen_day_code.add(dedup_key)
+
+        cleaned.append(ev_copy)
+        if len(cleaned) >= 30:
+            break
+    return cleaned
+
+
 def get_sidecar_guard_status() -> Dict[str, Any]:
     """대표님 전용 계좌 보호 사이드카 실시간 상태 + 시장 사이드카 현황 통합 조회"""
     from sidecar_monitor import get_market_sidecar_status, evaluate_account_sidecar
@@ -3733,10 +3775,14 @@ def get_sidecar_guard_status() -> Dict[str, Any]:
     market_stat = get_market_sidecar_status()
     guard_eval = evaluate_account_sidecar(state, market_stat)
     state["sidecar_guard_live"] = guard_eval
+    cleaned_events = _clean_sidecar_events(state.get("sidecar_events", []))
+    if len(cleaned_events) != len(state.get("sidecar_events", [])):
+        state["sidecar_events"] = cleaned_events
+        save_state(state)
     return {
         "market": market_stat,
         "guard": guard_eval,
-        "events": state.get("sidecar_events", [])[:20],
+        "events": cleaned_events[:20],
         "auto_trader_enabled": bool(state.get("config", {}).get("enabled", True)),
         "auto_trader_mode": state.get("config", {}).get("mode", "AI_PAPER"),
         "strategy_lab_settings": state.get("strategy_lab_settings", {"paper_enabled": True, "real_enabled": False}),
