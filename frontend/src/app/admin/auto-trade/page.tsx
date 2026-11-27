@@ -424,6 +424,8 @@ export default function AdminAutoTradePage() {
   const [viewWindow, setViewWindow] = useState<"REAL" | "PAPER">("PAPER");
   const [limitToastMsg, setLimitToastMsg] = useState<string | null>(null);
   const [showFirmPipeline, setShowFirmPipeline] = useState<boolean>(false);
+  const [showStrategySettings, setShowStrategySettings] = useState<boolean>(false);
+  const [showRadarTop10, setShowRadarTop10] = useState<boolean>(false);
 
   const handleCopySymbol = (e: React.MouseEvent, symbol: string) => {
     e.preventDefault();
@@ -2364,42 +2366,65 @@ export default function AdminAutoTradePage() {
           )}
         </div>
 
-        {/* 2. 로봇 전략 설정 & 한국투자증권(KIS) 24시간 무인 API 연동 패널 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 2. 로봇 전략 설정 & 한국투자증권(KIS) 24시간 무인 API 연동 패널 (각 패널 개별 접힘/펼침 지원) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
           {/* 좌측: 자동매매 운전 모드 & 손익비 설정 (사령부 콘솔) */}
-          <div className="rounded-3xl bg-gradient-to-b from-zinc-900/95 via-zinc-950/90 to-black/95 border border-white/10 p-5 sm:p-7 space-y-6 shadow-2xl relative overflow-hidden">
+          <div
+            className={`rounded-2xl bg-gradient-to-b from-zinc-900/95 via-zinc-950/90 to-black/95 border border-white/10 shadow-2xl relative overflow-hidden transition-all ${
+              showStrategySettings ? "p-5 sm:p-7 space-y-6" : "p-4 sm:px-5 sm:py-4"
+            }`}
+          >
             <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
-            {/* 헤더 & 가동 상태 */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10 pb-4 border-b border-white/10">
-              <div>
-                <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2.5 tracking-tight">
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-400/30 flex items-center justify-center text-blue-400">
+            {/* 헤더 & 가동 상태 & 접기/펼치기 */}
+            <div
+              className={`flex flex-wrap items-center justify-between gap-2.5 relative z-10 ${
+                showStrategySettings ? "pb-4 border-b border-white/10" : ""
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setShowStrategySettings((prev) => !prev)}
+                className="text-left cursor-pointer group flex-1 min-w-0"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-blue-500/15 border border-blue-400/30 flex items-center justify-center text-blue-400 shrink-0">
                     <Settings className="w-4 h-4" />
                   </div>
-                  자동매매 전략 &amp; 계좌 연동 설정
-                </h2>
-                <p className="text-xs text-gray-400 mt-1 pl-10.5">
-                  클라우드 24시간 무인 매매 엔진 · 리스크 관리 사령부
-                </p>
-              </div>
-
-              <div>
-                {cfg.enabled ? (
-                  <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-2 shadow-lg shadow-emerald-500/10">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    🟢 실시간 자동매매 가동 중 (ON)
-                  </span>
-                ) : (
-                  <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-rose-400" />
-                    🛑 자동매매 일시정지 (OFF)
-                  </span>
+                  <h2 className="text-sm sm:text-base font-black text-white tracking-tight group-hover:text-blue-200 transition-colors">
+                    자동매매 전략 &amp; 계좌 연동 설정
+                  </h2>
+                  {cfg.enabled ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10.5px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1 shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      가동 중 (ON)
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10.5px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-flex items-center gap-1 shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                      정지 (OFF)
+                    </span>
+                  )}
+                </div>
+                {showStrategySettings && (
+                  <p className="text-xs text-gray-400 mt-1 pl-9">
+                    클라우드 24시간 무인 매매 엔진 · 리스크 관리 사령부
+                  </p>
                 )}
-              </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowStrategySettings((prev) => !prev)}
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-blue-200 text-[11px] font-black transition-all cursor-pointer shrink-0"
+              >
+                {showStrategySettings ? "▲ 접기" : "▼ 펼치기"}
+              </button>
             </div>
 
+            {showStrategySettings && (
+              <>
             {/* 🎛️ 원터치 제어 덱: 마스터 스위치 박스 */}
             <div className="p-4 rounded-2xl bg-zinc-950/80 border border-white/10 space-y-3 relative z-10">
               <div className="flex items-center justify-between">
@@ -2960,31 +2985,49 @@ export default function AdminAutoTradePage() {
                 </button>
               </div>
             </div>
+              </>
+            )}
           </div>
 
           {/* 우측: AI 실시간 종목 발굴 레이더 Top 10 (시간대별 국내장·미국장 자동 스위칭) */}
-          <div className="rounded-3xl bg-gradient-to-b from-zinc-900/95 via-zinc-950/90 to-black/95 border border-white/10 p-5 sm:p-7 space-y-5 shadow-2xl relative overflow-hidden">
+          <div
+            className={`rounded-2xl bg-gradient-to-b from-zinc-900/95 via-zinc-950/90 to-black/95 border border-white/10 shadow-2xl relative overflow-hidden transition-all ${
+              showRadarTop10 ? "p-5 sm:p-7 space-y-5" : "p-4 sm:px-5 sm:py-4"
+            }`}
+          >
             <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
-            {/* 헤더 */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10 relative z-10">
-              <div>
-                <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2.5 tracking-tight">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shadow-sm">
+            {/* 헤더 & 접기/펼치기 */}
+            <div
+              className={`flex flex-wrap items-center justify-between gap-2.5 relative z-10 ${
+                showRadarTop10 ? "pb-4 border-b border-white/10" : ""
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setShowRadarTop10((prev) => !prev)}
+                className="text-left cursor-pointer group flex-1 min-w-0"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shadow-sm shrink-0">
                     <TrendingUp className="w-4 h-4" />
                   </div>
-                  AI 로봇 실시간 매수 타점 레이더 Top 10
-                </h2>
-                <p className="text-xs text-gray-400 mt-1 pl-10.5">
-                  현재 열리는 주식시장 시간대에 맞춰 AI가 즉시 매수·익절할 최우선 10대 종목
-                </p>
-              </div>
+                  <h2 className="text-sm sm:text-base font-black text-white tracking-tight group-hover:text-emerald-200 transition-colors">
+                    AI 로봇 실시간 매수 타점 레이더 Top 10
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10.5px] font-mono font-bold bg-zinc-900 border border-white/10 text-gray-300 inline-flex items-center gap-1 shrink-0">
+                    <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
+                    {data?.last_cycle_at?.slice(11) || "실시간"}
+                  </span>
+                </div>
+                {showRadarTop10 && (
+                  <p className="text-xs text-gray-400 mt-1 pl-9">
+                    현재 열리는 주식시장 시간대에 맞춰 AI가 즉시 매수·익절할 최우선 10대 종목
+                  </p>
+                )}
+              </button>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-zinc-900 border border-white/10 text-gray-300 flex items-center gap-1.5 shadow-sm">
-                  <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                  최근 스캔: {data?.last_cycle_at?.slice(11) || "실시간"}
-                </span>
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => fetchStatus(false)}
@@ -2994,9 +3037,18 @@ export default function AdminAutoTradePage() {
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-emerald-400" : ""}`} />
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRadarTop10((prev) => !prev)}
+                  className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-black transition-all cursor-pointer"
+                >
+                  {showRadarTop10 ? "▲ 접기" : "▼ 펼치기"}
+                </button>
               </div>
             </div>
 
+            {showRadarTop10 && (
+              <>
             {/* 🕒 시간대별 자동 스위칭 세션 상태 배너 */}
             <div
               className={`p-4 rounded-2xl border flex flex-col gap-2 relative z-10 shadow-lg ${
@@ -3355,6 +3407,8 @@ export default function AdminAutoTradePage() {
                 })
               )}
             </div>
+              </>
+            )}
           </div>
         </div>
 
