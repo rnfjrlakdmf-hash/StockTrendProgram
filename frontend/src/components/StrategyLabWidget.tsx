@@ -1170,7 +1170,7 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                                     💰 1회 자동 매수 투자금 ({deployMode === 'REAL' ? '실전 계좌 한도' : '모의 계좌 투자금'})
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
-                                    {[300000, 500000, 1000000, 2000000, 5000000].map((amt) => (
+                                    {[100000, 300000, 500000, 1000000, 2000000, 5000000].map((amt) => (
                                         <button
                                             key={amt}
                                             type="button"
@@ -1192,7 +1192,7 @@ export default function StrategyLabWidget({ onDeploySuccess }: StrategyLabWidget
                             <div className="flex items-center gap-2">
                                 <input
                                     type="number"
-                                    step="100000"
+                                    step="50000"
                                     min="50000"
                                     value={allocationKrw}
                                     onChange={(e) => setAllocationKrw(Math.max(50000, parseInt(e.target.value || '50000', 10)))}
