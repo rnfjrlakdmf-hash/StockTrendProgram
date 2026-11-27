@@ -423,7 +423,7 @@ export default function AdminAutoTradePage() {
   const [copiedSymbol, setCopiedSymbol] = useState<string | null>(null);
   const [viewWindow, setViewWindow] = useState<"REAL" | "PAPER">("PAPER");
   const [limitToastMsg, setLimitToastMsg] = useState<string | null>(null);
-  const [showFirmPipeline, setShowFirmPipeline] = useState<boolean>(true);
+  const [showFirmPipeline, setShowFirmPipeline] = useState<boolean>(false);
 
   const handleCopySymbol = (e: React.MouseEvent, symbol: string) => {
     e.preventDefault();
@@ -1514,47 +1514,83 @@ export default function AdminAutoTradePage() {
         {/* 🛡️ [통합 패키지] 시장 매도 사이드카 연동 & 계좌 보호 비상 브레이크 사령부 */}
         <AccountSidecarControlPanel adminKey={ADMIN_KEY} />
 
-        {/* 🏢 0. AI 증권사 9대 부서 24시간 무인 협업 파이프라인 (투자의 전 과정을 대신 돌리는 9단계 컨트롤 타워) */}
-        <div className="rounded-3xl bg-gradient-to-b from-emerald-950/35 via-zinc-950/95 to-black/95 border border-emerald-500/40 p-4 sm:p-6 space-y-5 shadow-2xl shadow-emerald-500/5 relative overflow-hidden">
+        {/* 🏢 0. AI 증권사 9대 부서 24시간 무인 협업 파이프라인 (기본 1줄 슬림 접힘 · 클릭 시 9대 부서 전체 펼침) */}
+        <div
+          className={`rounded-2xl bg-gradient-to-br from-emerald-950/35 via-zinc-950/95 to-black/95 border-2 border-emerald-500/35 shadow-xl relative overflow-hidden transition-all ${
+            showFirmPipeline ? "p-4 sm:p-6 space-y-5" : "p-4 sm:px-5 sm:py-3.5"
+          }`}
+        >
           <div className="absolute -top-24 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 left-1/4 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
 
-          {/* 상단 헤더 */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4 border-b border-emerald-500/20 relative z-10">
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-400 text-black text-[11px] font-black tracking-wide shadow-sm shadow-emerald-400/30">
+          {!showFirmPipeline ? (
+            /* 접힘 상태: 슬림 1줄 바 (위 계좌 보호 사이드카와 동일한 깔끔한 높이) */
+            <div className="flex flex-wrap items-center justify-between gap-2 relative z-10">
+              <button
+                type="button"
+                onClick={() => setShowFirmPipeline(true)}
+                className="flex flex-wrap items-center gap-2 cursor-pointer text-left min-w-0"
+              >
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 text-xs font-black shrink-0">
                   🏢 AI 증권사 본부 가동 중
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-[11px] font-mono font-bold flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>9개 전문 부서 100% 실시간 연동 완료</span>
+                <span className="text-xs font-black text-white">
+                  9개 전문 부서 100% 실시간 연동 완료
                 </span>
                 {data?.firm_pipeline?.self_learning?.summary_text && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-[11px] font-bold">
+                  <span className="hidden md:inline-block px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[11px] font-bold truncate max-w-md">
                     🧠 {data.firm_pipeline.self_learning.summary_text}
                   </span>
                 )}
-              </div>
-              <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 tracking-tight">
-                <span>투자의 전 과정을 대신 돌리는 9개 부서 · AI 증권사 자동화 파이프라인</span>
-              </h2>
-              <p className="text-xs text-gray-300 leading-relaxed">
-                시장 분석부터 전략 선택, 리스크 통제, 최근 25일 백테스트 검증, 수급·재무 스크리닝, 차트 타점 포착, 자동 주문, 그리고{" "}
-                <strong className="text-emerald-300 font-bold">매매 복기 및 자가학습(①번 부서로 피드백 순환)</strong>까지 하나의 증권사 회사처럼 24시간 유기적으로 돌아갑니다.
-              </p>
-            </div>
+                <span className="text-[11px] text-gray-400 shrink-0">▼ 펼치기</span>
+              </button>
 
-            <div className="flex items-center gap-2 self-end lg:self-center shrink-0">
               <button
                 type="button"
-                onClick={() => setShowFirmPipeline((prev) => !prev)}
-                className="px-3.5 py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-emerald-500/30 text-emerald-300 text-xs font-black transition-all cursor-pointer shadow-sm"
+                onClick={() => setShowFirmPipeline(true)}
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-black transition-all cursor-pointer shrink-0"
               >
-                {showFirmPipeline ? "🔼 9대 부서 브리핑 접기" : "🔽 9대 부서 실시간 브리핑 펼치기"}
+                🔽 9대 부서 브리핑 펼치기
               </button>
             </div>
-          </div>
+          ) : (
+            /* 펼침 상태: 전체 헤더 */
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4 border-b border-emerald-500/20 relative z-10">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-400 text-black text-[11px] font-black tracking-wide shadow-sm shadow-emerald-400/30">
+                    🏢 AI 증권사 본부 가동 중
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-[11px] font-mono font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span>9개 전문 부서 100% 실시간 연동 완료</span>
+                  </span>
+                  {data?.firm_pipeline?.self_learning?.summary_text && (
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-[11px] font-bold">
+                      🧠 {data.firm_pipeline.self_learning.summary_text}
+                    </span>
+                  )}
+                </div>
+                <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2 tracking-tight">
+                  <span>투자의 전 과정을 대신 돌리는 9개 부서 · AI 증권사 자동화 파이프라인</span>
+                </h2>
+                <p className="text-xs text-gray-300 leading-relaxed">
+                  시장 분석부터 전략 선택, 리스크 통제, 최근 25일 백테스트 검증, 수급·재무 스크리닝, 차트 타점 포착, 자동 주문, 그리고{" "}
+                  <strong className="text-emerald-300 font-bold">매매 복기 및 자가학습(①번 부서로 피드백 순환)</strong>까지 하나의 증권사 회사처럼 24시간 유기적으로 돌아갑니다.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 self-end lg:self-center shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowFirmPipeline(false)}
+                  className="px-3.5 py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-emerald-500/30 text-emerald-300 text-xs font-black transition-all cursor-pointer shadow-sm"
+                >
+                  🔼 9대 부서 브리핑 접기
+                </button>
+              </div>
+            </div>
+          )}
 
           {showFirmPipeline && (
             <>
