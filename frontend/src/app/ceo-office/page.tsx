@@ -378,31 +378,41 @@ function renderHighlightedExecutiveText(text: string): React.ReactNode {
 }
 
 // 4대 핵심 지표(전광판) 깔끔 렌더링 헬퍼: 숫자/금융 데이터는 font-mono, 한글 텍스트/테마/섹터는 font-sans로 자간 깨짐 없이 자연스럽게 출력!
-// 🏛️ 월가 5대 전설 3초 쉬운 요약 사전 (마우스 호버 시 직관적 이해 제공)
-const ANALYST_EASY_EXPLANATIONS: Record<string, { tag: string; analogy: string; desc: string }> = {
+// 🏛️ 월가 5대 전설 3초 쉬운 요약 사전 (카드·모달 태그 및 직관적 설명 제공)
+const ANALYST_EASY_EXPLANATIONS: Record<string, { shortTag: string; tag: string; analogy: string; focus: string; desc: string }> = {
     buffett: {
+        shortTag: "#독점력·수익성",
         tag: "비법 소스 & 1등 해자",
         analogy: "3대째 내려오는 맛집의 독점 비법 소스",
+        focus: "남들이 못 따라 하는 독점 경쟁력(해자)과 꾸준한 이익률·ROE 체력을 분석합니다.",
         desc: "남들이 흉내 못 내는 독점 경쟁력(해자)으로 매년 내 자본 대비 15~20% 이상을 꼬박꼬박 불려주는 진짜배기 1등 기업인지 검사합니다."
     },
     munger: {
+        shortTag: "#악재·재무방어",
         tag: "망할 구멍 없는 기업",
         analogy: "불황에도 10년 뒤 끄떡없는 알짜 가게",
+        focus: "실적 눈높이 하향·과다 부채 같은 치명적 악재와 하방 리스크가 없는지 먼저 거릅니다.",
         desc: "빚이 너무 많거나 유행을 타서 망할 위험을 철저히 배제하고, 어떤 경제 위기가 와도 끄떡없이 살아남을 위대한 기업만 고릅니다."
     },
     graham: {
+        shortTag: "#저평가·안전마진",
         tag: "10억 건물을 6억에",
         analogy: "바닥에 단단하게 깔린 안전 에어백",
+        focus: "기업 본래 가치(PBR·PER·목표가) 대비 주가가 얼마나 싸게 할인됐는지 따집니다.",
         desc: "당장 회사가 망해 땅과 공장을 팔아도 내가 산 가격보다 더 건질 수 있을 만큼 주가가 바닥 헐값(안전마진)인지 확인합니다."
     },
     lynch: {
+        shortTag: "#이익성장·PEG",
         tag: "성장 대비 바겐세일",
         analogy: "손님이 2배로 느는데 가격은 그대로인 식당",
+        focus: "회사가 커지는 속도(매출·이익 성장률)에 비해 주가가 비싼지 싼지(PEG)를 분석합니다.",
         desc: "일감과 주문서(수주)가 쏟아져 매년 20~30%씩 무섭게 크는데, 시장이 아직 가치를 몰라봐서 주가가 싼 알짜 성장주를 찾습니다."
     },
     druckenmiller: {
+        shortTag: "#큰손수급·추세타점",
         tag: "큰손 수급 급류 타기",
         analogy: "외국인·기관 큰손이 줄 서서 담는 바로 그 타이밍",
+        focus: "외국인·기관 자금 유입 방향과 손절 대비 수익(손익비)이 좋은 매수 타이밍을 잡습니다.",
         desc: "환율·금리 환경이 좋아지고 외국인·기관 큰손 자금이 바닥에서 강하게 쏟아져 들어오는 바로 그 매수 승부처를 포착합니다."
     }
 };
@@ -7344,8 +7354,10 @@ export default function CeoOfficePage() {
 
                                                                                         const gaugeColor = isBuy ? 'bg-emerald-400' : isSell ? 'bg-rose-400' : 'bg-amber-400';
                                                                                         const easyInfo = ANALYST_EASY_EXPLANATIONS[a.id] || {
+                                                                                            shortTag: `#${String(a.role || '핵심분석').split('&')[0].trim()}`,
                                                                                             tag: a.role,
                                                                                             analogy: "월가 전설의 핵심 검증 철학",
+                                                                                            focus: a.role || "핵심 투자 지표를 종합 검증합니다.",
                                                                                             desc: a.reason
                                                                                         };
 
@@ -7424,12 +7436,22 @@ export default function CeoOfficePage() {
                                                                                                 className={`rounded-xl p-2.5 sm:p-3 border transition-all shadow-md hover:-translate-y-0.5 hover:shadow-lg flex flex-col justify-between gap-2 cursor-pointer group/card ${cardBorder}`}
                                                                                             >
                                                                                                 <div className="space-y-2">
-                                                                                                    {/* 1행: 아바타 + 거장 풀네임 (100% 너비로 이름 잘림 완전 방지) */}
-                                                                                                    <div className="flex items-center gap-1.5">
-                                                                                                        <span className="text-base shrink-0 select-none leading-none">{a.avatar}</span>
-                                                                                                        <span className="text-xs sm:text-[13px] font-black text-white whitespace-nowrap tracking-tight">
-                                                                                                            {a.name}
-                                                                                                        </span>
+                                                                                                    {/* 1행: 아바타 + 거장 풀네임 + 핵심 분석 관점 태그 (이름 잘림 완전 방지) */}
+                                                                                                    <div className="space-y-1">
+                                                                                                        <div className="flex items-center gap-1.5">
+                                                                                                            <span className="text-base shrink-0 select-none leading-none">{a.avatar}</span>
+                                                                                                            <span className="text-xs sm:text-[13px] font-black text-white whitespace-nowrap tracking-tight">
+                                                                                                                {a.name}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        <div>
+                                                                                                            <span
+                                                                                                                title={easyInfo.focus}
+                                                                                                                className="inline-block px-1.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-400/25 text-[10px] font-extrabold text-amber-200 whitespace-nowrap"
+                                                                                                            >
+                                                                                                                {easyInfo.shortTag}
+                                                                                                            </span>
+                                                                                                        </div>
                                                                                                     </div>
 
                                                                                                     {/* 2행: 판정 뱃지 + 확신도 점수 + 슬림 게이지 바 */}
@@ -11376,101 +11398,144 @@ export default function CeoOfficePage() {
                         onClick={() => setSelectedCouncilDetail(null)}
                     >
                         <div
-                            className={`w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl bg-[#0a1020] border-2 shadow-2xl p-5 sm:p-7 space-y-5 ${
+                            className={`w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-3xl bg-[#0a1020] border-2 shadow-2xl p-5 sm:p-7 space-y-5 ${
                                 isSell ? 'border-rose-500/50' : isBuy ? 'border-emerald-500/50' : 'border-amber-500/50'
                             }`}
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* 1. 상단 헤더 */}
-                            <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
-                                <div>
-                                    <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border ${
-                                            isSell
-                                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                                                : isBuy
-                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                                : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                                        }`}>
-                                            {activeA.vote_label} · 확신도 {activeA.confidence}점
-                                        </span>
-                                        <span className="text-xs text-zinc-300 font-black">
-                                            {modalDoc?.stock_name || snap.stock_name} {snap.stock_code ? `(${snap.stock_code})` : ''}
-                                        </span>
-                                        {compProf?.sector_name && (
-                                            <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 text-[10px] font-bold">
-                                                업종 · {compProf.sector_name}
-                                            </span>
-                                        )}
-                                        {councilDeepLoading && (
-                                            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/40 text-[10px] font-black animate-pulse">
-                                                ⏳ 실시간 4개년 재무·5일 수급·기업개요 불러오는 중...
-                                            </span>
-                                        )}
+                            {(() => {
+                                const activeEasyInfo = ANALYST_EASY_EXPLANATIONS[activeA.id] || {
+                                    shortTag: `#${String(activeA.role || '핵심분석').split('&')[0].trim()}`,
+                                    tag: activeA.role || '핵심 분석',
+                                    analogy: '월가 전설의 투자 기준',
+                                    focus: activeA.role || '핵심 투자 지표를 종합 검증합니다.',
+                                    desc: activeA.reason || '',
+                                };
+                                return (
+                                    <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black border ${
+                                                    isSell
+                                                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                                        : isBuy
+                                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                        : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                                }`}>
+                                                    {activeA.vote_label} · 확신도 {activeA.confidence}점
+                                                </span>
+                                                <span className="text-xs text-zinc-300 font-black">
+                                                    {modalDoc?.stock_name || snap.stock_name} {snap.stock_code ? `(${snap.stock_code})` : ''}
+                                                </span>
+                                                {compProf?.sector_name && (
+                                                    <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-200 border border-indigo-400/30 text-[10px] font-bold">
+                                                        업종 · {compProf.sector_name}
+                                                    </span>
+                                                )}
+                                                {councilDeepLoading && (
+                                                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/40 text-[10px] font-black animate-pulse">
+                                                        ⏳ 실시간 4개년 재무·5일 수급·기업개요 불러오는 중...
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h3 className="text-lg sm:text-2xl font-black text-white flex items-center gap-2">
+                                                <span>{activeA.avatar}</span>
+                                                <span>{activeA.name}의 심층 분석 세부 근거</span>
+                                            </h3>
+                                            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                                <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-400/35 text-[11px] font-black whitespace-nowrap">
+                                                    {activeEasyInfo.shortTag}
+                                                </span>
+                                                <p className="text-xs text-zinc-300 font-medium break-keep">
+                                                    {activeEasyInfo.focus}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedCouncilDetail(null)}
+                                            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-zinc-200 text-xs font-black cursor-pointer shrink-0"
+                                        >
+                                            ✕ 닫기
+                                        </button>
                                     </div>
-                                    <h3 className="text-lg sm:text-2xl font-black text-white flex items-center gap-2">
-                                        <span>{activeA.avatar}</span>
-                                        <span>{activeA.name}의 심층 분석 세부 근거</span>
-                                    </h3>
-                                    <p className="text-xs text-zinc-400 mt-0.5">{activeA.role}</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedCouncilDetail(null)}
-                                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-zinc-200 text-xs font-black cursor-pointer shrink-0"
-                                >
-                                    ✕ 닫기
-                                </button>
-                            </div>
+                                );
+                            })()}
 
-                            {/* 2. 5대 거장 빠른 전환 탭 + ⚡ 3초 핵심 요약 / 📑 상세 전체 보기 스위치 */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                            {/* 2. 보기 모드 전환 + 5대 거장 5등분 카드 탭 (이름·태그 잘림 원천 차단) */}
+                            <div className="space-y-2.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="text-[11px] font-bold text-zinc-400">
+                                        🏛️ 거장 5인별 분석 관점 선택 · 클릭하면 해당 거장의 근거로 전환됩니다
+                                    </span>
+                                    <div className="inline-flex items-center p-1 rounded-xl bg-black/60 border border-white/10 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => setCouncilViewMode('summary')}
+                                            className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
+                                                councilViewMode === 'summary'
+                                                    ? 'bg-emerald-400 text-slate-950 shadow-sm'
+                                                    : 'text-zinc-300 hover:text-white'
+                                            }`}
+                                        >
+                                            ⚡ 3초 한눈에 요약
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setCouncilViewMode('detail')}
+                                            className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
+                                                councilViewMode === 'detail'
+                                                    ? 'bg-indigo-400 text-slate-950 shadow-sm'
+                                                    : 'text-zinc-300 hover:text-white'
+                                            }`}
+                                        >
+                                            📑 상세 근거·재무표
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                                     {analystsList.map((tabA: any) => {
                                         const active = tabA.id === activeA.id;
                                         const dot = tabA.vote === 'BUY' ? '🟢' : tabA.vote === 'SELL' ? '🔴' : '🟡';
+                                        const tabEasy = ANALYST_EASY_EXPLANATIONS[tabA.id] || {
+                                            shortTag: `#${String(tabA.role || '핵심분석').split('&')[0].trim()}`,
+                                            focus: tabA.role || '',
+                                        };
                                         return (
                                             <button
                                                 key={tabA.id}
                                                 type="button"
+                                                title={`${tabA.name} (${tabEasy.shortTag}) — ${tabEasy.focus}`}
                                                 onClick={() => setSelectedCouncilDetail({ ...selectedCouncilDetail, activeAnalystId: tabA.id })}
-                                                className={`shrink-0 px-3 py-2 rounded-xl text-xs font-black border transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                className={`px-2.5 py-2 rounded-xl border transition-all flex flex-col items-start justify-between gap-1.5 cursor-pointer text-left ${
                                                     active
-                                                        ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md'
-                                                        : 'bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10'
+                                                        ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md ring-1 ring-amber-200/60'
+                                                        : 'bg-white/5 text-zinc-200 border-white/10 hover:bg-white/10 hover:border-white/20'
                                                 }`}
                                             >
-                                                <span>{tabA.avatar}</span>
-                                                <span>{tabA.name}</span>
-                                                <span className="text-[10px] opacity-85">{dot}</span>
+                                                <div className="flex items-center justify-between gap-1 w-full">
+                                                    <div className="flex items-center gap-1 min-w-0">
+                                                        <span className="text-sm leading-none shrink-0">{tabA.avatar}</span>
+                                                        <span className="text-[11.5px] font-black whitespace-nowrap tracking-tight">
+                                                            {tabA.name}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[10px] leading-none shrink-0">{dot}</span>
+                                                </div>
+                                                <span
+                                                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold whitespace-nowrap ${
+                                                        active
+                                                            ? 'bg-slate-950/15 text-slate-950'
+                                                            : 'bg-amber-500/15 text-amber-200 border border-amber-400/25'
+                                                    }`}
+                                                >
+                                                    {tabEasy.shortTag}
+                                                </span>
                                             </button>
                                         );
                                     })}
-                                </div>
-
-                                <div className="inline-flex items-center p-1 rounded-xl bg-black/60 border border-white/10 shrink-0 self-start sm:self-auto">
-                                    <button
-                                        type="button"
-                                        onClick={() => setCouncilViewMode('summary')}
-                                        className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
-                                            councilViewMode === 'summary'
-                                                ? 'bg-emerald-400 text-slate-950 shadow-sm'
-                                                : 'text-zinc-300 hover:text-white'
-                                        }`}
-                                    >
-                                        ⚡ 3초 한눈에 요약
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setCouncilViewMode('detail')}
-                                        className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
-                                            councilViewMode === 'detail'
-                                                ? 'bg-indigo-400 text-slate-950 shadow-sm'
-                                                : 'text-zinc-300 hover:text-white'
-                                        }`}
-                                    >
-                                        📑 상세 근거·재무표
-                                    </button>
                                 </div>
                             </div>
 
