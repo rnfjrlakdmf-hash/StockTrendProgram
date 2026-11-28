@@ -1022,7 +1022,16 @@ interface FinancialRiskPlan {
     finalProfitAmt: string;
     finalUpsidePct: string;
     priceExceedsBudget: boolean;
-    tranches: { step: string; price: string; shares: string; amt: string; desc: string }[];
+    tranches: {
+        step: string;
+        weightPct: number;
+        price: string;
+        priceTag: string;
+        shares: string;
+        amt: string;
+        whenToBuy: string;
+        desc: string;
+    }[];
 }
 
 function roundToKrxTick(price: number, isDollar: boolean): number {
@@ -1206,51 +1215,77 @@ function computeFinancialRiskPlan(rawCurrPrice: any, rawTargetPrice: any, totalC
         tranches: totalShares === 0 ? [
             {
                 step: '1차 분할 매수',
+                weightPct: 0,
                 price: fmt(currP),
+                priceTag: '예산 초과 대기',
                 shares: '0주 (매수 전면 보류)',
                 amt: '0원',
+                whenToBuy: `설정 예산(${fmt(maxAlloc)})보다 1주 가격(${fmt(currP)})이 높아 매수를 자동 보류합니다.`,
                 desc: `설정 예산(${fmt(maxAlloc)}) < 1주 단가(${fmt(currP)}). 최소 1주 매수에 ${fmt(neededMore)} 부족하여 자동 매수가 0주로 안전 보류됩니다.`,
             },
             {
                 step: '2차 분할 매수',
+                weightPct: 0,
                 price: '-',
+                priceTag: '예산 증액 필요',
                 shares: '0주',
                 amt: '0원',
+                whenToBuy: `예산을 ${fmt(suggestedBudget)} 이상으로 올리면 1차·2차 분할 매수가 활성화됩니다.`,
                 desc: `상단에서 예산을 ${fmt(suggestedBudget)} 이상으로 증액하시면 1차·2차 분할 매수가 즉시 활성화됩니다.`,
             },
             {
                 step: '3차 분할 매수',
+                weightPct: 0,
                 price: '-',
+                priceTag: '예수금 보존',
                 shares: '0주',
                 amt: '0원',
+                whenToBuy: `예산 ${fmt(maxAlloc)}은 계좌에 100% 현금으로 안전하게 보관됩니다.`,
                 desc: `설정하신 예산 ${fmt(maxAlloc)}은 계좌에서 1원도 무단 출금되지 않고 100% 안전 예수금으로 보존됩니다.`,
             },
         ] : [
             {
-                step: '1차 분할 매수',
+                step: isSingleShare ? '1차 단일 매수' : '1차 분할 매수',
+                weightPct: Math.round((share1 / totalShares) * 100),
                 price: fmt(p1),
+                priceTag: p1 < currP ? '현재가 대비 -1.5% 눌림' : '현재가 부근',
                 shares: `${share1}주`,
                 amt: fmt(amt1),
+                whenToBuy: isSingleShare
+                    ? `오전 10시 이후 장 초반 흔들림이 진정되고 ${fmt(p1)} 이하에서 버틸 때 1주 지정가 매수 (9시 직후 추격 금지)`
+                    : p1 < currP
+                    ? `오전 10시 이후 주가가 ${fmt(p1)} 이하로 살짝 눌리며 버틸 때 먼저 ${share1}주 진입 (9시 급등 추격 금지)`
+                    : `오전 10시 이후 장 초반 출렁임이 잦아들고 ${fmt(p1)} 이하에서 안정될 때 먼저 ${share1}주 진입 (9시 급등 추격 금지)`,
                 desc: isSingleShare
                     ? '1주 단가 특성상 분할 없이 지지선 확인 후 1주 단일 진입 (100%)'
-                    : `비중 ${Math.round((share1 / totalShares) * 100)}% · 오전 10시 이후 지지선 1차 진입`,
+                    : `비중 ${Math.round((share1 / totalShares) * 100)}% · 오전 10시 이후 ${fmt(p1)} 부근 지지선 확인 시 1차 진입`,
             },
             {
                 step: '2차 분할 매수',
+                weightPct: share2 > 0 ? Math.round((share2 / totalShares) * 100) : 0,
                 price: share2 > 0 ? fmt(p2) : '-',
+                priceTag: share2 > 0 ? (totalShares === 2 ? '현재가 대비 -2.0% 눌림목' : '현재가 대비 -3.0% 눌림목') : '미해당',
                 shares: `${share2}주`,
                 amt: fmt(amt2),
+                whenToBuy: share2 > 0
+                    ? `1차 매수 뒤 주가가 ${fmt(p2)}까지 내려올 때 평단가(${fmt(avgBuyP)})를 낮추기 위해 ${share2}주 추가 매수 · 안 내려오고 바로 오르면 1차 물량만 수익 실현!`
+                    : '예산 내 1주 단일 매수 구간 (예산 증액 시 2차 분할 활성화)',
                 desc: share2 > 0
-                    ? `비중 ${Math.round((share2 / totalShares) * 100)}% · 눌림목 하방 지지력 확인 후 추가 체결`
+                    ? `비중 ${Math.round((share2 / totalShares) * 100)}% · ${fmt(p2)} 눌림목 도달 및 하방 지지 확인 시 추가 체결`
                     : '예산 내 1주 단일 매수 구간 (예산 증액 시 2차 분할 활성화)',
             },
             {
                 step: '3차 분할 매수',
+                weightPct: share3 > 0 ? Math.round((share3 / totalShares) * 100) : 0,
                 price: share3 > 0 ? fmt(p3) : '-',
+                priceTag: share3 > 0 ? '현재가 회복·돌파 시' : '미해당',
                 shares: `${share3}주`,
                 amt: fmt(amt3),
+                whenToBuy: share3 > 0
+                    ? `눌림목 이후 거래량이 붙으며 ${fmt(p3)} 위로 반등·안착하는 상승 전환 확인 시 마지막 ${share3}주 완성`
+                    : '예산 내 추가 매수 없음 (잔여 현금은 안전 비상금으로 비축)',
                 desc: share3 > 0
-                    ? `비중 ${Math.round((share3 / totalShares) * 100)}% · 추세 안착 확인 후 잔여 물량 체결`
+                    ? `비중 ${Math.round((share3 / totalShares) * 100)}% · ${fmt(p3)} 위로 추세 안착 확인 후 잔여 물량 체결`
                     : '예산 내 추가 매수 없음 (잔여 현금은 안전 비상금으로 비축)',
             },
         ],
@@ -2057,20 +2092,26 @@ function getDetailedRiskBreakdown(doc: AutoApprovalDoc, capitalOverride: number 
         },
         {
             num: "②",
-            title: "3단계 분할 매수",
+            title: plan && !plan.priceExceedsBudget && plan.tranches[2].shares === '0주'
+                ? (plan.tranches[1].shares === '0주' ? "1주 단일 매수" : "2단계 분할 매수")
+                : "3단계 분할 매수",
             target: plan 
                 ? (plan.priceExceedsBudget
                     ? `0주 전액 보류 (0원 지출)`
                     : (plan.tranches[1].shares === '0주' 
-                        ? `1차 ${plan.tranches[0].amt} (1주 집중)` 
-                        : `1차 ${plan.tranches[0].amt} ➔ 2차 ${plan.tranches[1].amt} ➔ 3차 ${plan.tranches[2].amt}`))
+                        ? `1차 ${plan.tranches[0].price} (1주 집중)` 
+                        : plan.tranches[2].shares === '0주'
+                        ? `1차 ${plan.tranches[0].price} (${plan.tranches[0].shares}) ➔ 2차 ${plan.tranches[1].price} (${plan.tranches[1].shares})`
+                        : `1차 ${plan.tranches[0].price} (${plan.tranches[0].shares}) ➔ 2차 ${plan.tranches[1].price} (${plan.tranches[1].shares}) ➔ 3차 ${plan.tranches[2].price} (${plan.tranches[2].shares})`))
                 : `30% ➔ 40% ➔ 30% (${safeEntryFormatted})`,
             desc: plan
                 ? (plan.priceExceedsBudget
                     ? `1주 단가(${plan.currPrice})가 설정 한도(${plan.maxAlloc})를 초과하므로 1·2·3차 분할 매수가 일체 체결되지 않으며 계좌 잔고가 안전하게 보호됩니다.`
                     : (plan.tranches[1].shares === '0주'
-                        ? `오전 10시 지지선 확인 후 ${plan.tranches[0].price}에 1주 진입합니다.`
-                        : `1차(${plan.tranches[0].price} ${plan.tranches[0].shares}) ➔ 2차(${plan.tranches[1].price} ${plan.tranches[1].shares}) ➔ 3차(${plan.tranches[2].price} ${plan.tranches[2].shares}) 분할 체결`))
+                        ? `오전 10시 이후 지지선 확인 뒤 ${plan.tranches[0].price} 이하에 1주 진입합니다.`
+                        : plan.tranches[2].shares === '0주'
+                        ? `1차는 오전 10시 이후 ${plan.tranches[0].price} 이하 안정 시 ${plan.tranches[0].shares}, 2차는 ${plan.tranches[1].price}(-2% 눌림목) 도달 시 ${plan.tranches[1].shares} 추가 매수합니다. (손절선 이탈 시 2차 중단)`
+                        : `1차(오전 10시 이후 ${plan.tranches[0].price} ${plan.tranches[0].shares}) ➔ 2차(${plan.tranches[1].price} 눌림 지지 ${plan.tranches[1].shares}) ➔ 3차(${plan.tranches[2].price} 반등 안착 ${plan.tranches[2].shares}) 분할 체결`))
                 : `1차(오전 10시 지지선 ${safeEntryFormatted}에 30%) ➔ 2차(눌림목 안착 40%) ➔ 3차(상승 돌파 30%)로 나누어 매수합니다.`,
         },
         {
@@ -4323,10 +4364,8 @@ export default function CeoOfficePage() {
                                             <td className="py-2.5 px-3 text-center text-cyan-300 font-bold">
                                                 {t.amt}
                                             </td>
-                                            <td className="py-2.5 px-3 text-right font-sans text-gray-300 text-[11px]">
-                                                {idx === 0 && '장 초반 30분 관망 후 1차 눌림목 타진'}
-                                                {idx === 1 && '당일 시초가 위 지지선 안착 확인 시 비중 확대'}
-                                                {idx === 2 && '직전 고점 돌파 및 거래량 동반 시 불타기 완성'}
+                                            <td className="py-2.5 px-3 text-right font-sans text-gray-300 text-[11px] break-keep">
+                                                {t.whenToBuy || t.desc}
                                             </td>
                                         </tr>
                                     ))}
@@ -7211,68 +7250,143 @@ export default function CeoOfficePage() {
                                                                                             </div>
                                                                                         </div>
 
-                                                                                        {/* 3. 대표님 즉각 행동 지침 (액션 플랜) */}
-                                                                                        <div className="flex items-center gap-2.5 pt-2.5 border-t border-white/10 text-xs flex-wrap">
-                                                                                            <span className="px-3 py-1 rounded-lg bg-purple-500/30 text-purple-200 border border-purple-400/50 font-black shrink-0 text-xs shadow-sm flex items-center gap-1">
-                                                                                                <span>👉</span>
-                                                                                                <span>대표님 최종 행동 지침</span>
-                                                                                            </span>
-                                                                                            <div className="font-bold break-keep text-xs sm:text-[12.5px]">
-                                                                                                {council.target_allocation_pct === 0 ? (
-                                                                                                    <span className="text-rose-300 font-extrabold flex items-center gap-1 flex-wrap">
-                                                                                                        <span>🛡️ 신규 매수 0주 (지출 0원 유지)</span>
-                                                                                                        <span className="text-zinc-400 font-normal">·</span>
-                                                                                                        <span>기존 보유분 있다면 비중 축소 또는 즉시 손절 방어선(-3.5%) 점검</span>
-                                                                                                    </span>
-                                                                                                ) : (
-                                                                                                    plan ? (
-                                                                                                        plan.priceExceedsBudget ? (
-                                                                                                            <span className="text-amber-300 font-extrabold">
-                                                                                                                1회 예산(10만원) 대비 현재가({plan.currPrice}) 초과로 [0주 대기] · 원금 100% 안전 예수금 보관
-                                                                                                            </span>
-                                                                                                        ) : (
-                                                                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                                                                <span className="text-emerald-300 font-extrabold">
-                                                                                                                    실시간 현재가({plan.currPrice}) 기준 딱 {plan.totalShares.replace(/주$/, '')}주 ({plan.actualInvest}) 분할 매수 집행
-                                                                                                                </span>
-                                                                                                                {plan.isSingleShare ? (
-                                                                                                                    <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-xs shadow-sm ring-1 ring-amber-300">
-                                                                                                                        🥇 1차 단일 진입: {plan.tranches[0]?.amt} (1주 전액)
-                                                                                                                    </span>
-                                                                                                                ) : (
-                                                                                                                    <div className="flex flex-wrap items-center gap-1.5 text-xs font-black">
-                                                                                                                        <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black shadow-sm ring-1 ring-amber-300 flex items-center gap-1">
-                                                                                                                            <span>🥇 1차 30%:</span>
-                                                                                                                            <span className="underline underline-offset-2">{plan.tranches[0]?.amt}</span>
-                                                                                                                            <span className="text-[11px] font-bold opacity-90">({plan.tranches[0]?.shares})</span>
-                                                                                                                        </span>
-                                                                                                                        {plan.tranches[1] && plan.tranches[1].shares !== '0주' && (
-                                                                                                                            <>
-                                                                                                                                <span className="text-zinc-500 font-normal">➔</span>
-                                                                                                                                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                                                                                                                                    2차 40%: {plan.tranches[1]?.amt} ({plan.tranches[1]?.shares})
-                                                                                                                                </span>
-                                                                                                                            </>
-                                                                                                                        )}
-                                                                                                                        {plan.tranches[2] && plan.tranches[2].shares !== '0주' && (
-                                                                                                                            <>
-                                                                                                                                <span className="text-zinc-500 font-normal">➔</span>
-                                                                                                                                <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">
-                                                                                                                                    3차 30%: {plan.tranches[2]?.amt} ({plan.tranches[2]?.shares})
-                                                                                                                                </span>
-                                                                                                                            </>
-                                                                                                                        )}
-                                                                                                                    </div>
-                                                                                                                )}
-                                                                                                            </div>
-                                                                                                        )
-                                                                                                    ) : (
-                                                                                                        <span className="text-emerald-300 font-extrabold">
-                                                                                                            10만원 한도 내 실시간 현재가 기준 3회 분할 매수 집행 (오전 10시 지지선 안착 확인)
+                                                                                        {/* 3. 대표님 즉각 행동 지침 (초보자 눈높이 단계별 매수 가격·타이밍 가이드 포함) */}
+                                                                                        <div className="pt-2.5 border-t border-white/10 space-y-2.5 text-xs">
+                                                                                            <div className="flex items-center gap-2.5 flex-wrap">
+                                                                                                <span className="px-3 py-1 rounded-lg bg-purple-500/30 text-purple-200 border border-purple-400/50 font-black shrink-0 text-xs shadow-sm flex items-center gap-1">
+                                                                                                    <span>👉</span>
+                                                                                                    <span>대표님 최종 행동 지침</span>
+                                                                                                </span>
+                                                                                                <div className="font-bold break-keep text-xs sm:text-[12.5px]">
+                                                                                                    {council.target_allocation_pct === 0 ? (
+                                                                                                        <span className="text-rose-300 font-extrabold flex items-center gap-1 flex-wrap">
+                                                                                                            <span>🛡️ 신규 매수 0주 (지출 0원 유지)</span>
+                                                                                                            <span className="text-zinc-400 font-normal">·</span>
+                                                                                                            <span>기존 보유분 있다면 비중 축소 또는 즉시 손절 방어선(-3.5%) 점검</span>
                                                                                                         </span>
-                                                                                                    )
-                                                                                                )}
+                                                                                                    ) : (
+                                                                                                        plan ? (
+                                                                                                            plan.priceExceedsBudget ? (
+                                                                                                                <span className="text-amber-300 font-extrabold">
+                                                                                                                    1회 예산(10만원) 대비 현재가({plan.currPrice}) 초과로 [0주 대기] · 원금 100% 안전 예수금 보관
+                                                                                                                </span>
+                                                                                                            ) : (
+                                                                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                                                                    <span className="text-emerald-300 font-extrabold">
+                                                                                                                        실시간 현재가({plan.currPrice}) 기준 딱 {plan.totalShares.replace(/주$/, '')}주 ({plan.actualInvest}) 분할 매수 집행
+                                                                                                                    </span>
+                                                                                                                    {plan.isSingleShare ? (
+                                                                                                                        <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-xs shadow-sm ring-1 ring-amber-300">
+                                                                                                                            🥇 1차 단일 진입: {plan.tranches[0]?.price} × 1주
+                                                                                                                        </span>
+                                                                                                                    ) : (
+                                                                                                                        <div className="flex flex-wrap items-center gap-1.5 text-xs font-black">
+                                                                                                                            <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black shadow-sm ring-1 ring-amber-300 flex items-center gap-1">
+                                                                                                                                <span>🥇 1차 ({plan.tranches[0]?.weightPct}%):</span>
+                                                                                                                                <span className="underline underline-offset-2">{plan.tranches[0]?.price}</span>
+                                                                                                                                <span className="text-[11px] font-bold opacity-90">({plan.tranches[0]?.shares})</span>
+                                                                                                                            </span>
+                                                                                                                            {plan.tranches[1] && plan.tranches[1].shares !== '0주' && (
+                                                                                                                                <>
+                                                                                                                                    <span className="text-zinc-500 font-normal">➔</span>
+                                                                                                                                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                                                                                                                        🥈 2차 ({plan.tranches[1]?.weightPct}%): {plan.tranches[1]?.price} ({plan.tranches[1]?.shares})
+                                                                                                                                    </span>
+                                                                                                                                </>
+                                                                                                                            )}
+                                                                                                                            {plan.tranches[2] && plan.tranches[2].shares !== '0주' && (
+                                                                                                                                <>
+                                                                                                                                    <span className="text-zinc-500 font-normal">➔</span>
+                                                                                                                                    <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                                                                                                                                        🥉 3차 ({plan.tranches[2]?.weightPct}%): {plan.tranches[2]?.price} ({plan.tranches[2]?.shares})
+                                                                                                                                    </span>
+                                                                                                                                </>
+                                                                                                                            )}
+                                                                                                                        </div>
+                                                                                                                    )}
+                                                                                                                </div>
+                                                                                                            )
+                                                                                                        ) : (
+                                                                                                            <span className="text-emerald-300 font-extrabold">
+                                                                                                                10만원 한도 내 실시간 현재가 기준 3회 분할 매수 집행 (오전 10시 지지선 안착 확인)
+                                                                                                            </span>
+                                                                                                        )
+                                                                                                    )}
+                                                                                                </div>
                                                                                             </div>
+
+                                                                                            {/* 초보자용 1차·2차·3차 정확한 매수 가격 & 매입 타이밍 가이드 */}
+                                                                                            {council.target_allocation_pct > 0 && plan && !plan.priceExceedsBudget && (() => {
+                                                                                                const activeTranches = (plan.tranches || [])
+                                                                                                    .map((t, idx) => ({ ...t, idx }))
+                                                                                                    .filter((t) => t.shares && !t.shares.startsWith('0주'));
+                                                                                                if (activeTranches.length === 0) return null;
+                                                                                                const gridCols =
+                                                                                                    activeTranches.length === 1
+                                                                                                        ? 'grid-cols-1'
+                                                                                                        : activeTranches.length === 2
+                                                                                                        ? 'grid-cols-1 md:grid-cols-2'
+                                                                                                        : 'grid-cols-1 md:grid-cols-3';
+                                                                                                const medals = ['🥇', '🥈', '🥉'];
+                                                                                                const toneStyles = [
+                                                                                                    'border-amber-400/35 bg-amber-950/20',
+                                                                                                    'border-emerald-400/35 bg-emerald-950/20',
+                                                                                                    'border-sky-400/35 bg-sky-950/20',
+                                                                                                ];
+                                                                                                const badgeStyles = [
+                                                                                                    'bg-amber-400/20 text-amber-200 border-amber-400/40',
+                                                                                                    'bg-emerald-400/20 text-emerald-200 border-emerald-400/40',
+                                                                                                    'bg-sky-400/20 text-sky-200 border-sky-400/40',
+                                                                                                ];
+                                                                                                return (
+                                                                                                    <div className="rounded-xl bg-white/[0.03] border border-white/10 p-2.5 sm:p-3 space-y-2">
+                                                                                                        <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+                                                                                                            <span className="font-black text-amber-300">
+                                                                                                                📘 초보자 실전 주문 방법 · 언제 얼마에 사면 되나요?
+                                                                                                            </span>
+                                                                                                            <span className="text-zinc-400 font-medium">
+                                                                                                                예상 평균 매입가 <strong className="text-white font-mono">{plan.avgBuyPrice}</strong> · 1차 익절 목표 <strong className="text-emerald-300 font-mono">{plan.target1Price}</strong>
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        <div className={`grid ${gridCols} gap-2`}>
+                                                                                                            {activeTranches.map((t) => (
+                                                                                                                <div
+                                                                                                                    key={t.idx}
+                                                                                                                    className={`rounded-lg border p-2.5 space-y-1.5 ${toneStyles[t.idx] || toneStyles[0]}`}
+                                                                                                                >
+                                                                                                                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                                                                                                        <span className="text-[11.5px] font-black text-white">
+                                                                                                                            {medals[t.idx] || '🔹'} {t.idx + 1}차 매수 ({t.weightPct}% · {t.shares})
+                                                                                                                        </span>
+                                                                                                                        <span className={`px-1.5 py-0.5 rounded border text-[10px] font-extrabold whitespace-nowrap ${badgeStyles[t.idx] || badgeStyles[0]}`}>
+                                                                                                                            {t.priceTag}
+                                                                                                                        </span>
+                                                                                                                    </div>
+                                                                                                                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                                                                                                                        <span className="text-[11px] text-zinc-400 font-bold">주문 가격:</span>
+                                                                                                                        <span className="text-sm font-mono font-black text-white">
+                                                                                                                            {t.price}
+                                                                                                                        </span>
+                                                                                                                        <span className="text-[10.5px] text-zinc-400 font-mono">
+                                                                                                                            (총 {t.amt})
+                                                                                                                        </span>
+                                                                                                                    </div>
+                                                                                                                    <p className="text-[11px] text-zinc-200 leading-snug break-keep">
+                                                                                                                        <strong className="text-amber-200">언제?</strong> {t.whenToBuy}
+                                                                                                                    </p>
+                                                                                                                </div>
+                                                                                                            ))}
+                                                                                                        </div>
+                                                                                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 border-t border-white/10 text-[11px] text-zinc-300 break-keep">
+                                                                                                            <span className="text-rose-300 font-black shrink-0">🛑 꼭 기억하세요:</span>
+                                                                                                            <span>
+                                                                                                                주가가 손절 방어선(<strong className="text-rose-200 font-mono">{plan.stopLossPrice}</strong>, 평단가 -3.5%) 아래로 밀리면 <strong className="text-white">추가 매수(물타기) 금지</strong>하고 원금을 지킵니다.
+                                                                                                                {activeTranches.length >= 2 && ' 2차 가격까지 안 내려오고 바로 오르면 1차 물량만으로 수익을 챙기세요.'}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                );
+                                                                                            })()}
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
@@ -7531,7 +7645,13 @@ export default function CeoOfficePage() {
                                                                                     <div className="flex items-center gap-2 text-[11px] text-amber-300 font-bold shrink-0 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
                                                                                         <span>⚡ 10만원 한도 엄수 (단일 종목 몰빵 절대 금지)</span>
                                                                                         <span className="text-zinc-500">·</span>
-                                                                                        <span className="text-zinc-300 font-medium">3회 분할 매수 준수</span>
+                                                                                        <span className="text-zinc-300 font-medium">
+                                                                                            {plan && !plan.priceExceedsBudget
+                                                                                                ? plan.isSingleShare
+                                                                                                    ? '1주 단일 진입'
+                                                                                                    : `${(plan.tranches || []).filter((t) => t.shares && !t.shares.startsWith('0주')).length}회 분할 매수 준수`
+                                                                                                : '분할 매수 준수'}
+                                                                                        </span>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
