@@ -219,9 +219,9 @@ def beautify_notification(title: str, body: str, data: Optional[Dict] = None) ->
     # [v4.5] 사용자 요청: FCM 알림 화면 공간 최적화 (면책 문구는 앱 내에서 상시 고지되므로 푸시 본문에서는 제거)
     DISCLAIMER_TEXT = ""
 
-    # [차트 스터디 / 1타 강사 특강 알림 보호]
-    # 대표님이 지정하신 명확한 2줄 요약 (📌 핵심 요약 / 📌 수록 자료) 형식을 왜곡 없이 100% 보존
-    if alert_type in ['theory_alert', 'study'] or any(k in clean_title for k in ["1타 강사", "1타강사", "차트 스터디", "주식 스터디"]):
+    # [차트 스터디 / 1타 강사 특강 & 주말 VIP 프리미엄 리포트 알림 보호]
+    # 구조화된 요약(📊 / 🔥 / 📅 / 🏆 / 💎 / 💡) 형식을 왜곡 없이 100% 보존
+    if alert_type in ['theory_alert', 'study', 'weekend_report', 'weekend_whale', 'whale_weekend', 'vip_report'] or any(k in clean_title for k in ["1타 강사", "1타강사", "차트 스터디", "주식 스터디", "VIP 주말", "슈퍼 고래", "마켓 인사이트", "프리미엄 인사이트"]):
         return sanitize_notification_text(clean_title, clean_body)
 
     # 기존 본문에 들어있던 💡 해석 등 모든 형태의 해석 및 사족 문구를 분리/제거
@@ -506,7 +506,8 @@ def sanitize_notification_text(title: str, body: str):
     clean_body = format_korean_shares_and_amounts(clean_body)
     
     # 1. 스마트워치 및 모바일 공통 타이틀 슬림화
-    if "수급 스캐너" in clean_title or "모닝 마켓 레이더" in clean_title or "개장 15분 전" in clean_title or "차트 스터디" in clean_title or "1타 강사" in clean_title:
+    is_vip_special = any(k in clean_title for k in ["VIP 주말", "슈퍼 고래", "마켓 인사이트", "프리미엄 인사이트", "주말 한정"])
+    if is_vip_special or "수급 스캐너" in clean_title or "모닝 마켓 레이더" in clean_title or "개장 15분 전" in clean_title or "차트 스터디" in clean_title or "1타 강사" in clean_title:
         # 매력적인 전용 헤드라인 원형 보존
         pass
     elif any(k in clean_title for k in ["매수", "매도", "익절", "손절", "체결", "모의투자", "실전매매", "물타기", "추매"]):
@@ -530,8 +531,8 @@ def sanitize_notification_text(title: str, body: str):
         stock_part = clean_title.replace("⚖️", "").replace("AI", "").replace("마켓 밸런스 브리핑", "").strip()
         clean_title = f"⚖️ AI 브리핑: {stock_part}" if stock_part else "⚖️ AI 브리핑"
 
-    # 일반 모바일 제목 길이 제한 완화 (충분히 한눈에 들어오도록 40자까지 허용)
-    max_title_len = 40
+    # 일반 모바일 제목 길이 제한 완화 (VIP 특집은 55자, 일반은 40자까지 허용)
+    max_title_len = 55 if is_vip_special else 40
     if len(clean_title) > max_title_len:
         clean_title = clean_title[:max_title_len - 2] + ".."
 

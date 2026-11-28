@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import json
 import asyncio
@@ -219,6 +220,102 @@ def get_latest_whale_report():
         except:
             return None
     return None
+
+
+def _compact_shares(raw_amt: str) -> str:
+    if not raw_amt:
+        return ""
+    s = str(raw_amt).strip()
+    m = re.search(r'([+\-]?)\s*([\d,]+)\s*주?', s)
+    if not m:
+        return s
+    sign = m.group(1) or "+"
+    try:
+        n = int(m.group(2).replace(",", ""))
+    except Exception:
+        return s
+    if n >= 10000:
+        man = n / 10000.0
+        val_str = f"{man:.1f}만주" if man < 100 else f"{int(round(man)):,}만주"
+        return f"{sign}{val_str}"
+    return f"{sign}{n:,}주"
+
+
+def build_whale_vip_alert_payload(report_data: dict = None) -> tuple:
+    """
+    주말 슈퍼 고래(Whale) 수급 심층 엑스레이(whale_weekend_report.json) 실제 데이터를 바탕으로
+    VIP 프리미엄 리포트 알림(제목, 본문, data)을 생성합니다.
+    """
+    if report_data is None:
+        report_data = get_latest_whale_report()
+
+    title = "🐋 [VIP 주말 특집 ②] 슈퍼 고래 수급 심층 엑스레이"
+
+    if not report_data or not isinstance(report_data, dict):
+        body = (
+            "🏆 [고래 집중 3대 섹터] 한 주간 외국인·기관 거대 자본이 집중 유입된 주도 산업군 맵\n"
+            "💎 [은밀한 매집주 TOP 3] 주가 횡보 구간에서 큰손이 조용히 수량을 축적한 핵심 3종목\n"
+            "🌐 [외인·기관 TOP 10] 한국거래소(KRX) 주간 순매수 상위 10종목 전수 해부 및 수급 배경\n"
+            "🎯 [월요일 시초가 로드맵] 09:00~09:30 프로그램 수급 점검 및 눌림목 분할 접근 전략 수록\n"
+            "💡 [VIP 열람 혜택] 주말 한정 특별 공개 · 전문에서 전체 매집 명단과 대응 전략 확인"
+        )
+        return title, body, {"type": "weekend_whale", "url": "/weekend-whale"}
+
+    whale_sectors = report_data.get("whale_sectors") or []
+    hidden_whales = report_data.get("hidden_whales") or []
+    foreign_list = report_data.get("foreign_analysis") or []
+    inst_list = report_data.get("inst_analysis") or []
+
+    # 1) 고래 집중 3대 섹터
+    sec_parts = []
+    for ws in whale_sectors[:3]:
+        s_name = str(ws.get("sector") or "").strip()
+        leaders = str(ws.get("leader") or "").strip()
+        leader_short = "·".join([x.strip() for x in re.split(r'[,·]', leaders) if x.strip()][:2])
+        if s_name:
+            sec_parts.append(f"{s_name}({leader_short})" if leader_short else s_name)
+    sec_line = " · ".join(sec_parts) if sec_parts else "AI반도체 · 전력인프라 · 바이오"
+
+    # 2) 은밀한 고래 매집주 TOP 3
+    hw_parts = []
+    for hw in hidden_whales[:3]:
+        stk = str(hw.get("stock") or "").strip()
+        amt = _compact_shares(hw.get("amount") or "")
+        if stk:
+            hw_parts.append(f"{stk}({amt})" if amt else stk)
+    hw_line = " · ".join(hw_parts) if hw_parts else "외인·기관 연속 저점 축적 핵심 3선 수록"
+
+    # 3) 외국인 순매수 TOP 3 (ETF 제외 우선, 부족하면 포함)
+    f_non_etf = [x for x in foreign_list if not any(k in str(x.get("stock", "")) for k in ["KODEX", "TIGER", "ACE", "RISE", "SOL"])]
+    f_pick = (f_non_etf[:3] if len(f_non_etf) >= 3 else foreign_list[:3])
+    f_line = " · ".join([f"{x.get('stock')}({_compact_shares(x.get('amount', ''))})" for x in f_pick if x.get("stock")]) or "외국인 주간 순매수 TOP 10 전수 분석"
+
+    # 4) 기관 순매수 TOP 3 (ETF 제외 우선)
+    i_non_etf = [x for x in inst_list if not any(k in str(x.get("stock", "")) for k in ["KODEX", "TIGER", "ACE", "RISE", "SOL"])]
+    i_pick = (i_non_etf[:3] if len(i_non_etf) >= 3 else inst_list[:3])
+    i_line = " · ".join([f"{x.get('stock')}({_compact_shares(x.get('amount', ''))})" for x in i_pick if x.get("stock")]) or "기관 주간 순매수 TOP 10 전수 분석"
+
+    # 5) 월요일 전략 요약
+    strat_raw = str(report_data.get("monday_strategy") or "").strip()
+    strat_first = ""
+    for ln in strat_raw.splitlines():
+        cln = re.sub(r'^[•\-\*\d\.\s📌🎯🛡️]+', '', ln).strip()
+        if len(cln) >= 12:
+            strat_first = cln[:86] + ("…" if len(cln) > 86 else "")
+            break
+    if not strat_first:
+        strat_first = "월요일 장 초반(09:00~09:30) 갭상승 추격 대신 외인·기관 프로그램 수급 확인 후 분할 접근"
+
+    lines = [
+        f"🏆 [고래 집중 3대 섹터] {sec_line}",
+        f"💎 [은밀한 매집주 TOP 3] {hw_line}",
+        f"🌐 [외국인 순매수 TOP 3] {f_line}",
+        f"🏛️ [기관 순매수 TOP 3] {i_line}",
+        f"🎯 [월요일 시초가 전략] {strat_first}",
+        "💡 [VIP 열람 혜택] 외인·기관 TOP 10 전체 명단 · 종목별 매집 배경 · 월요일 로드맵 전문 수록",
+    ]
+    return title, "\n".join(lines), {"type": "weekend_whale", "url": "/weekend-whale"}
+
 
 if __name__ == "__main__":
     _generate_whale_report_sync()

@@ -1699,22 +1699,18 @@ async def weekend_report_scheduler_loop():
                 await generate_whale_weekend_report()
                 last_run_gen_tag = target_tag
                 
-            # 2. 푸시 발송 (토요일 오전 10시 00분 ~ 10시 29분 사이 1회)
+            # 2. 푸시 발송 (토요일 오전 10시 00분 ~ 10시 29분 사이 1회: VIP 주말 특집 ① 마켓 인사이트)
             if now.weekday() == 5 and now.hour == 10 and now.minute < 30 and last_run_week_push != current_week:
-                logger.info(f"[WeekendReport] Sending push notifications for week {current_week}...")
+                logger.info(f"[WeekendReport] Sending VIP weekend market insight push for week {current_week}...")
                 from firebase_config import send_multicast_notification
                 from db_manager import get_all_fcm_tokens_with_user
+                from utils.weekend_report import build_weekend_vip_alert_payload
                 
                 all_tokens = [t[1] for t in get_all_fcm_tokens_with_user()]
                 if all_tokens:
-                    push_title = "🚨 [주말 한정] 마켓 인사이트 발행 완료"
-                    push_body = "지난주 시장 자금 흐름과 다음 주 핵심 일정을 지금 바로 확인하세요! (일요일 자정 삭제)"
-                    push_data = {
-                        "type": "weekend_report",
-                        "url": "/weekend-report"
-                    }
+                    push_title, push_body, push_data = build_weekend_vip_alert_payload()
                     send_multicast_notification(all_tokens, push_title, push_body, data=push_data)
-                    logger.info(f"[WeekendReport] Push sent to {len(all_tokens)} devices.")
+                    logger.info(f"[WeekendReport] VIP Market Insight push sent to {len(all_tokens)} devices.")
                 
                 last_run_week_push = current_week
                 

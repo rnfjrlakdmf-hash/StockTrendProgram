@@ -378,6 +378,104 @@ def _generate_sync_impl():
 async def generate_weekend_report():
     return await asyncio.to_thread(_generate_sync_impl)
 
+
+def _trim_sentence(text: str, max_len: int = 88) -> str:
+    if not text:
+        return ""
+    s = re.sub(r'^\[[^\]]+\]\s*', '', str(text)).strip()
+    s = re.sub(r'\s+', ' ', s)
+    if len(s) <= max_len:
+        return s
+    cut = s[:max_len]
+    for sep in ['.', '다 ', '요 ', ', ']:
+        pos = cut.rfind(sep)
+        if pos >= int(max_len * 0.55):
+            return cut[:pos + (1 if sep == '.' else 0)].strip()
+    return cut.rstrip() + "…"
+
+
+def build_weekend_vip_alert_payload(report_data: dict = None) -> tuple:
+    """
+    주말 마켓 인사이트 리포트(weekend_report.json)의 실제 데이터를 추출하여
+    VIP 프리미엄 리포트에 걸맞은 구조화된 핵심 브리핑(제목, 본문, data)을 생성합니다.
+    """
+    if report_data is None and os.path.exists(REPORT_FILE):
+        try:
+            with open(REPORT_FILE, "r", encoding="utf-8") as f:
+                report_data = json.load(f)
+        except Exception:
+            report_data = None
+
+    title = "💎 [VIP 주말 특집 ①] 주간 글로벌 마켓 인사이트"
+
+    if not report_data or not isinstance(report_data, dict):
+        body = (
+            "📊 [주간 시황 요약] 한 주간 코스피·코스닥 및 뉴욕 증시 핵심 수급 흐름과 변곡점 총정리\n"
+            "🔥 [자금 쏠림 테마] 기관·외국인 자금이 집중된 주도 섹터와 차주 관찰 밸류체인 복기\n"
+            "📅 [차주 핵심 일정] 다음 주 증시를 흔들 국내외 거시경제 캘린더(물가·수출·고용) 예습\n"
+            "📑 [증권사 리서치] 국내 주요 증권사 최신 시황·산업·종목 리포트 초보자 눈높이 해설 수록\n"
+            "💡 [VIP 열람 혜택] 주말 한정 특별 공개 (일요일 자정 마감) · 전문에서 상세 지표 확인"
+        )
+        return title, body, {"type": "weekend_report", "url": "/weekend-report"}
+
+    bullets = report_data.get("week_summary_bullets") or []
+    sections = report_data.get("sections") or []
+    research_list = report_data.get("securities_research") or []
+
+    # 1) 국내/미국 핵심 시황
+    kr_summary = _trim_sentence(bullets[0], 92) if len(bullets) >= 1 else "국내 증시 주요 지수 및 수급 흐름 복기 완료"
+    us_summary = _trim_sentence(bullets[1], 92) if len(bullets) >= 2 else "뉴욕 증시·미 국채금리·원/달러 환율 영향 분석 완료"
+
+    # 2) 자금 쏠림 테마명 추출
+    theme_names = []
+    if len(sections) >= 1 and sections[0].get("content"):
+        for raw_ln in str(sections[0]["content"]).splitlines():
+            ln = re.sub(r'^[•\-\*·\s]+', '', raw_ln).strip()
+            if ':' in ln:
+                t_name = ln.split(':', 1)[0].strip()
+                if t_name:
+                    theme_names.append(t_name)
+    theme_line = " · ".join(theme_names[:4]) if theme_names else "AI 반도체 · 전력인프라 · 바이오 · 밸류업"
+
+    # 3) 차주 핵심 경제 일정 3건 추출
+    cal_items = []
+    if len(sections) >= 2 and sections[1].get("content"):
+        for raw_ln in str(sections[1]["content"]).splitlines():
+            ln = re.sub(r'^[•\-\*·\s]+', '', raw_ln).strip()
+            m = re.match(r'^(\d+월\s*\d+일\([월화수목금토일]\))\s*:\s*\[([^\]]+)\]', ln)
+            if m:
+                dt_short = re.sub(r'(\d+)월\s*(\d+)일', r'\1/\2', m.group(1))
+                ev_short = m.group(2).replace(' 발표', '').strip()
+                if len(ev_short) > 22:
+                    ev_short = ev_short[:21] + "…"
+                cal_items.append(f"{dt_short} {ev_short}")
+    cal_line = " · ".join(cal_items[:3]) if cal_items else "다음 주 국내외 핵심 거시경제 지표 캘린더 수록"
+
+    # 4) 증권사 리서치 요약
+    brokers = []
+    for r in research_list:
+        b = str(r.get("broker") or "").strip()
+        if b and b not in brokers:
+            brokers.append(b)
+    if research_list:
+        broker_preview = "·".join(brokers[:3])
+        res_line = f"{broker_preview} 등 주요 증권사 최신 리서치 {len(research_list)}건 + 초보자 해설 수록"
+    else:
+        res_line = "주요 증권사 시황·산업·종목 최신 리서치 핵심 요약 및 체크포인트 수록"
+
+    # 5) 결론/체크포인트
+    caution = _trim_sentence(bullets[2], 82) if len(bullets) >= 3 else "추격 매수 대신 실적·수급 우량주 중심 분할 대응 (일요일 자정 마감)"
+
+    lines = [
+        f"📊 [국내 시황·수급] {kr_summary}",
+        f"🌎 [미국·환율 흐름] {us_summary}",
+        f"🔥 [자금 쏠림 테마] {theme_line}",
+        f"📅 [차주 핵심 일정] {cal_line}",
+        f"📑 [증권사 리서치] {res_line}",
+        f"💡 [VIP 체크포인트] {caution} (일요일 자정 마감)",
+    ]
+    return title, "\n".join(lines), {"type": "weekend_report", "url": "/weekend-report"}
+
 def get_latest_weekend_report():
     if os.path.exists(REPORT_FILE):
         try:

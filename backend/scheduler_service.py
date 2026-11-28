@@ -1827,23 +1827,24 @@ def run_market_scheduler():
                 run_market_scheduler.last_run_whale_push = current_date
                 _save_sched_state("last_run_whale_push", current_date)
                 
-            # [토요일 실행] 오전 9:55 주말 한정 프리미엄 리포트 생성 (10시 오픈 대비)
+            # [토요일 실행] 오전 9:55 주말 한정 프리미엄 리포트 2종 생성 & VIP 특집 ②(슈퍼 고래 수급 엑스레이) 오픈 알림
             if now.weekday() == 5 and now.hour == 9 and now.minute >= 55 and current_date != last_run_weekend_report_gen:
                 try:
                     from utils.weekend_report import _generate_sync_impl
+                    from utils.whale_weekend_report import _generate_whale_report_sync, build_whale_vip_alert_payload
                     _generate_sync_impl()
+                    whale_data = _generate_whale_report_sync()
                     try:
-                        title = "🔓 주말 프리미엄 인사이트 오픈!"
-                        body = "지난주 시장 핵심 요약과 다음 주 필수 체크포인트를 지금 바로 확인하세요."
+                        title, body, push_data = build_whale_vip_alert_payload(whale_data)
                         conn = get_db_connection()
                         cursor = conn.cursor()
                         cursor.execute("SELECT DISTINCT token FROM fcm_tokens WHERE token IS NOT NULL AND token != ''")
                         tokens = [row[0] for row in cursor.fetchall() if row[0]]
                         conn.close()
                         if tokens:
-                            send_multicast_notification(tokens, title, body, {"url": "/weekend-report"})
+                            send_multicast_notification(tokens, title, body, push_data)
                     except Exception as e:
-                        print(f"[Scheduler-Error] Failed to send weekend report push: {e}")
+                        print(f"[Scheduler-Error] Failed to send weekend VIP whale report push: {e}")
                 except Exception as e:
                     print(f"[Scheduler] Weekend report generation error: {e}")
                 last_run_weekend_report_gen = current_date

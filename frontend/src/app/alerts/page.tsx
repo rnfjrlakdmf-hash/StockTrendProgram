@@ -53,7 +53,7 @@ export default function AlertCenterPage() {
     const [alerts, setAlerts] = useState<AlertItem[]>(() => {
         if (typeof window !== 'undefined') {
             try {
-                const cached = sessionStorage.getItem('stocktrend_alerts_cache_v2');
+                const cached = sessionStorage.getItem('stocktrend_alerts_cache_v3');
                 if (cached) {
                     const parsed = JSON.parse(cached);
                     if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -65,7 +65,7 @@ export default function AlertCenterPage() {
     const [loading, setLoading] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
             try {
-                const cached = sessionStorage.getItem('stocktrend_alerts_cache_v2');
+                const cached = sessionStorage.getItem('stocktrend_alerts_cache_v3');
                 if (cached) {
                     const parsed = JSON.parse(cached);
                     if (Array.isArray(parsed) && parsed.length > 0) return false;
@@ -250,7 +250,8 @@ export default function AlertCenterPage() {
                     'sec_insider_trading', 'sec_13f', 'sec_disclosure',
                     'disclosure_alert', 'disclosure', 'large_holding',
                     'insider_trading', 'whale_accumulation', 'whale_alert',
-                    'quant_scanner', 'theory_alert', 'economics_alert', 'system_alert'
+                    'quant_scanner', 'theory_alert', 'economics_alert', 'system_alert',
+                    'weekend_report', 'weekend_whale', 'whale_weekend', 'vip_report', 'premium_report'
                 ].includes(data.type) ||
                 (data.type === 'market_summary' && isGlobal && !hasTargetUsers) ||
                 titleStr.includes('[SEC]') ||
@@ -396,7 +397,7 @@ export default function AlertCenterPage() {
 
                 // 세션 스토리지 캐시 저장
                 try {
-                    sessionStorage.setItem('stocktrend_alerts_cache_v2', JSON.stringify(combinedAlerts.slice(0, 100)));
+                    sessionStorage.setItem('stocktrend_alerts_cache_v3', JSON.stringify(combinedAlerts.slice(0, 100)));
                 } catch {}
 
                 // 🌊 [2단계: 백그라운드 심층 보강] 3일치 전체 알림(1,500건)을 백그라운드로 가져와 부드럽게 병합 (화면 멈춤 없음)
@@ -417,7 +418,7 @@ export default function AlertCenterPage() {
                             deepList.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
                             setAlerts(deepList);
                             try {
-                                sessionStorage.setItem('stocktrend_alerts_cache_v2', JSON.stringify(deepList.slice(0, 100)));
+                                sessionStorage.setItem('stocktrend_alerts_cache_v3', JSON.stringify(deepList.slice(0, 100)));
                             } catch {}
                         }
                     } catch (deepErr) {
@@ -2280,6 +2281,115 @@ function formatUsdToKrwInText(text: string): string {
         );
     };
 
+    // 💎 VVIP 프리미엄 주말 리포트 전용 구조화 브리핑 렌더러
+    const renderVipPremiumCardContent = (alert: any, isWhaleVip: boolean) => {
+        const rawBody = String(alert.body || '').trim();
+        const lines = rawBody
+            .split('\n')
+            .map((l: string) => l.trim())
+            .filter(Boolean);
+
+        const structuredItems: { emoji: string; tag: string; text: string; tone: string }[] = [];
+        let takeawayTag = '';
+        let takeawayText = '';
+        const plainFallbackLines: string[] = [];
+
+        const tagToneMap = (tag: string, emoji: string) => {
+            if (tag.includes('국내') || tag.includes('외국인') || emoji === '📊' || emoji === '🌐') {
+                return 'bg-cyan-500/15 text-cyan-200 border-cyan-400/35';
+            }
+            if (tag.includes('미국') || tag.includes('환율') || tag.includes('일정') || emoji === '🌎' || emoji === '📅') {
+                return 'bg-indigo-500/15 text-indigo-200 border-indigo-400/35';
+            }
+            if (tag.includes('테마') || tag.includes('고래') || tag.includes('매집') || emoji === '🔥' || emoji === '🏆' || emoji === '💎') {
+                return 'bg-amber-500/15 text-amber-200 border-amber-400/35';
+            }
+            if (tag.includes('기관') || tag.includes('리서치') || emoji === '🏛️' || emoji === '📑') {
+                return 'bg-purple-500/15 text-purple-200 border-purple-400/35';
+            }
+            if (tag.includes('전략') || emoji === '🎯') {
+                return 'bg-emerald-500/15 text-emerald-200 border-emerald-400/35';
+            }
+            return 'bg-amber-500/15 text-amber-200 border-amber-400/30';
+        };
+
+        for (const line of lines) {
+            const m = line.match(/^([^\[\s]{1,4})?\s*\[([^\]]+)\]\s*(.+)$/);
+            if (m) {
+                const emoji = (m[1] || '✦').trim();
+                const tag = m[2].trim();
+                const text = m[3].trim();
+                if (emoji === '💡' || tag.includes('체크포인트') || tag.includes('열람 혜택') || tag.includes('VIP')) {
+                    takeawayTag = tag;
+                    takeawayText = text;
+                } else {
+                    structuredItems.push({ emoji, tag, text, tone: tagToneMap(tag, emoji) });
+                }
+            } else {
+                const cleaned = line.replace(/^[📌•\-\*·\s]+/, '').trim();
+                if (cleaned) plainFallbackLines.push(cleaned);
+            }
+        }
+
+        return (
+            <div className="space-y-3">
+                <div className="rounded-2xl bg-black/50 border border-amber-400/20 p-3.5 sm:p-4 space-y-3 shadow-inner">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/10">
+                        <span className="text-[10.5px] font-mono font-black tracking-widest uppercase text-amber-300 flex items-center gap-1.5">
+                            <Crown className="w-3.5 h-3.5 text-amber-400" />
+                            {isWhaleVip ? 'VVIP WHALE FLOW X-RAY · EXECUTIVE SUMMARY' : 'VVIP WEEKLY MARKET INSIGHT · EXECUTIVE SUMMARY'}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">
+                            ● 실데이터 검증 완료
+                        </span>
+                    </div>
+
+                    {structuredItems.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                            {structuredItems.map((item, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`rounded-xl bg-white/[0.03] border border-white/10 p-3 space-y-1.5 ${
+                                        structuredItems.length % 2 === 1 && idx === structuredItems.length - 1 ? 'md:col-span-2' : ''
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10.5px] font-black ${item.tone}`}>
+                                            <span>{item.emoji}</span>
+                                            <span>{item.tag}</span>
+                                        </span>
+                                    </div>
+                                    <p className="text-[12.5px] sm:text-[13px] text-zinc-100 leading-relaxed font-medium break-keep">
+                                        {item.text}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {plainFallbackLines.map((ln, idx) => (
+                                <p key={idx} className="text-sm text-zinc-100 leading-relaxed font-medium break-keep flex items-start gap-2">
+                                    <span className="text-amber-400 shrink-0 mt-0.5">✦</span>
+                                    <span>{ln}</span>
+                                </p>
+                            ))}
+                        </div>
+                    )}
+
+                    {takeawayText && (
+                        <div className="rounded-xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-purple-500/15 border border-amber-400/35 px-3.5 py-2.5 flex items-start gap-2">
+                            <span className="text-amber-300 text-sm shrink-0 mt-0.5">💡</span>
+                            <div className="text-xs sm:text-[12.5px] text-amber-100 leading-relaxed break-keep">
+                                <span className="font-black text-amber-300 mr-1.5">[{takeawayTag}]</span>
+                                <span className="font-semibold">{takeawayText}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     const renderAlertCard = (alert: any) => {
         const titleText = (alert.title || '').trim();
         const bodyText = (alert.body || '').trim();
@@ -2308,11 +2418,25 @@ function formatUsdToKrwInText(text: string): string {
             titleText.includes('자동매매') ||
             bodyText.includes('가상 예수금')
         );
-        const isWhale = !isAutoTradeCard && !hasDisclosureKey && (['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수"));
-        const isDisclosure = !isAutoTradeCard && (hasDisclosureKey || ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading'].includes(alert.type));
+        const isVipPremiumReport = !isAutoTradeCard && !hasDisclosureKey && (
+            ['weekend_report', 'weekend_whale', 'whale_weekend', 'vip_report', 'premium_report'].includes(alert.type) ||
+            titleText.includes('VIP 주말') ||
+            titleText.includes('마켓 인사이트') ||
+            titleText.includes('프리미엄 인사이트') ||
+            titleText.includes('슈퍼 고래') ||
+            Boolean(alert.url && (String(alert.url).includes('/weekend-report') || String(alert.url).includes('/weekend-whale')))
+        );
+        const isVipWhaleReport = isVipPremiumReport && (
+            ['weekend_whale', 'whale_weekend'].includes(alert.type) ||
+            titleText.includes('슈퍼 고래') ||
+            titleText.includes('세력/외인') ||
+            Boolean(alert.url && String(alert.url).includes('/weekend-whale'))
+        );
+        const isWhale = !isAutoTradeCard && !hasDisclosureKey && !isVipPremiumReport && (['whale_accumulation', 'whale_alert'].includes(alert.type) || titleText.includes("외국인") || titleText.includes("쓸어담은") || titleText.includes("세력") || titleText.includes("기관 순매수"));
+        const isDisclosure = !isAutoTradeCard && !isVipPremiumReport && (hasDisclosureKey || ['disclosure_alert', 'large_holding', 'disclosure', 'sec_insider_trading', 'sec_13f', 'sec_disclosure', 'insider_trading'].includes(alert.type));
         const rawSymbol = alert.symbol || alert.code || '';
         const cleanSymbol = rawSymbol ? (rawSymbol.split('.')[0] || rawSymbol) : '';
-        const marketBadge = getMarketBadge(alert);
+        const marketBadge = isVipPremiumReport ? null : getMarketBadge(alert);
 
         let targetUrl = alert.url || '';
         if (targetUrl && (targetUrl.startsWith("https://stock-trend-program.co.kr") || targetUrl.startsWith("http://stock-trend-program.co.kr"))) {
@@ -2411,7 +2535,35 @@ function formatUsdToKrwInText(text: string): string {
             accentBorder = "border-l-4 border-l-purple-500";
             defaultCta = { href: "/admin", label: "관리자 시스템 대시보드 바로가기", icon: Crown, style: "bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border-purple-500/40" };
         }
-        // [0-1순위: 장전 모닝 팩트 브리핑]
+        // [0-1순위: 💎 VVIP 주말 프리미엄 리포트 (글로벌 마켓 인사이트 & 슈퍼 고래 수급 엑스레이)]
+        else if (isVipPremiumReport) {
+            if (isVipWhaleReport) {
+                typeBadgeStyle = "bg-gradient-to-r from-cyan-500/25 via-indigo-500/25 to-amber-400/25 text-amber-200 border-amber-400/55 shadow-[0_0_18px_rgba(6,182,212,0.28)]";
+                typeBadgeLabel = "👑 VVIP 슈퍼 고래 엑스레이";
+                cardBorderHover = "hover:border-amber-300/75 hover:shadow-[0_0_35px_rgba(6,182,212,0.25)]";
+                accentBorder = "border-l-4 border-l-amber-400";
+                targetUrl = "/weekend-whale";
+                defaultCta = {
+                    href: "/weekend-whale",
+                    label: "🐋 VIP 슈퍼 고래(외인·기관) 매집 TOP 10 엑스레이 전문 열람하기",
+                    icon: Crown,
+                    style: "bg-gradient-to-r from-cyan-500/25 via-indigo-500/25 to-amber-500/25 hover:from-cyan-500/35 hover:to-amber-500/35 text-amber-100 border-amber-400/50 shadow-[0_0_20px_rgba(245,158,11,0.18)]"
+                };
+            } else {
+                typeBadgeStyle = "bg-gradient-to-r from-amber-400/25 via-purple-500/25 to-indigo-500/25 text-amber-200 border-amber-400/55 shadow-[0_0_18px_rgba(245,158,11,0.28)]";
+                typeBadgeLabel = "💎 VVIP 프리미엄 리포트";
+                cardBorderHover = "hover:border-amber-300/75 hover:shadow-[0_0_35px_rgba(245,158,11,0.25)]";
+                accentBorder = "border-l-4 border-l-amber-400";
+                targetUrl = "/weekend-report";
+                defaultCta = {
+                    href: "/weekend-report",
+                    label: "💎 VIP 주간 마켓 인사이트 · 경제 캘린더 전문 열람하기",
+                    icon: Crown,
+                    style: "bg-gradient-to-r from-amber-500/25 via-purple-600/25 to-indigo-600/25 hover:from-amber-500/35 hover:to-purple-500/35 text-amber-100 border-amber-400/50 shadow-[0_0_20px_rgba(245,158,11,0.18)]"
+                };
+            }
+        }
+        // [0-2순위: 장전 모닝 팩트 브리핑]
         else if (isMorningBriefing) {
             typeBadgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]";
             typeBadgeLabel = "🌅 장전 모닝 팩트 브리핑";
@@ -2616,13 +2768,32 @@ function formatUsdToKrwInText(text: string): string {
             titleText.includes('시장·섹터 지수 결산');
 
         const cardContent = (
-            <div className={`relative bg-gradient-to-br from-zinc-900/90 via-zinc-950 to-black border border-white/10 ${accentBorder} ${cardBorderHover} rounded-3xl p-5 md:p-6 transition-all duration-300 shadow-2xl w-full text-left overflow-hidden group`}>
+            <div className={`relative ${
+                isVipPremiumReport
+                    ? 'bg-gradient-to-br from-[#1d1236] via-[#110c22] to-[#08090f] border border-amber-400/40'
+                    : 'bg-gradient-to-br from-zinc-900/90 via-zinc-950 to-black border border-white/10'
+            } ${accentBorder} ${cardBorderHover} rounded-3xl p-5 md:p-6 transition-all duration-300 shadow-2xl w-full text-left overflow-hidden group`}>
+                {isVipPremiumReport && (
+                    <>
+                        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-amber-300 via-purple-400 to-cyan-300 opacity-90" />
+                        <div className="absolute -top-16 -right-16 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                    </>
+                )}
                 {/* Header Row: Type Badge + Market Badge + Timestamp */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 pb-3 border-b border-white/5">
+                <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 pb-3 border-b border-white/10">
                     <div className="flex flex-wrap items-center gap-2">
                         <span className={`px-3 py-1 rounded-xl text-xs font-black border flex items-center gap-1.5 ${typeBadgeStyle}`}>
                             {typeBadgeLabel}
                         </span>
+                        {isVipPremiumReport && (
+                            <span className={`px-2.5 py-1 rounded-xl text-[11px] font-black border tracking-tight shadow-sm ${
+                                isVipWhaleReport
+                                    ? 'bg-cyan-500/15 text-cyan-200 border-cyan-400/35'
+                                    : 'bg-purple-500/15 text-purple-200 border-purple-400/35'
+                            }`}>
+                                {isVipWhaleReport ? '🐋 외인·기관 TOP 10 · 주말 한정' : '🌐 글로벌·국내 통합 · 일요일 자정 마감'}
+                            </span>
+                        )}
                         {isPrivatePersonalCard && (
                             <span className="px-2.5 py-1 rounded-xl text-[11px] font-black border bg-emerald-500/15 text-emerald-300 border-emerald-500/35 tracking-tight shadow-sm flex items-center gap-1">
                                 🔒 내 맞춤 알림 (나에게만 표시)
@@ -2716,7 +2887,9 @@ function formatUsdToKrwInText(text: string): string {
                 </h3>
 
                 {/* Body Content */}
-                {isPortfolio ? (
+                {isVipPremiumReport ? (
+                    renderVipPremiumCardContent(alert, isVipWhaleReport)
+                ) : isPortfolio ? (
                     renderPortfolioCardContent(alert)
                 ) : isMorningBriefing ? (
                     renderMorningBriefingCardContent(alert)
@@ -2728,8 +2901,22 @@ function formatUsdToKrwInText(text: string): string {
                     </div>
                 )}
 
-                {/* Action Buttons for Disclosures / Stocks */}
-                {isDisclosure ? (
+                {/* Action Buttons for Disclosures / Stocks / VIP Reports */}
+                {isVipPremiumReport ? (
+                    <div className="mt-4 pt-3.5 border-t border-amber-400/20">
+                        <Link
+                            href={defaultCta.href}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`w-full py-3 px-4 rounded-2xl border text-xs md:text-sm font-black transition-all flex items-center justify-between active:scale-[0.99] cursor-pointer ${defaultCta.style}`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <Crown className="w-4 h-4 text-amber-300 shrink-0" />
+                                <span>{defaultCta.label}</span>
+                            </span>
+                            <ChevronRight className="w-4 h-4 text-amber-300 shrink-0 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                    </div>
+                ) : isDisclosure ? (
                     <div className="flex flex-wrap gap-2.5 mt-5 pt-4 border-t border-white/10">
                         {cleanSymbol && (
                             <Link 
@@ -2972,7 +3159,8 @@ function formatUsdToKrwInText(text: string): string {
                 'sec_insider_trading', 'sec_13f', 'sec_disclosure',
                 'disclosure_alert', 'disclosure', 'large_holding',
                 'insider_trading', 'whale_accumulation', 'whale_alert',
-                'quant_scanner', 'theory_alert', 'economics_alert', 'system_alert'
+                'quant_scanner', 'theory_alert', 'economics_alert', 'system_alert',
+                'weekend_report', 'weekend_whale', 'whale_weekend', 'vip_report', 'premium_report'
             ].includes(alert.type) ||
             (alert.type === 'market_summary' && alert.is_global === true && !hasTargetUsers) ||
             titleText.includes('[SEC]') ||
